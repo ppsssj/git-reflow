@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Reflow.io | Template Manager</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "error": "#ba1a1a",
+                    "on-surface-variant": "#3f4852",
+                    "on-background": "#1a1c1c",
+                    "secondary": "#7a2ad6",
+                    "primary-fixed": "#cfe5ff",
+                    "error-container": "#ffdad6",
+                    "surface": "#f9f9f9",
+                    "surface-dim": "#dadada",
+                    "secondary-fixed": "#eedcff",
+                    "on-tertiary": "#ffffff",
+                    "on-tertiary-fixed": "#2e1500",
+                    "inverse-primary": "#9acbff",
+                    "outline": "#6f7883",
+                    "on-secondary": "#ffffff",
+                    "on-tertiary-fixed-variant": "#6c3a00",
+                    "on-surface": "#1a1c1c",
+                    "on-secondary-fixed": "#290055",
+                    "surface-container-highest": "#e2e2e2",
+                    "on-primary-fixed": "#001d34",
+                    "on-secondary-container": "#fffbff",
+                    "surface-variant": "#e2e2e2",
+                    "surface-bright": "#f9f9f9",
+                    "on-secondary-fixed-variant": "#6300bb",
+                    "primary-container": "#18a0fb",
+                    "tertiary-container": "#e58100",
+                    "on-error-container": "#93000a",
+                    "surface-container-low": "#f3f3f3",
+                    "on-primary-fixed-variant": "#004a79",
+                    "inverse-surface": "#2f3131",
+                    "surface-tint": "#00629e",
+                    "on-primary-container": "#003458",
+                    "surface-container-high": "#e8e8e8",
+                    "secondary-fixed-dim": "#d8b9ff",
+                    "inverse-on-surface": "#f1f1f1",
+                    "surface-container": "#eeeeee",
+                    "on-tertiary-container": "#4e2900",
+                    "tertiary-fixed-dim": "#ffb779",
+                    "tertiary": "#8e4e00",
+                    "on-primary": "#ffffff",
+                    "primary": "#00629e",
+                    "secondary-container": "#944af1",
+                    "primary-fixed-dim": "#9acbff",
+                    "on-error": "#ffffff",
+                    "outline-variant": "#bfc7d4",
+                    "surface-container-lowest": "#ffffff",
+                    "tertiary-fixed": "#ffdcc1",
+                    "background": "#f9f9f9"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "fontFamily": {
+                    "headline": ["Inter"],
+                    "body": ["Inter"],
+                    "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .tonal-shift { background-color: rgba(0, 0, 0, 0.02); }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface selection:bg-primary-fixed selection:text-on-primary-fixed">
+<!-- TopNavBar -->
+<nav class="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md shadow-sm w-full sticky top-0 z-50 flex justify-between items-center px-6 h-14">
+<div class="flex items-center gap-8">
+<span class="text-lg font-bold tracking-tighter text-slate-900 dark:text-white">Reflow.io</span>
+<div class="hidden md:flex gap-6 items-baseline">
+<a class="font-sans text-sm tracking-tight font-medium text-slate-500 dark:text-slate-400 pb-2 hover:text-blue-500 dark:hover:text-blue-300 transition-colors active:opacity-80" href="#">Dashboard</a>
+<a class="font-sans text-sm tracking-tight font-medium text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 pb-2 transition-all" href="#">Templates</a>
+<a class="font-sans text-sm tracking-tight font-medium text-slate-500 dark:text-slate-400 pb-2 hover:text-blue-500 dark:hover:text-blue-300 transition-colors active:opacity-80" href="#">Network</a>
+<a class="font-sans text-sm tracking-tight font-medium text-slate-500 dark:text-slate-400 pb-2 hover:text-blue-500 dark:hover:text-blue-300 transition-colors active:opacity-80" href="#">Docs</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative group hidden sm:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-lg">search</span>
+<input class="bg-surface-container-low border-none rounded-lg pl-10 pr-4 py-1.5 text-sm w-64 focus:ring-2 focus:ring-primary/20 transition-all outline-none" placeholder="Search resources..." type="text"/>
+</div>
+<div class="flex gap-2">
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-colors">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+</div>
+<button class="bg-primary text-on-primary px-4 py-1.5 rounded-lg text-sm font-semibold hover:opacity-90 active:scale-95 transition-all">Deploy</button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-outline-variant/20">
+<img alt="User avatar" data-alt="close-up portrait of a professional male developer in a neutral studio setting with soft lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCJ3PyNuJ1mKlXCRnRfdxhrei8VKtLrQpDUSRieYEL3uk9IbCvaz6xEP3w6TbB9Kb51NOifdcoCKXehBQ-LAatrmu2k5FQb-DHxeEfWH6wIAi4ejaMVKT9mKLzSj-utAOSchRYtDrlCmej7ldAYL8QPC5Kl1sWokptc08SylG8tFD6x5gkjdKHThDUAa6v6OUNXqUsaaFhU0Db5UULx0z4z1FEglBvzxYz3ES3yQjMSHokPXOOlCltXmDLzlHwtsRP-hfie-2QuVyk"/>
+</div>
+</div>
+</nav>
+<div class="flex min-h-[calc(100vh-3.5rem)]">
+<!-- SideNavBar -->
+<aside class="bg-slate-50 dark:bg-slate-950 h-[calc(100vh-3.5rem)] w-64 flex flex-col sticky top-14 flex-none border-r border-slate-200/10 p-3 gap-1">
+<div class="px-3 py-4 mb-4 flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary-container text-lg">terminal</span>
+</div>
+<div>
+<h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100">Main Workspace</h2>
+<p class="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Production v1.0.4</p>
+</div>
+</div>
+<button class="mb-6 mx-2 bg-primary text-on-primary py-2 px-4 rounded-md text-xs font-semibold flex items-center justify-center gap-2 hover:opacity-90 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-sm">add</span>
+                Create New
+            </button>
+<nav class="space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-sm rounded-md text-xs font-medium transition-all" href="#">
+<span class="material-symbols-outlined text-sm" data-icon="folder">folder</span>
+                    Projects
+                </a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 text-xs font-medium transition-all" href="#">
+<span class="material-symbols-outlined text-sm" data-icon="alt_route">alt_route</span>
+                    Branches
+                </a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 text-xs font-medium transition-all" href="#">
+<span class="material-symbols-outlined text-sm" data-icon="history">history</span>
+                    Commits
+                </a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 text-xs font-medium transition-all" href="#">
+<span class="material-symbols-outlined text-sm" data-icon="merge_type">merge_type</span>
+                    Pull Requests
+                </a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 text-xs font-medium transition-all" href="#">
+<span class="material-symbols-outlined text-sm" data-icon="inventory_2">inventory_2</span>
+                    Assets
+                </a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 text-xs font-medium transition-all" href="#">
+<span class="material-symbols-outlined text-sm" data-icon="analytics">analytics</span>
+                    Analytics
+                </a>
+</nav>
+<div class="mt-auto pt-6 border-t border-slate-200/10 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 text-xs font-medium transition-all" href="#">
+<span class="material-symbols-outlined text-sm" data-icon="help_outline">help_outline</span>
+                    Support
+                </a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 text-xs font-medium transition-all" href="#">
+<span class="material-symbols-outlined text-sm" data-icon="archive">archive</span>
+                    Archive
+                </a>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 overflow-y-auto p-8 space-y-8">
+<header class="flex justify-between items-end max-w-7xl mx-auto w-full">
+<div class="space-y-1">
+<h1 class="text-3xl font-extrabold tracking-tight text-on-surface">Repository Templates</h1>
+<p class="text-on-surface-variant text-sm font-medium">Manage and deploy pre-configured development environments.</p>
+</div>
+<div class="flex gap-3">
+<div class="bg-surface-container-low p-1 rounded-lg flex">
+<button class="px-3 py-1 bg-surface-container-lowest shadow-sm rounded-md text-xs font-semibold flex items-center gap-1.5">
+<span class="material-symbols-outlined text-xs">grid_view</span> Grid
+                        </button>
+<button class="px-3 py-1 text-on-surface-variant text-xs font-semibold flex items-center gap-1.5 hover:text-on-surface">
+<span class="material-symbols-outlined text-xs">list</span> List
+                        </button>
+</div>
+</div>
+</header>
+<!-- Template Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-7xl mx-auto">
+<!-- Card 1 -->
+<div class="group bg-surface-container-lowest rounded-xl p-4 transition-all duration-300 hover:shadow-[0_32px_64px_-12px_rgba(0,0,0,0.08)] cursor-pointer">
+<div class="relative aspect-[16/10] rounded-lg overflow-hidden mb-4 bg-slate-100">
+<img alt="Next.js template" class="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500" data-alt="abstract dark 3d render of flowing digital wires and futuristic patterns with blue neon glow" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC7DeeAz5qsg5zNEIKn3dItso7jAIODOyATjYdVW-ZzNnURJY3bvSqlvDnt-32OOVOlpc5sCAYnXGAycgJ5OaZcxz438GerLZ4Otgq36KL_fLPqfNJWs-Nrac94hx1pgGdCG45iNYri5BDbo6LanfOT4O7k7Zm3RUTT5Em5NFgmVKXNmDJq4l33IsjEI2aewTwIzdR3lDrtkrkqtCa2LQJz6usA-ppXtbZnL4kLwVGtyu5S1gFyEvToPkZW2YWBOn2_rvZ8QZBKvJw"/>
+<div class="absolute top-3 left-3">
+<span class="bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">ACTIVE</span>
+</div>
+</div>
+<div class="flex justify-between items-start mb-2">
+<h3 class="font-semibold text-sm">nextjs-enterprise-stack</h3>
+<span class="material-symbols-outlined text-on-surface-variant text-sm">more_vert</span>
+</div>
+<p class="text-xs text-on-surface-variant line-clamp-2 leading-relaxed mb-4">Production-ready Next.js 14 template with Tailwind, TypeScript, and pre-configured CI/CD pipelines.</p>
+<div class="flex items-center gap-3">
+<div class="flex -space-x-2">
+<div class="w-5 h-5 rounded-full border-2 border-surface-container-lowest bg-slate-200 overflow-hidden">
+<img alt="collaborator" data-alt="professional portrait of a man with glasses on neutral background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDnB981C5geduBUD9Vp3WeW0-InJU1rfn6AVbtUjmonY3mGsn0x433ZlBxaIt0InhfwJ3O1IKbn-8pfZ4lHbjax9_MS9LL4rV_FGEkLDtEzp-viD0Kc4hEyZJxD1Tni1Ms7ytterWz23wiSXdtbJueHQRfgfJWUQZrBwf03znvW93zIp-CF4Cy_IFESDIlOcd08dN-1ij31uApY4w37BcmstSaXJntPO79uh8sMVW0FqVmfUuZ53L8qxSee-koQ6AC7-c_gAO9mMrE"/>
+</div>
+<div class="w-5 h-5 rounded-full border-2 border-surface-container-lowest bg-slate-200 overflow-hidden">
+<img alt="collaborator" data-alt="friendly woman professional smiling in soft daylight" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDEYUB3NyIlOh1BvNk3OJorWEQkoK9LnDrTHkxDUdiWzjWzbxAqzKOJjUwMMUMLr8GgYb_NuHOSFNX1w2Zj1WlhploZSgckHDNcNFYHy4Xa0TiXORZXpD43lM2PubE9QYuElkNmX_jLt_YK6VG3RnCQLxd3LpiETqNRSMVyyHfMPwPOdE1omUgRs-vLpsZs5zWFjH-cRV1KGFAU0AOC7v-WQD1UEkyoKjdRD-bsR_u9nJbE9Qh7wNiajG9yFX5hfjVeKlsdJ8QmZfI"/>
+</div>
+</div>
+<span class="text-[10px] font-medium text-outline">Updated 2h ago</span>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="group bg-surface-container-lowest rounded-xl p-4 transition-all duration-300 hover:shadow-[0_32px_64px_-12px_rgba(0,0,0,0.08)] cursor-pointer">
+<div class="relative aspect-[16/10] rounded-lg overflow-hidden mb-4 bg-slate-100">
+<img alt="React Library template" class="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500" data-alt="geometric minimal composition of spheres and blocks in a clean white studio with soft shadows" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBU2WPSyYZ9slIyc2SEj8NR6rbSvLv6Snc2w6JdMhUQ2ZdHhsEC8bVxvWJWK06qRVnMlQFvjux-goy1XhbKcNuNSlwbUubdbFVtCu7xtOOeFg4K2xhfYiEAquro7oHD7PTCcnP7JYSQvqGcw6H18fXqfdPAgAHsIYLaifedYkRropVzNwgVNZhAF_ELjeL0glSxuFkzNxZwsW1cxXU-u-wqM4NPU-ou4jzMRomz8oj0zOQj4GtOwkOq-fXdgR3z6kKlgGt6YS_SOgg"/>
+<div class="absolute top-3 left-3">
+<span class="bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">ACTIVE</span>
+</div>
+</div>
+<div class="flex justify-between items-start mb-2">
+<h3 class="font-semibold text-sm">ui-component-kit-v2</h3>
+<span class="material-symbols-outlined text-on-surface-variant text-sm">more_vert</span>
+</div>
+<p class="text-xs text-on-surface-variant line-clamp-2 leading-relaxed mb-4">Rollup based UI library boilerplate with Storybook 7 and automatic versioning logic.</p>
+<div class="flex items-center gap-3">
+<div class="flex -space-x-2">
+<div class="w-5 h-5 rounded-full border-2 border-surface-container-lowest bg-slate-200 overflow-hidden">
+<img alt="collaborator" data-alt="professional male headshot" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAugy_kTVHVln-0WD9rFC1F3bWV5svedxVOWlg78GhvcQ-npzmjvPwN2ThzruTlYhOx--vqOUxe97mTvnJO93aPj7kfqMW8UWT5t_cwkVOmpuIbdiXxe_y9MA8smwPd449vQLjnmtJnmkc6reJE3QS11kSWTOwxBebAAU4bnQszQ5L2-JgN4SHFriNOw3Zrm1gr2DdzaAszDlO21k0Z69xHbY6biW8IJ2gG1sQNnMnK_louiNF36il9IXT81KkEhNz_zdrRyRfgqk0"/>
+</div>
+</div>
+<span class="text-[10px] font-medium text-outline">Updated 1d ago</span>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="group bg-surface-container-lowest rounded-xl p-4 transition-all duration-300 hover:shadow-[0_32px_64px_-12px_rgba(0,0,0,0.08)] cursor-pointer">
+<div class="relative aspect-[16/10] rounded-lg overflow-hidden mb-4 bg-slate-100">
+<img alt="Python API template" class="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500" data-alt="close-up of clean source code on a computer screen with soft focus and blue ambient light" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAHIFBxyiebVZnUFg2D9XUvpWH1Fyqst4tVuD_OuDyi_JggCv_83ZWra-Q6wkTvglKjj-gDyne2wjgtIMgGjNIOFVEB1gJLrIHe_irmkMWa-jQiPiNWWh76eIXlBTMrRcPGrQXPChnbUvftitWcYlZeL9mwpdRJLHIih7ZjhyJ3ofs2r4b4dxUCT8d5P5Xt2otswhxBbMeiNYx3ny9HOkLkT0oipBLXwn0Iz1DgpPkbJ_MuuuByuZW2yPYCL6iENjCCzYn15epUz8c"/>
+<div class="absolute top-3 left-3">
+<span class="bg-slate-400 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">INACTIVE</span>
+</div>
+</div>
+<div class="flex justify-between items-start mb-2">
+<h3 class="font-semibold text-sm">fastapi-microservice</h3>
+<span class="material-symbols-outlined text-on-surface-variant text-sm">more_vert</span>
+</div>
+<p class="text-xs text-on-surface-variant line-clamp-2 leading-relaxed mb-4">Scalable FastAPI backend with PostgreSQL, Redis, and Docker integration for high-performance apps.</p>
+<div class="flex items-center gap-3">
+<div class="flex -space-x-2">
+<div class="w-5 h-5 rounded-full border-2 border-surface-container-lowest bg-slate-200 overflow-hidden">
+<img alt="collaborator" data-alt="woman in professional attire with neutral expression" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB4JyAyHwos4GETA7hMIz_AcnuDX_5IeuSOnHTpw_qNZxjxnPIOFbecT66neaySX4QzRNKqv5eKaP8Ogywa4-Ut6Ujg5uwCcmV75EAMLIf9nrjwIkANZj-zw_TU5nBa8pX1e7aSgaPVac2mwV386Gnl5icDNrgv2f6PTwdnYomqIEqPf1U9QlAZnt5wsokWVAJ_ky3RVvvcfqKVWM53XFtrX4sgtMmI-RrO4MbO5EJeUfFGPNsd16rD2xerl-Gfms-2Jrs1HVHhL4M"/>
+</div>
+</div>
+<span class="text-[10px] font-medium text-outline">Updated 4d ago</span>
+</div>
+</div>
+<!-- Card 4 -->
+<div class="group bg-surface-container-lowest rounded-xl p-4 transition-all duration-300 hover:shadow-[0_32px_64px_-12px_rgba(0,0,0,0.08)] cursor-pointer">
+<div class="relative aspect-[16/10] rounded-lg overflow-hidden mb-4 bg-slate-100">
+<img alt="Static Site template" class="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500" data-alt="server racks in a high-tech data center with glowing blue and green status indicators" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDqpQIkPIvkghAd6hIn6J8W0tqwRqeOw6lwhpTkGvL2ggKfwHAEuCuRuMcGOoeC5mnW9o5xcQtc3D9zbSVzQxvdE-a5ws4ZKmhGv9P0hKJzR8rMGZkQV0HrMJuZ7CQRzZ86VyfaAjow4APQ2c1n47ZgcQWnuyafniZsF7ufcu46iV1wnkxAfzHsWebBMyLDPt2h8jXuMXF_V6BPeuoEMXaqTXZBR24b80uq_5YwZdig3n80rE_OgC6pf2DSp2YrisreiBrPZ5U-Zp4"/>
+<div class="absolute top-3 left-3">
+<span class="bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">ACTIVE</span>
+</div>
+</div>
+<div class="flex justify-between items-start mb-2">
+<h3 class="font-semibold text-sm">astro-blog-clean</h3>
+<span class="material-symbols-outlined text-on-surface-variant text-sm">more_vert</span>
+</div>
+<p class="text-xs text-on-surface-variant line-clamp-2 leading-relaxed mb-4">Lightning fast blog template using Astro 4.0 with markdown support and SEO optimization.</p>
+<div class="flex items-center gap-3">
+<div class="flex -space-x-2">
+<div class="w-5 h-5 rounded-full border-2 border-surface-container-lowest bg-slate-200 overflow-hidden">
+<img alt="collaborator" data-alt="professional male headshot" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDduXp1m_jpO_FS36qLz6ffhzTdto3uexxF8Xc0FGx54H7o2rZedw8XgU_ZHf_UJ5myZwv635QrxIId0SgN8EYqI7uH-bF4UJjJja-aTuEpz0N2WbUxUCSduC_CZJ5NdVzhBGLI-AQxfOopsvcHiB1WIq_aJD9mXuZz3SrJs1wTYWt1a1GPrwLXUpsETR9d7qXqcAZWQpJuMJI15XmlZXPlNuyDGC2o3eiD45fhVr-gISiloDo2NdpjnaBFS1QAv0m6VaBDzmTr6ho"/>
+</div>
+</div>
+<span class="text-[10px] font-medium text-outline">Updated 1w ago</span>
+</div>
+</div>
+<!-- Add Template Skeleton -->
+<div class="group border-2 border-dashed border-outline-variant/30 rounded-xl p-4 flex flex-col items-center justify-center gap-4 hover:border-primary/50 transition-all cursor-pointer bg-surface/50">
+<div class="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-on-surface-variant">add_circle</span>
+</div>
+<div class="text-center">
+<p class="text-sm font-semibold">New Template</p>
+<p class="text-[10px] text-on-surface-variant mt-1">Initialize from repository</p>
+</div>
+</div>
+</div>
+<!-- Dashboard Stats Bento -->
+<section class="max-w-7xl mx-auto w-full space-y-6 pt-12 border-t border-outline-variant/10">
+<h2 class="text-xl font-bold tracking-tight">Recent Activity</h2>
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+<div class="md:col-span-2 p-6 bg-secondary-fixed text-on-secondary-fixed rounded-xl flex flex-col justify-between h-48 relative overflow-hidden group">
+<div class="relative z-10">
+<p class="text-xs font-bold uppercase tracking-widest opacity-70">Total Deployments</p>
+<h3 class="text-5xl font-black mt-2">1,284</h3>
+</div>
+<div class="relative z-10 flex items-center gap-2 text-xs font-semibold">
+<span class="material-symbols-outlined text-sm">trending_up</span>
+                            +12% from last month
+                        </div>
+<div class="absolute -right-8 -bottom-8 opacity-10 group-hover:scale-110 transition-transform duration-700">
+<span class="material-symbols-outlined text-[160px]">rocket_launch</span>
+</div>
+</div>
+<div class="p-6 bg-surface-container-lowest rounded-xl flex flex-col justify-between h-48 border border-outline-variant/10">
+<div>
+<p class="text-[10px] font-bold uppercase tracking-widest text-outline">Active Assets</p>
+<h3 class="text-3xl font-bold mt-1">42</h3>
+</div>
+<div class="h-16 w-full bg-slate-50 rounded-lg flex items-end gap-1 p-2">
+<div class="flex-1 bg-primary/20 h-2/3 rounded-t-sm"></div>
+<div class="flex-1 bg-primary/40 h-1/2 rounded-t-sm"></div>
+<div class="flex-1 bg-primary/60 h-3/4 rounded-t-sm"></div>
+<div class="flex-1 bg-primary h-full rounded-t-sm"></div>
+<div class="flex-1 bg-primary/80 h-4/5 rounded-t-sm"></div>
+</div>
+</div>
+<div class="p-6 bg-surface-container-lowest rounded-xl flex flex-col justify-between h-48 border border-outline-variant/10">
+<div>
+<p class="text-[10px] font-bold uppercase tracking-widest text-outline">Templates Usage</p>
+<h3 class="text-3xl font-bold mt-1">89%</h3>
+</div>
+<div class="flex flex-wrap gap-1">
+<span class="px-2 py-0.5 bg-secondary-fixed text-[9px] font-bold rounded uppercase">Next.js</span>
+<span class="px-2 py-0.5 bg-primary-fixed text-[9px] font-bold rounded uppercase">Astro</span>
+<span class="px-2 py-0.5 bg-tertiary-fixed text-[9px] font-bold rounded uppercase">API</span>
+</div>
+</div>
+</div>
+</section>
+</main>
+</div>
+<!-- Footer -->
+<footer class="w-full border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 mt-12">
+<div class="flex justify-between items-center px-12 py-8 max-w-7xl mx-auto">
+<div class="space-y-1">
+<span class="text-xs font-black text-slate-300 uppercase tracking-[0.2em]">Reflow Platform</span>
+<p class="text-[11px] font-normal text-slate-400">© 2024 Precision Git Reflow Platform. All rights reserved.</p>
+</div>
+<div class="flex gap-8">
+<a class="text-[11px] font-normal text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors opacity-70 hover:opacity-100" href="#">Privacy</a>
+<a class="text-[11px] font-normal text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors opacity-70 hover:opacity-100" href="#">Terms</a>
+<a class="text-[11px] font-normal text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors opacity-70 hover:opacity-100" href="#">Security</a>
+<a class="text-[11px] font-normal text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors opacity-70 hover:opacity-100" href="#">Status</a>
+</div>
+</div>
+</footer>
+</body></html>

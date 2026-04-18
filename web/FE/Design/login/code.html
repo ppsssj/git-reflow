@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Login - git-reflow</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "error": "#ba1a1a",
+                    "on-surface-variant": "#3f4852",
+                    "on-background": "#1a1c1c",
+                    "secondary": "#7a2ad6",
+                    "primary-fixed": "#cfe5ff",
+                    "error-container": "#ffdad6",
+                    "surface": "#f9f9f9",
+                    "surface-dim": "#dadada",
+                    "secondary-fixed": "#eedcff",
+                    "on-tertiary": "#ffffff",
+                    "on-tertiary-fixed": "#2e1500",
+                    "inverse-primary": "#9acbff",
+                    "outline": "#6f7883",
+                    "on-secondary": "#ffffff",
+                    "on-tertiary-fixed-variant": "#6c3a00",
+                    "on-surface": "#1a1c1c",
+                    "on-secondary-fixed": "#290055",
+                    "surface-container-highest": "#e2e2e2",
+                    "on-primary-fixed": "#001d34",
+                    "on-secondary-container": "#fffbff",
+                    "surface-variant": "#e2e2e2",
+                    "surface-bright": "#f9f9f9",
+                    "on-secondary-fixed-variant": "#6300bb",
+                    "primary-container": "#18a0fb",
+                    "tertiary-container": "#e58100",
+                    "on-error-container": "#93000a",
+                    "surface-container-low": "#f3f3f3",
+                    "on-primary-fixed-variant": "#004a79",
+                    "inverse-surface": "#2f3131",
+                    "surface-tint": "#00629e",
+                    "on-primary-container": "#003458",
+                    "surface-container-high": "#e8e8e8",
+                    "secondary-fixed-dim": "#d8b9ff",
+                    "inverse-on-surface": "#f1f1f1",
+                    "surface-container": "#eeeeee",
+                    "on-tertiary-container": "#4e2900",
+                    "tertiary-fixed-dim": "#ffb779",
+                    "tertiary": "#8e4e00",
+                    "on-primary": "#ffffff",
+                    "primary": "#00629e",
+                    "secondary-container": "#944af1",
+                    "primary-fixed-dim": "#9acbff",
+                    "on-error": "#ffffff",
+                    "outline-variant": "#bfc7d4",
+                    "surface-container-lowest": "#ffffff",
+                    "tertiary-fixed": "#ffdcc1",
+                    "background": "#f9f9f9"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "fontFamily": {
+                    "headline": ["Inter"],
+                    "body": ["Inter"],
+                    "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface antialiased min-h-screen flex flex-col relative overflow-hidden">
+<!-- Background Layer: Faded Editor Preview -->
+<div class="absolute inset-0 z-0 opacity-[0.03] pointer-events-none select-none">
+<div class="p-12 font-mono text-sm leading-relaxed space-y-4">
+<div class="flex gap-4"><span class="text-primary">01</span><span class="text-on-surface-variant">import { ReflowEngine } from "@git-reflow/core";</span></div>
+<div class="flex gap-4"><span class="text-primary">02</span><span class="text-on-surface-variant">const config = await ReflowEngine.syncTemplates();</span></div>
+<div class="flex gap-4"><span class="text-primary">03</span><span class="text-on-surface-variant">export default function Deploy() {</span></div>
+<div class="flex gap-4 ml-8"><span class="text-primary">04</span><span class="text-on-surface-variant">return config.deploy({</span></div>
+<div class="flex gap-4 ml-12"><span class="text-primary">05</span><span class="text-on-surface-variant">strategy: "precision-canvas",</span></div>
+<div class="flex gap-4 ml-12"><span class="text-primary">06</span><span class="text-on-surface-variant">analytics: true</span></div>
+<div class="flex gap-4 ml-8"><span class="text-primary">07</span><span class="text-on-surface-variant">});</span></div>
+<div class="flex gap-4"><span class="text-primary">08</span><span class="text-on-surface-variant">}</span></div>
+<div class="h-24"></div>
+<div class="flex gap-4"><span class="text-primary">12</span><span class="text-on-surface-variant">// Optimizing git workflow...</span></div>
+<div class="flex gap-4"><span class="text-primary">13</span><span class="text-on-surface-variant">const extension = Reflow.getExtension("vscode-reflow");</span></div>
+<div class="flex gap-4"><span class="text-primary">14</span><span class="text-on-surface-variant">extension.sync();</span></div>
+</div>
+</div>
+<!-- Main Content Canvas -->
+<main class="relative z-10 flex-grow flex items-center justify-center px-6 py-12 md:py-24">
+<!-- Login Container -->
+<div class="w-full max-w-md">
+<!-- Branding Anchor -->
+<div class="mb-10 text-center md:text-left">
+<div class="inline-flex items-center gap-2 mb-6">
+<div class="w-8 h-8 bg-primary rounded flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-xl">alt_route</span>
+</div>
+<span class="text-lg font-bold tracking-tighter text-on-surface">git-reflow</span>
+</div>
+<h1 class="text-[2.5rem] font-bold leading-[1.1] tracking-tight text-on-surface mb-3">
+                    Continue your <br class="hidden md:block"/>
+                    Precision Journey.
+                </h1>
+<p class="text-on-surface-variant text-sm font-medium">
+                    Experience the ultimate git refactoring environment.
+                </p>
+</div>
+<!-- Login Card -->
+<div class="glass-panel p-8 rounded-xl border border-outline-variant/15 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.06)] space-y-6">
+<!-- Primary Action -->
+<button class="w-full flex items-center justify-center gap-3 h-12 bg-surface-container-lowest border border-outline-variant/30 hover:bg-surface-container-high active:scale-[0.98] transition-all duration-150 rounded-lg text-on-surface text-sm font-semibold group">
+<img alt="Google logo" class="w-5 h-5" data-alt="Official Google logo emblem on transparent background with standard multi-color branding" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDjNiBTYkhj4Xdx4EOq5KNrEZMsMezMgDzCK-3gwfzg68mTkKCA2NqsQ2qRB9NnyDddxAkFCmecp03EhWC5bS9YqvrMLXDD9TN2vygCAewAh87Kp1yi9uYON3kyq_r4-urIqb1RXg4nmhUZTtejW01PvH93UsloacdsFkSwFOGpwTOIpaIzO-mWacwWJVfQyqrIMRRV6nqKxh1de1_RjBEVzQXIxAhx8a40arl0m3ACzeOZFpacocJOrr0fpMjYVt5KnUeurtv4aNo"/>
+                    Continue with Google
+                </button>
+<div class="relative flex items-center py-2">
+<div class="flex-grow border-t border-outline-variant/20"></div>
+<span class="flex-shrink mx-4 text-[10px] uppercase tracking-widest text-on-surface-variant/60 font-bold">Secure Access</span>
+<div class="flex-grow border-t border-outline-variant/20"></div>
+</div>
+<!-- Secondary/Email Fallback -->
+<div class="space-y-4">
+<div class="space-y-1.5">
+<label class="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant/80 ml-1" for="email">Work Email</label>
+<input class="w-full bg-surface-container-low border border-outline-variant/15 focus:border-primary focus:ring-4 focus:ring-primary/5 rounded-lg h-11 px-4 text-sm transition-all outline-none" id="email" placeholder="name@company.com" type="email"/>
+</div>
+<button class="w-full h-11 bg-primary hover:bg-primary-tint active:bg-primary text-white text-sm font-semibold rounded-lg transition-colors shadow-sm">
+                        Sign in with Email
+                    </button>
+</div>
+<!-- Trust Indicators/Subtext -->
+<div class="grid grid-cols-2 gap-4 pt-4">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-1.5 text-primary">
+<span class="material-symbols-outlined text-[16px]">terminal</span>
+<span class="text-[11px] font-semibold">Templates</span>
+</div>
+<p class="text-[10px] text-on-surface-variant leading-relaxed">
+                            Sync your refactoring templates across teams instantly.
+                        </p>
+</div>
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-1.5 text-secondary">
+<span class="material-symbols-outlined text-[16px]">sync_alt</span>
+<span class="text-[11px] font-semibold">Extension Sync</span>
+</div>
+<p class="text-[10px] text-on-surface-variant leading-relaxed">
+                            Your VS Code configurations follow you everywhere.
+                        </p>
+</div>
+</div>
+</div>
+<!-- Footer Links -->
+<div class="mt-8 flex flex-wrap justify-center md:justify-start gap-x-6 gap-y-2 text-[11px] font-medium text-on-surface-variant/60">
+<a class="hover:text-primary transition-colors" href="#">Privacy Policy</a>
+<a class="hover:text-primary transition-colors" href="#">Terms of Service</a>
+<a class="hover:text-primary transition-colors" href="#">Security Standards</a>
+<a class="hover:text-primary transition-colors" href="#">Platform Status</a>
+</div>
+</div>
+<!-- Decorative Right Section: Asymmetric Visual -->
+<div class="hidden lg:flex flex-col items-center justify-center flex-1 ml-24 pointer-events-none">
+<div class="relative w-full max-w-lg aspect-square">
+<!-- Abstract visual of precision -->
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="w-[80%] h-[80%] border border-primary/10 rounded-full flex items-center justify-center animate-pulse">
+<div class="w-[70%] h-[70%] border border-secondary/10 rounded-full flex items-center justify-center">
+<div class="w-[60%] h-[60%] border border-primary/20 rounded-full"></div>
+</div>
+</div>
+</div>
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="relative w-96 h-96 bg-surface-container-lowest rounded-2xl shadow-2xl border border-outline-variant/10 overflow-hidden transform rotate-2">
+<div class="h-8 bg-surface-container-low flex items-center px-4 gap-1.5">
+<div class="w-2.5 h-2.5 rounded-full bg-error/40"></div>
+<div class="w-2.5 h-2.5 rounded-full bg-tertiary-container/40"></div>
+<div class="w-2.5 h-2.5 rounded-full bg-primary/40"></div>
+</div>
+<div class="p-6 space-y-4">
+<div class="h-4 w-3/4 bg-surface-container rounded-sm"></div>
+<div class="h-4 w-1/2 bg-surface-container rounded-sm"></div>
+<div class="grid grid-cols-3 gap-3">
+<div class="h-20 bg-primary/5 rounded-lg border border-primary/10"></div>
+<div class="h-20 bg-secondary/5 rounded-lg border border-secondary/10"></div>
+<div class="h-20 bg-surface-container-high rounded-lg"></div>
+</div>
+<div class="h-4 w-5/6 bg-surface-container rounded-sm"></div>
+<div class="h-4 w-2/3 bg-surface-container rounded-sm"></div>
+</div>
+<div class="absolute bottom-4 right-4 flex items-center gap-2">
+<div class="w-10 h-10 rounded-full bg-surface-container-high border-2 border-surface-container-lowest flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant">person</span>
+</div>
+<div class="bg-primary px-3 py-1.5 rounded-full shadow-lg">
+<span class="text-[9px] font-bold text-white uppercase tracking-tighter">Sync Active</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer Identity -->
+<footer class="relative z-10 w-full px-12 py-8 flex justify-between items-center bg-transparent border-t border-outline-variant/10">
+<div class="text-[11px] font-normal text-on-surface-variant/50">
+            © 2024 Precision Git Reflow Platform. All rights reserved.
+        </div>
+<div class="flex items-center gap-4 opacity-70">
+<span class="text-[11px] font-bold tracking-tighter text-on-surface-variant">INFRASTRUCTURE STATUS: OPTIMAL</span>
+<div class="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+</div>
+</footer>
+</body></html>

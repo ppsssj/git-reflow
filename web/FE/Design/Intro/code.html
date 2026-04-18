@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Reflow.io - Design on Web, Sync to GitHub</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "error": "#ba1a1a",
+                        "on-surface-variant": "#3f4852",
+                        "on-background": "#1a1c1c",
+                        "secondary": "#7a2ad6",
+                        "primary-fixed": "#cfe5ff",
+                        "error-container": "#ffdad6",
+                        "surface": "#f9f9f9",
+                        "surface-dim": "#dadada",
+                        "secondary-fixed": "#eedcff",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-fixed": "#2e1500",
+                        "inverse-primary": "#9acbff",
+                        "outline": "#6f7883",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary-fixed-variant": "#6c3a00",
+                        "on-surface": "#1a1c1c",
+                        "on-secondary-fixed": "#290055",
+                        "surface-container-highest": "#e2e2e2",
+                        "on-primary-fixed": "#001d34",
+                        "on-secondary-container": "#fffbff",
+                        "surface-variant": "#e2e2e2",
+                        "surface-bright": "#f9f9f9",
+                        "on-secondary-fixed-variant": "#6300bb",
+                        "primary-container": "#18a0fb",
+                        "tertiary-container": "#e58100",
+                        "on-error-container": "#93000a",
+                        "surface-container-low": "#f3f3f3",
+                        "on-primary-fixed-variant": "#004a79",
+                        "inverse-surface": "#2f3131",
+                        "surface-tint": "#00629e",
+                        "on-primary-container": "#003458",
+                        "surface-container-high": "#e8e8e8",
+                        "secondary-fixed-dim": "#d8b9ff",
+                        "inverse-on-surface": "#f1f1f1",
+                        "surface-container": "#eeeeee",
+                        "on-tertiary-container": "#4e2900",
+                        "tertiary-fixed-dim": "#ffb779",
+                        "tertiary": "#8e4e00",
+                        "on-primary": "#ffffff",
+                        "primary": "#00629e",
+                        "secondary-container": "#944af1",
+                        "primary-fixed-dim": "#9acbff",
+                        "on-error": "#ffffff",
+                        "outline-variant": "#bfc7d4",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-fixed": "#ffdcc1",
+                        "background": "#f9f9f9"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+        }
+        .comparison-slider {
+            position: relative;
+            overflow: hidden;
+            user-select: none;
+        }
+        .comparison-handle {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #00629e;
+            cursor: ew-resize;
+            z-index: 30;
+        }
+        .comparison-circle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 32px;
+            height: 32px;
+            background: #00629e;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface selection:bg-primary-fixed selection:text-on-primary-fixed">
+<!-- TopNavBar -->
+<nav class="w-full sticky top-0 z-50 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md shadow-sm">
+<div class="flex justify-between items-center px-6 h-14 w-full max-w-[1440px] mx-auto">
+<div class="flex items-center gap-8">
+<span class="text-lg font-bold tracking-tighter text-slate-900 dark:text-white">Reflow.io</span>
+<div class="hidden md:flex items-center gap-6 font-sans text-sm tracking-tight font-medium">
+<a class="text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 pb-2 transition-all" href="#">Dashboard</a>
+<a class="text-slate-500 dark:text-slate-400 pb-2 hover:text-blue-500 dark:hover:text-blue-300 transition-colors" href="#">Templates</a>
+<a class="text-slate-500 dark:text-slate-400 pb-2 hover:text-blue-500 dark:hover:text-blue-300 transition-colors" href="#">Network</a>
+<a class="text-slate-500 dark:text-slate-400 pb-2 hover:text-blue-500 dark:hover:text-blue-300 transition-colors" href="#">Docs</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden sm:flex items-center bg-surface-container-low px-3 py-1.5 rounded-lg border border-outline-variant/15">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant mr-2">search</span>
+<input class="bg-transparent border-none text-sm focus:ring-0 p-0 w-32" placeholder="Search..." type="text"/>
+</div>
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary transition-colors">notifications</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary transition-colors">settings</span>
+<button class="bg-primary hover:bg-primary/90 text-on-primary px-4 py-1.5 rounded-lg text-sm font-semibold active:opacity-80 transition-all duration-150">Deploy</button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-outline-variant/20">
+<img alt="User avatar" data-alt="Close up professional headshot of a developer in a modern office setting with soft natural lighting and bokeh background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuACSeDxoqyIlxTc-BlPf3S_u6HNrAop3w5MLqKurOUJ_D9y7l8MGH-lUIjpC1zezBpj2bclmCV9g4u1jeip3zcedVPm-cY90LuF2RI8O8H_kazxNLM_v5yqH82JgsbiHU1Hgx4bgU5xppG1_68jK15Q0Qha-QAnHq0JZ_vvOT5MT1xO_d50XoWsWPflBrymH1vQrijyJcecGrEBUnDmUiPdNc_msKBdLTQvuG5yBL8WHQAJwvxOWbY616Hh9h2vhfX1PrFHc8jdEuw"/>
+</div>
+</div>
+</div>
+</div>
+</nav>
+<main class="relative">
+<!-- Hero Section -->
+<section class="pt-24 pb-20 px-6 overflow-hidden">
+<div class="max-w-5xl mx-auto text-center space-y-8">
+<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary-fixed text-on-secondary-fixed-variant text-xs font-semibold uppercase tracking-wider mb-4">
+<span class="material-symbols-outlined text-[14px]">sync</span>
+                Cloud Sync Enabled
+            </div>
+<h1 class="text-6xl md:text-7xl font-extrabold tracking-tighter text-on-surface leading-[1.1]">
+                Design on Web, <br/><span class="text-primary">Sync to GitHub.</span>
+</h1>
+<p class="text-lg text-on-surface-variant max-w-2xl mx-auto font-medium leading-relaxed">
+                Transform your GitHub interface from our web dashboard. Every visual tweak syncs instantly to your browser via the Reflow Chrome Extension for a seamless, high-fidelity experience.
+            </p>
+<div class="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+<button class="w-full sm:w-auto px-8 py-4 bg-primary text-on-primary rounded-lg font-bold shadow-lg shadow-primary/20 hover:translate-y-[-2px] transition-all">Install Chrome Extension</button>
+<button class="w-full sm:w-auto px-8 py-4 bg-surface-container-high text-on-surface rounded-lg font-bold hover:bg-surface-container-highest transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[20px]">open_in_new</span>
+                    Go to Dashboard
+                </button>
+</div>
+</div>
+<!-- Illustration/Mockup Section -->
+<div class="mt-20 max-w-6xl mx-auto relative">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+<!-- Web Dashboard Mockup -->
+<div class="relative group">
+<div class="absolute -inset-1 bg-gradient-to-r from-primary/20 to-primary/5 rounded-xl blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
+<div class="relative bg-surface-container-lowest rounded-xl shadow-2xl overflow-hidden border border-outline-variant/10">
+<div class="h-10 bg-surface-container-low border-b border-outline-variant/10 flex items-center px-4 gap-2">
+<div class="flex gap-1.5">
+<div class="w-2.5 h-2.5 rounded-full bg-error/20"></div>
+<div class="w-2.5 h-2.5 rounded-full bg-tertiary-container/20"></div>
+<div class="w-2.5 h-2.5 rounded-full bg-primary-container/20"></div>
+</div>
+<div class="mx-auto bg-surface-container-lowest px-12 py-1 rounded-md text-[10px] text-on-surface-variant/50 font-medium">app.reflow.io/workspace</div>
+</div>
+<div class="p-6 space-y-4">
+<div class="flex items-center justify-between mb-4">
+<div class="h-6 w-32 bg-surface-container-high rounded-full"></div>
+<div class="flex gap-2">
+<div class="h-6 w-16 bg-primary/10 rounded-full flex items-center justify-center text-[10px] font-bold text-primary">SYNCING</div>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="h-32 bg-surface-container-low rounded-lg border border-outline-variant/10 p-4 space-y-3">
+<div class="h-2 w-12 bg-primary/30 rounded"></div>
+<div class="h-4 w-full bg-surface-container-highest rounded"></div>
+<div class="h-2 w-2/3 bg-surface-container-highest rounded"></div>
+<div class="h-6 w-full bg-primary rounded mt-2"></div>
+</div>
+<div class="h-32 bg-surface-container-low rounded-lg border border-outline-variant/10 p-4 space-y-3">
+<div class="h-2 w-12 bg-secondary/30 rounded"></div>
+<div class="h-4 w-full bg-surface-container-highest rounded"></div>
+<div class="h-10 w-10 bg-secondary/20 rounded-full mx-auto"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="absolute -bottom-4 -left-4 bg-white shadow-xl border border-outline-variant/10 px-4 py-2 rounded-lg flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]">cloud_done</span>
+<span class="text-[11px] font-bold">Cloud Dashboard</span>
+</div>
+</div>
+<!-- Connection Arrow (Hidden on small screens) -->
+<div class="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex-col items-center gap-2">
+<div class="w-12 h-12 bg-primary text-on-primary rounded-full flex items-center justify-center shadow-lg animate-pulse">
+<span class="material-symbols-outlined">sync</span>
+</div>
+<div class="h-24 w-0.5 bg-gradient-to-b from-primary via-primary/50 to-transparent"></div>
+</div>
+<!-- Extension/GitHub Mockup -->
+<div class="relative group mt-12 md:mt-0">
+<div class="absolute -inset-1 bg-gradient-to-l from-secondary/20 to-secondary/5 rounded-xl blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
+<div class="relative bg-slate-50 dark:bg-slate-900 rounded-xl shadow-2xl overflow-hidden border border-slate-200/20">
+<div class="h-10 bg-slate-200/30 dark:bg-slate-800/50 border-b border-slate-200/20 flex items-center px-4 gap-2">
+<div class="flex gap-1.5">
+<div class="w-2.5 h-2.5 rounded-full bg-slate-300"></div>
+<div class="w-2.5 h-2.5 rounded-full bg-slate-300"></div>
+<div class="w-2.5 h-2.5 rounded-full bg-slate-300"></div>
+</div>
+<div class="mx-auto bg-white/80 dark:bg-slate-950/80 px-12 py-1 rounded-md text-[10px] text-slate-400 font-medium">github.com/reflow-io</div>
+<div class="flex items-center gap-1 ml-auto">
+<div class="w-5 h-5 bg-primary/20 rounded flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-[12px] font-bold">bolt</span>
+</div>
+</div>
+</div>
+<div class="p-6 opacity-80 flex flex-col gap-4">
+<div class="flex gap-3 border-b border-slate-200/20 pb-4">
+<div class="w-6 h-6 rounded-full bg-slate-300"></div>
+<div class="h-2 w-24 bg-slate-200 rounded self-center"></div>
+</div>
+<div class="bg-primary/5 border border-primary/20 rounded-lg p-6 flex flex-col items-center text-center gap-3">
+<div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-white">architecture</span>
+</div>
+<div class="h-3 w-32 bg-slate-300 rounded"></div>
+<div class="h-2 w-full bg-slate-200 rounded"></div>
+<div class="h-2 w-4/5 bg-slate-200 rounded"></div>
+</div>
+</div>
+</div>
+<div class="absolute -bottom-4 -right-4 bg-white shadow-xl border border-outline-variant/10 px-4 py-2 rounded-lg flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[18px]">extension</span>
+<span class="text-[11px] font-bold">Chrome Extension Active</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Features Bento Grid -->
+<section class="py-20 px-6 bg-surface-container-low/30">
+<div class="max-w-6xl mx-auto">
+<div class="mb-16 text-left">
+<h2 class="text-4xl font-extrabold tracking-tighter text-on-surface mb-4">Built for High-Velocity Teams</h2>
+<p class="text-on-surface-variant font-medium">No fluff. Just the precision tools you need to ship faster.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+<!-- Large Feature: Before vs After Comparison -->
+<div class="md:col-span-8 bg-surface-container-lowest p-8 rounded-xl border border-outline-variant/5 flex flex-col group h-[500px]">
+<div class="mb-6">
+<div class="w-12 h-12 bg-primary-fixed rounded-lg flex items-center justify-center mb-6 text-primary">
+<span class="material-symbols-outlined">swap_horiz</span>
+</div>
+<h3 class="text-2xl font-bold mb-3 tracking-tight">The Precision Reflow</h3>
+<p class="text-on-surface-variant text-sm leading-relaxed max-w-lg">Experience the transformation from standard Git noise to high-fidelity clarity. Compare the original experience with the Reflowed interface.</p>
+</div>
+<div class="flex-1 relative rounded-lg border border-outline-variant/10 overflow-hidden comparison-slider">
+<!-- Left: Original GitHub (cluttered) -->
+<div class="absolute inset-0 w-full h-full bg-[#f6f8fa]">
+<div class="p-4 flex flex-col gap-4">
+<div class="flex items-center gap-3 border-b border-[#d0d7de] pb-3">
+<div class="w-6 h-6 rounded-full bg-[#afb8c1]"></div>
+<div class="h-3 w-32 bg-[#d0d7de] rounded"></div>
+<div class="ml-auto flex gap-2">
+<div class="h-5 w-12 bg-[#ebf0f4] rounded border border-[#d0d7de]"></div>
+<div class="h-5 w-12 bg-[#ebf0f4] rounded border border-[#d0d7de]"></div>
+</div>
+</div>
+<div class="flex gap-4">
+<div class="w-1/3 space-y-3">
+<div class="h-8 w-full bg-white border border-[#d0d7de] rounded"></div>
+<div class="h-32 w-full bg-white border border-[#d0d7de] rounded p-2 space-y-2">
+<div class="h-2 w-full bg-[#f6f8fa]"></div>
+<div class="h-2 w-3/4 bg-[#f6f8fa]"></div>
+<div class="h-2 w-full bg-[#f6f8fa]"></div>
+</div>
+</div>
+<div class="w-2/3 space-y-3">
+<div class="h-48 w-full bg-white border border-[#d0d7de] rounded p-4">
+<div class="flex gap-2 mb-4"><div class="h-4 w-4 bg-green-100"></div><div class="h-4 w-32 bg-[#f6f8fa]"></div></div>
+<div class="space-y-2">
+<div class="h-2 w-full bg-[#f6f8fa]"></div>
+<div class="h-2 w-full bg-[#f6f8fa]"></div>
+<div class="h-2 w-5/6 bg-[#f6f8fa]"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="absolute top-4 left-4 z-20 px-3 py-1 bg-slate-900 text-white text-[10px] font-bold rounded uppercase tracking-widest">Original GitHub</div>
+</div>
+<!-- Right: Reflowed (clean) -->
+<div class="absolute inset-0 w-full h-full bg-surface-container-lowest" style="clip-path: inset(0 0 0 50%)">
+<div class="p-6 h-full flex flex-col">
+<div class="flex justify-between items-center mb-6">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center"><span class="material-symbols-outlined text-primary text-sm">hub</span></div>
+<div class="h-4 w-32 bg-surface-container-high rounded"></div>
+</div>
+<div class="h-6 w-20 bg-primary/10 rounded-full"></div>
+</div>
+<div class="grid grid-cols-2 gap-4 flex-1">
+<div class="bg-surface-container-low rounded-xl border border-outline-variant/10 p-4">
+<div class="h-2 w-12 bg-outline-variant/30 rounded mb-3"></div>
+<div class="h-6 w-full bg-surface-container-highest rounded mb-1"></div>
+<div class="h-6 w-2/3 bg-surface-container-highest rounded"></div>
+</div>
+<div class="bg-primary/5 rounded-xl border border-primary/10 p-4 relative overflow-hidden">
+<div class="absolute top-0 right-0 w-16 h-16 bg-primary/10 rounded-full -mr-8 -mt-8"></div>
+<div class="h-2 w-12 bg-primary/30 rounded mb-3"></div>
+<div class="h-12 w-full bg-white rounded-lg shadow-sm"></div>
+</div>
+<div class="col-span-2 bg-surface-container-low rounded-xl border border-outline-variant/10 p-4">
+<div class="flex items-center gap-3 mb-4">
+<div class="w-6 h-6 rounded bg-tertiary/20"></div>
+<div class="h-2 w-24 bg-outline-variant/30 rounded"></div>
+</div>
+<div class="space-y-2">
+<div class="h-1.5 w-full bg-outline-variant/10 rounded"></div>
+<div class="h-1.5 w-full bg-outline-variant/10 rounded"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="absolute top-4 right-4 z-20 px-3 py-1 bg-primary text-white text-[10px] font-bold rounded uppercase tracking-widest">Reflowed</div>
+</div>
+<!-- Handle -->
+<div class="comparison-handle" style="left: 50%">
+<div class="comparison-circle">
+<span class="material-symbols-outlined text-[18px]">unfold_more_double</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Small Feature -->
+<div class="md:col-span-4 bg-primary text-on-primary p-8 rounded-xl flex flex-col justify-between">
+<div>
+<span class="material-symbols-outlined text-4xl mb-6">bolt</span>
+<h3 class="text-2xl font-bold mb-3 tracking-tight">Zero-Latency Sync</h3>
+<p class="text-primary-fixed/80 text-sm leading-relaxed">Changes made in the dashboard are reflected on GitHub instantly via our real-time websocket relay engine.</p>
+</div>
+<button class="mt-8 text-xs font-black uppercase tracking-widest flex items-center gap-2 group">
+                        Learn More 
+                        <span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</button>
+</div>
+<!-- Medium Feature -->
+<div class="md:col-span-4 bg-surface-container-lowest p-8 rounded-xl border border-outline-variant/5">
+<div class="w-12 h-12 bg-secondary-fixed rounded-lg flex items-center justify-center mb-6 text-secondary">
+<span class="material-symbols-outlined">analytics</span>
+</div>
+<h3 class="text-xl font-bold mb-2 tracking-tight">Velocity Insights</h3>
+<p class="text-on-surface-variant text-sm">Visualize code churn and contributor impact with editorial-grade reporting dashboards.</p>
+</div>
+<!-- Medium Feature 2 -->
+<div class="md:col-span-4 bg-surface-container-lowest p-8 rounded-xl border border-outline-variant/5">
+<div class="w-12 h-12 bg-tertiary-fixed rounded-lg flex items-center justify-center mb-6 text-tertiary">
+<span class="material-symbols-outlined">verified_user</span>
+</div>
+<h3 class="text-xl font-bold mb-2 tracking-tight">Enterprise Security</h3>
+<p class="text-on-surface-variant text-sm">Role-based access controls and SOC2 compliant auditing baked into the core interface.</p>
+</div>
+<!-- Medium Feature 3 -->
+<div class="md:col-span-4 bg-surface-container-lowest p-8 rounded-xl border border-outline-variant/5">
+<div class="w-12 h-12 bg-surface-container-high rounded-lg flex items-center justify-center mb-6 text-on-surface">
+<span class="material-symbols-outlined">extension</span>
+</div>
+<h3 class="text-xl font-bold mb-2 tracking-tight">Infinite Plugins</h3>
+<p class="text-on-surface-variant text-sm">Extend the workflow with our JavaScript API. Build your own reflow rules and UI panels.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- CTA Section -->
+<section class="py-24 px-6">
+<div class="max-w-4xl mx-auto rounded-3xl bg-surface-container-lowest border border-outline-variant/10 overflow-hidden relative">
+<div class="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -mr-32 -mt-32"></div>
+<div class="absolute bottom-0 left-0 w-64 h-64 bg-secondary/5 rounded-full blur-3xl -ml-32 -mb-32"></div>
+<div class="relative p-12 text-center space-y-6">
+<h2 class="text-4xl font-extrabold tracking-tight">Ready to fix your flow?</h2>
+<p class="text-on-surface-variant max-w-xl mx-auto">Join 15,000+ developers who have reclaimed their productivity with the Precision Git Reflow Platform.</p>
+<div class="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6">
+<button class="bg-primary text-on-primary px-8 py-4 rounded-lg font-bold shadow-lg shadow-primary/10">Create Your Workspace</button>
+<button class="text-primary font-bold hover:underline">Contact Sales →</button>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="w-full border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950">
+<div class="flex justify-between items-center px-12 py-8 max-w-7xl mx-auto">
+<div class="flex flex-col gap-2">
+<span class="text-xs font-black text-slate-300">REFLOW.IO</span>
+<p class="text-[11px] font-normal text-slate-400">© 2024 Precision Git Reflow Platform. All rights reserved.</p>
+</div>
+<div class="flex gap-8">
+<a class="text-[11px] font-normal text-slate-500 hover:text-slate-900 dark:hover:text-white transition-all opacity-70 hover:opacity-100" href="#">Privacy</a>
+<a class="text-[11px] font-normal text-slate-500 hover:text-slate-900 dark:hover:text-white transition-all opacity-70 hover:opacity-100" href="#">Terms</a>
+<a class="text-[11px] font-normal text-slate-500 hover:text-slate-900 dark:hover:text-white transition-all opacity-70 hover:opacity-100" href="#">Security</a>
+<a class="text-[11px] font-normal text-slate-500 hover:text-slate-900 dark:hover:text-white transition-all opacity-70 hover:opacity-100" href="#">Status</a>
+</div>
+</div>
+</footer>
+<script>
+    // Simple interactive comparison slider script
+    document.addEventListener('DOMContentLoaded', () => {
+        const slider = document.querySelector('.comparison-slider');
+        const handle = document.querySelector('.comparison-handle');
+        const reflowed = slider.querySelector('div:nth-child(2)');
+        
+        let isResizing = false;
+
+        const setPosition = (x) => {
+            const rect = slider.getBoundingClientRect();
+            let position = ((x - rect.left) / rect.width) * 100;
+            if (position < 0) position = 0;
+            if (position > 100) position = 100;
+            
+            handle.style.left = `${position}%`;
+            reflowed.style.clipPath = `inset(0 0 0 ${position}%)`;
+        };
+
+        handle.addEventListener('mousedown', () => isResizing = true);
+        window.addEventListener('mouseup', () => isResizing = false);
+        window.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+            setPosition(e.clientX);
+        });
+
+        // Touch support
+        handle.addEventListener('touchstart', () => isResizing = true);
+        window.addEventListener('touchend', () => isResizing = false);
+        window.addEventListener('touchmove', (e) => {
+            if (!isResizing) return;
+            setPosition(e.touches[0].clientX);
+        });
+    });
+</script>
+</body></html>
