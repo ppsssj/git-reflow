@@ -30,10 +30,10 @@ export function TemplateListPage() {
             </div>
           </div>
 
-          <button className="sidebar-create" type="button">
+          <Link className="sidebar-create" to={`/templates/${templates[0].id}`}>
             <Icon name="add" />
             <span>Create New</span>
-          </button>
+          </Link>
 
           <nav className="sidebar-nav" aria-label="Workspace">
             {sidebarItems.map((item) => (
