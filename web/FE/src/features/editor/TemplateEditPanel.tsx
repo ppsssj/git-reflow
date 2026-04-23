@@ -18,8 +18,12 @@ const regionLabels: Record<TemplateRegion, string> = {
   'right-sidebar': 'Right sidebar',
 };
 
+function getBlockScreenId(layout: TemplateLayout, block: TemplateBlock) {
+  return block.screenId ?? layout.screens[0]?.id ?? layout.activeScreenId;
+}
+
 function getRegionBlocks(layout: TemplateLayout, region: TemplateRegion) {
-  return layout.blocks.filter((block) => block.region === region);
+  return layout.blocks.filter((block) => block.region === region && getBlockScreenId(layout, block) === layout.activeScreenId);
 }
 
 function getMoveState(layout: TemplateLayout, block: TemplateBlock) {

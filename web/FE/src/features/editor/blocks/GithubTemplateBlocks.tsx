@@ -66,6 +66,30 @@ function LanguageDot({ language = 'TypeScript' }: { language?: string }) {
   return <span className={`language-dot language-dot--${language.toLowerCase().replace(/\s+/g, '-')}`} />;
 }
 
+function GithubHomeMark() {
+  return (
+    <span className="github-home-mark" aria-hidden="true">
+      <span>GH</span>
+    </span>
+  );
+}
+
+function RepoName({ name }: { name: string }) {
+  const [owner, repo] = name.split('/');
+
+  if (!repo) {
+    return <span>{name}</span>;
+  }
+
+  return (
+    <span>
+      {owner}
+      <span className="repo-name__slash">/</span>
+      {repo}
+    </span>
+  );
+}
+
 function TopNavBlock({ block, selected, onSelect }: TemplateBlockComponentProps) {
   const props = block.props as { context?: string; searchPlaceholder?: string; links?: string[]; actions?: string[] };
   const links = props.links ?? [];
@@ -83,14 +107,15 @@ function TopNavBlock({ block, selected, onSelect }: TemplateBlockComponentProps)
           <Icon name="menu" />
         </button>
         <div className="github-home-topnav__mark">
-          <Icon name="code_blocks" />
+          <GithubHomeMark />
         </div>
+      </div>
+      <div className="github-home-topnav__context">
         <strong>{props.context ?? 'Dashboard'}</strong>
       </div>
       <label className="github-home-topnav__search">
         <Icon name="search" />
         <input aria-label="Template search" readOnly value={props.searchPlaceholder ?? 'Search'} />
-        <kbd>/</kbd>
       </label>
       <nav aria-label="Template GitHub-style navigation">
         {links.map((link) => (
@@ -112,9 +137,12 @@ function TopNavBlock({ block, selected, onSelect }: TemplateBlockComponentProps)
                       ? 'radio_button_unchecked'
                       : action === 'Pull requests'
                         ? 'merge_type'
-                        : 'inbox'
+                        : action === 'Repositories'
+                          ? 'folder'
+                          : 'inbox'
               }
             />
+            {action === 'Copilot' || action === 'Create' ? <Icon name="keyboard_arrow_down" /> : null}
           </button>
         ))}
         <span aria-hidden="true" />
@@ -143,15 +171,17 @@ function ProfileSummaryBlock({ block, selected, onSelect }: TemplateBlockCompone
           <Icon name="keyboard_arrow_down" />
         </button>
       </div>
-      <p className="profile-summary__bio">{props.bio}</p>
-      <div className="profile-summary__stats">
-        {(props.stats ?? []).map((stat) => (
-          <span key={stat.label}>
-            <strong>{stat.value}</strong>
-            {stat.label}
-          </span>
-        ))}
-      </div>
+      {props.bio ? <p className="profile-summary__bio">{props.bio}</p> : null}
+      {(props.stats ?? []).length > 0 ? (
+        <div className="profile-summary__stats">
+          {(props.stats ?? []).map((stat) => (
+            <span key={stat.label}>
+              <strong>{stat.value}</strong>
+              {stat.label}
+            </span>
+          ))}
+        </div>
+      ) : null}
     </BlockFrame>
   );
 }
@@ -242,11 +272,14 @@ function RecentReposBlock({ block, selected, onSelect }: TemplateBlockComponentP
         {(props.repositories ?? []).map((repo) => (
           <a href={`#${repo.name}`} key={repo.name}>
             <span className="compact-list__avatar">{repo.name.slice(0, 1).toUpperCase()}</span>
-            <span>{repo.name}</span>
+            <RepoName name={repo.name} />
             <em>{repo.visibility}</em>
           </a>
         ))}
       </div>
+      <button className="compact-list__more" type="button">
+        Show more
+      </button>
     </BlockFrame>
   );
 }
@@ -257,12 +290,17 @@ function ActivityFeedBlock({ block, selected, onSelect }: TemplateBlockComponent
   return (
     <BlockFrame block={block} selected={selected} onSelect={onSelect}>
       <div className="home-feed-heading">
+        <h2>Feed</h2>
         <div>
           {(props.filters ?? []).map((filter, index) => (
             <button className={index === 0 ? 'is-active' : ''} key={filter} type="button">
+              <Icon name={filter === 'Filter' ? 'filter_alt' : 'tune'} />
               {filter}
             </button>
           ))}
+          <button aria-label="Open explore sidebar" type="button">
+            <Icon name="dock_to_right" />
+          </button>
         </div>
       </div>
       <div className="activity-feed-list">
@@ -351,6 +389,9 @@ function TrendingReposBlock({ block, selected, onSelect }: TemplateBlockComponen
           </article>
         ))}
       </div>
+      <a className="changelog-list__more" href="#changelog">
+        View changelog
+      </a>
     </BlockFrame>
   );
 }

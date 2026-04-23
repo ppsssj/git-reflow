@@ -44,7 +44,15 @@ export interface TemplateBlock<TProps extends Record<string, unknown> = Record<s
   region: TemplateRegion;
   visible: boolean;
   props: TProps;
+  screenId?: string;
   extensionSlot?: string;
+}
+
+export interface TemplateScreen {
+  id: string;
+  name: string;
+  providerRoute: string;
+  description: string;
 }
 
 export interface TemplateLayout {
@@ -53,6 +61,8 @@ export interface TemplateLayout {
   description: string;
   source: 'default' | 'user';
   version: number;
+  activeScreenId: string;
+  screens: TemplateScreen[];
   regions: TemplateRegion[];
   blocks: TemplateBlock[];
   metadata: {

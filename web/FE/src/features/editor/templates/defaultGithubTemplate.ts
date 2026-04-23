@@ -2,10 +2,19 @@ import type { TemplateLayout } from '../../../types/template';
 
 export const defaultGithubTemplate: TemplateLayout = {
   id: 'github-dashboard-reference',
-  name: 'GitHub Dashboard Template',
-  description: 'GitHub-like dashboard structure rebuilt with local placeholder blocks.',
+  name: 'GitHub Home Template',
+  description: 'GitHub home layout rebuilt with local placeholder blocks.',
   source: 'default',
   version: 2,
+  activeScreenId: 'github-home',
+  screens: [
+    {
+      id: 'github-home',
+      name: 'GitHub Home',
+      providerRoute: 'github.com/',
+      description: 'Logged-in GitHub dashboard home screen with placeholder content.',
+    },
+  ],
   regions: ['topbar', 'left-sidebar', 'main-feed', 'right-sidebar'],
   metadata: {
     provider: 'github',
@@ -18,13 +27,14 @@ export const defaultGithubTemplate: TemplateLayout = {
       type: 'top-nav',
       title: 'Global Header',
       region: 'topbar',
+      screenId: 'github-home',
       visible: true,
       extensionSlot: 'github.global.header',
       props: {
         context: 'Dashboard',
-        searchPlaceholder: 'Search or jump to...',
-        links: ['Pull requests', 'Issues', 'Codespaces', 'Marketplace', 'Explore'],
-        actions: ['Copilot', 'Create', 'Issues', 'Pull requests', 'Inbox'],
+        searchPlaceholder: 'Type / to search',
+        links: [],
+        actions: ['Copilot', 'Create', 'Issues', 'Pull requests', 'Repositories', 'Inbox'],
       },
     },
     {
@@ -32,16 +42,14 @@ export const defaultGithubTemplate: TemplateLayout = {
       type: 'profile-summary',
       title: 'Account Context',
       region: 'left-sidebar',
+      screenId: 'github-home',
       visible: true,
       extensionSlot: 'github.dashboard.account',
       props: {
-        name: 'Alex Morgan',
-        handle: '@alex-placeholder',
-        bio: 'Personal dashboard',
-        stats: [
-          { label: 'Teams', value: '3' },
-          { label: 'Projects', value: '12' },
-        ],
+        name: 'alex-placeholder',
+        handle: 'Personal dashboard',
+        bio: '',
+        stats: [],
       },
     },
     {
@@ -49,6 +57,7 @@ export const defaultGithubTemplate: TemplateLayout = {
       type: 'recent-repos',
       title: 'Top Repositories',
       region: 'left-sidebar',
+      screenId: 'github-home',
       visible: true,
       extensionSlot: 'github.dashboard.repositories.top',
       props: {
@@ -60,6 +69,8 @@ export const defaultGithubTemplate: TemplateLayout = {
           { name: 'demo-space/issue-board', language: 'JavaScript', visibility: 'Public' },
           { name: 'alex-placeholder/browser-mapper', language: 'CSS', visibility: 'Private' },
           { name: 'design-systems/token-playground', language: 'TypeScript', visibility: 'Public' },
+          { name: 'sample-org/primer-copy', language: 'TypeScript', visibility: 'Public' },
+          { name: 'alex-placeholder/home-feed', language: 'JavaScript', visibility: 'Public' },
         ],
       },
     },
@@ -68,11 +79,12 @@ export const defaultGithubTemplate: TemplateLayout = {
       type: 'copilot-prompt',
       title: 'Assistant Prompt',
       region: 'main-feed',
+      screenId: 'github-home',
       visible: true,
       extensionSlot: 'github.dashboard.copilot.prompt',
       props: {
         placeholder: 'Ask anything or type @ to add context',
-        model: 'Placeholder Model',
+        model: 'Claude Haiku 4.5',
         chips: ['Agent', 'Create issue', 'Write code', 'Git', 'Pull requests'],
       },
     },
@@ -81,24 +93,25 @@ export const defaultGithubTemplate: TemplateLayout = {
       type: 'activity-feed',
       title: 'Home Feed',
       region: 'main-feed',
+      screenId: 'github-home',
       visible: true,
       extensionSlot: 'github.dashboard.feed',
       props: {
-        filters: ['For you', 'Following'],
+        filters: ['Filter'],
         events: [
           {
-            actor: 'orbit-ui',
+            actor: 'octo-demo',
             action: 'released',
-            subject: 'Dashboard cards v2.4',
+            subject: 'placeholder-ui v2.4',
             time: '20m',
-            summary: 'A compact card system for repository activity and extension previews.',
+            summary: 'A compact release note with a short description, repository link, and muted metadata.',
           },
           {
-            actor: 'maple-dev',
+            actor: 'maple-labs',
             action: 'opened pull request',
             subject: 'Add selector scoring fallback',
             time: '1h',
-            summary: 'Improves matching when a source page changes class names.',
+            summary: 'Improves matching when source pages change class names and layout landmarks.',
           },
           {
             actor: 'northstar-labs',
@@ -115,12 +128,14 @@ export const defaultGithubTemplate: TemplateLayout = {
       type: 'repo-updates',
       title: 'Repository Updates',
       region: 'main-feed',
+      screenId: 'github-home',
       visible: true,
       extensionSlot: 'github.dashboard.repository.updates',
       props: {
         updates: [
           { repo: 'reflow-labs/layout-capture', message: 'Published a preview build with better sidebar detection.', status: 'Release' },
-          { repo: 'alex-placeholder/ui-workbench', message: 'Merged new empty-state components for dashboards.', status: 'Merged' },
+          { repo: 'alex-placeholder/ui-workbench', message: 'Merged compact empty-state components for feed cards.', status: 'Merged' },
+          { repo: 'sample-org/primer-copy', message: 'Added a smaller changelog card and muted timeline text.', status: 'Release' },
         ],
       },
     },
@@ -129,6 +144,7 @@ export const defaultGithubTemplate: TemplateLayout = {
       type: 'pinned-repos',
       title: 'Pinned Repositories',
       region: 'main-feed',
+      screenId: 'github-home',
       visible: false,
       extensionSlot: 'github.dashboard.repositories.pinned',
       props: {
@@ -153,7 +169,8 @@ export const defaultGithubTemplate: TemplateLayout = {
       type: 'issue-pr-updates',
       title: 'Issues and Pull Requests',
       region: 'right-sidebar',
-      visible: true,
+      screenId: 'github-home',
+      visible: false,
       extensionSlot: 'github.dashboard.work.queue',
       props: {
         items: [
@@ -166,16 +183,17 @@ export const defaultGithubTemplate: TemplateLayout = {
     {
       id: 'trending-repos',
       type: 'trending-repos',
-      title: 'Latest Changelog',
+      title: 'Latest from our changelog',
       region: 'right-sidebar',
+      screenId: 'github-home',
       visible: true,
       extensionSlot: 'github.dashboard.changelog',
       props: {
         repositories: [
-          { name: 'Dashboard feed placeholders now support compact previews', language: 'Changelog', stars: '7 hours ago' },
-          { name: 'Code review summary metrics added to template examples', language: 'Changelog', stars: '8 hours ago' },
-          { name: 'CLI telemetry controls available in sample settings', language: 'Changelog', stars: '9 hours ago' },
-          { name: 'Bring your own model key added to local prototype', language: 'Changelog', stars: '15 hours ago' },
+          { name: 'GitHub Copilot for Jira: Our latest enhancements', language: 'Changelog', stars: '7 hours ago' },
+          { name: 'Copilot code review user counts now aggregate in usage metrics API', language: 'Changelog', stars: '8 hours ago' },
+          { name: 'GitHub CLI: Opt-out usage telemetry', language: 'Changelog', stars: '9 hours ago' },
+          { name: 'Bring your own language model key in VS Code now available', language: 'Changelog', stars: '15 hours ago' },
         ],
       },
     },
@@ -184,7 +202,8 @@ export const defaultGithubTemplate: TemplateLayout = {
       type: 'recommended-repos',
       title: 'Explore Repositories',
       region: 'right-sidebar',
-      visible: true,
+      screenId: 'github-home',
+      visible: false,
       extensionSlot: 'github.dashboard.explore.repositories',
       props: {
         repositories: [

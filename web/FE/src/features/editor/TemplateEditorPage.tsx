@@ -28,25 +28,34 @@ export function TemplateEditorPage() {
   const templateRecord = templates.find((item) => item.id === templateId) ?? templates[0];
   const {
     layout,
+    activeScreen,
     blocksByRegion,
     serializedLayout,
+    setActiveScreen,
     toggleBlockVisibility,
     moveBlock,
     resetLayout,
   } = useTemplateLayout(defaultGithubTemplate);
-  const [selectedBlockId, setSelectedBlockId] = useState(defaultGithubTemplate.blocks[0]?.id ?? '');
+  const [selectedBlockId, setSelectedBlockId] = useState('');
 
   useEffect(() => {
-    if (!layout.blocks.some((block) => block.id === selectedBlockId)) {
+    if (selectedBlockId && !layout.blocks.some((block) => block.id === selectedBlockId)) {
       setSelectedBlockId(layout.blocks[0]?.id ?? '');
     }
   }, [layout.blocks, selectedBlockId]);
 
-  const visibleCount = useMemo(() => layout.blocks.filter((block) => block.visible).length, [layout.blocks]);
+  const visibleCount = useMemo(
+    () =>
+      layout.blocks.filter(
+        (block) =>
+          block.visible && (block.screenId ?? layout.screens[0]?.id ?? layout.activeScreenId) === layout.activeScreenId,
+      ).length,
+    [layout.activeScreenId, layout.blocks, layout.screens],
+  );
 
   const handleReset = () => {
     resetLayout();
-    setSelectedBlockId(defaultGithubTemplate.blocks[0]?.id ?? '');
+    setSelectedBlockId('');
   };
 
   return (
@@ -70,6 +79,27 @@ export function TemplateEditorPage() {
             <div className="source-template-card">
               <strong>{templateRecord.name}</strong>
               <span>{templateRecord.owner}</span>
+            </div>
+          </section>
+
+          <section className="template-builder-rail__section">
+            <p>Screens</p>
+            <div className="screen-list">
+              {layout.screens.map((screen) => (
+                <button
+                  className={screen.id === layout.activeScreenId ? 'is-active' : ''}
+                  key={screen.id}
+                  type="button"
+                  onClick={() => {
+                    setActiveScreen(screen.id);
+                    setSelectedBlockId('');
+                  }}
+                >
+                  <Icon name="web_asset" />
+                  <span>{screen.name}</span>
+                  <em>{screen.providerRoute}</em>
+                </button>
+              ))}
             </div>
           </section>
 
@@ -105,18 +135,19 @@ export function TemplateEditorPage() {
         <section className="template-builder-canvas-shell">
           <div className="template-builder-canvas-header">
             <div>
-              <span>GitHub-inspired layout</span>
-              <h1>{layout.description}</h1>
+              <span>{activeScreen?.providerRoute ?? layout.metadata.browserMappingKey}</span>
+              <h1>{activeScreen?.description ?? layout.description}</h1>
             </div>
             <div className="template-builder-canvas-header__meta">
+              <span>{activeScreen?.name ?? 'Screen'}</span>
               <span>v{layout.version}</span>
-              <span>{layout.metadata.provider}</span>
             </div>
           </div>
 
           <TemplateLayoutCanvas
             blocksByRegion={blocksByRegion}
             onSelectBlock={setSelectedBlockId}
+            screen={activeScreen}
             selectedBlockId={selectedBlockId}
           />
         </section>
