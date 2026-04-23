@@ -22,3 +22,42 @@ export interface TemplateRecord {
   highlights: string[];
   sections: TemplateSection[];
 }
+
+export type TemplateRegion = 'topbar' | 'left-sidebar' | 'main-feed' | 'right-sidebar';
+
+export type TemplateBlockType =
+  | 'top-nav'
+  | 'profile-summary'
+  | 'copilot-prompt'
+  | 'pinned-repos'
+  | 'recent-repos'
+  | 'activity-feed'
+  | 'repo-updates'
+  | 'issue-pr-updates'
+  | 'trending-repos'
+  | 'recommended-repos';
+
+export interface TemplateBlock<TProps extends Record<string, unknown> = Record<string, unknown>> {
+  id: string;
+  type: TemplateBlockType;
+  title: string;
+  region: TemplateRegion;
+  visible: boolean;
+  props: TProps;
+  extensionSlot?: string;
+}
+
+export interface TemplateLayout {
+  id: string;
+  name: string;
+  description: string;
+  source: 'default' | 'user';
+  version: number;
+  regions: TemplateRegion[];
+  blocks: TemplateBlock[];
+  metadata: {
+    provider: 'github';
+    browserMappingKey: string;
+    updatedAt: string;
+  };
+}
