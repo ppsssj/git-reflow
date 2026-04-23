@@ -2349,6 +2349,7 @@ img {
 }
 
 .template-builder-canvas-shell {
+  position: relative;
   overflow: auto;
   min-width: 0;
   padding: 24px;
@@ -3757,6 +3758,63 @@ img {
 .template-builder-canvas-shell {
   padding: 24px;
   background: #f6f8fa;
+}
+
+.template-canvas-zoom-layer {
+  min-width: max-content;
+  padding-bottom: 72px;
+  zoom: var(--template-canvas-zoom, 1);
+}
+
+.template-canvas-controls {
+  position: sticky;
+  bottom: 16px;
+  left: 50%;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  width: max-content;
+  gap: 8px;
+  margin: 28px auto 0;
+  padding: 8px;
+  border: 1px solid #d0d7de;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 8px 24px rgba(31, 35, 40, 0.12);
+}
+
+.template-canvas-controls button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #57606a;
+  cursor: pointer;
+}
+
+.template-canvas-controls button:hover {
+  background: #f6f8fa;
+  color: #0969da;
+}
+
+.template-canvas-controls .material-symbols-outlined {
+  font-size: 18px;
+}
+
+.template-canvas-controls strong {
+  min-width: 42px;
+  color: #24292f;
+  font-size: 12px;
+  text-align: center;
+}
+
+.template-canvas-controls > span {
+  width: 1px;
+  height: 20px;
+  background: #d8dee4;
 }
 
 .template-builder-canvas-header {

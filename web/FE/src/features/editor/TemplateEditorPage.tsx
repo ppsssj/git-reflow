@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import type { CSSProperties, WheelEvent } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { AppTopNav } from '../../components/layout/AppTopNav';
 import { Icon } from '../../components/ui/Icon';
@@ -23,6 +24,14 @@ const regionLabels: Record<TemplateRegion, string> = {
   'right-sidebar': 'Right sidebar',
 };
 
+const MIN_CANVAS_ZOOM = 0.5;
+const MAX_CANVAS_ZOOM = 2;
+const CANVAS_ZOOM_STEP = 0.1;
+
+function clampCanvasZoom(value: number) {
+  return Math.min(MAX_CANVAS_ZOOM, Math.max(MIN_CANVAS_ZOOM, value));
+}
+
 export function TemplateEditorPage() {
   const { templateId } = useParams();
   const templateRecord = templates.find((item) => item.id === templateId) ?? templates[0];
@@ -37,6 +46,8 @@ export function TemplateEditorPage() {
     resetLayout,
   } = useTemplateLayout(defaultGithubTemplate);
   const [selectedBlockId, setSelectedBlockId] = useState('');
+  const [canvasZoom, setCanvasZoom] = useState(1);
+  const canvasShellRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (selectedBlockId && !layout.blocks.some((block) => block.id === selectedBlockId)) {
@@ -56,6 +67,43 @@ export function TemplateEditorPage() {
   const handleReset = () => {
     resetLayout();
     setSelectedBlockId('');
+  };
+
+  const updateCanvasZoom = (nextZoom: number) => {
+    setCanvasZoom(clampCanvasZoom(nextZoom));
+  };
+
+  const handleCanvasWheel = (event: WheelEvent<HTMLElement>) => {
+    if (event.ctrlKey || event.metaKey) {
+      event.preventDefault();
+
+      const shell = event.currentTarget;
+      const rect = shell.getBoundingClientRect();
+      const pointerX = event.clientX - rect.left + shell.scrollLeft;
+      const pointerY = event.clientY - rect.top + shell.scrollTop;
+      const direction = event.deltaY > 0 ? -1 : 1;
+      const nextZoom = clampCanvasZoom(canvasZoom + direction * CANVAS_ZOOM_STEP);
+
+      if (nextZoom === canvasZoom) {
+        return;
+      }
+
+      const zoomRatio = nextZoom / canvasZoom;
+      setCanvasZoom(nextZoom);
+
+      requestAnimationFrame(() => {
+        shell.scrollLeft = pointerX * zoomRatio - (event.clientX - rect.left);
+        shell.scrollTop = pointerY * zoomRatio - (event.clientY - rect.top);
+      });
+
+      return;
+    }
+
+    if (event.shiftKey) {
+      event.preventDefault();
+      const dominantDelta = Math.abs(event.deltaY) >= Math.abs(event.deltaX) ? event.deltaY : event.deltaX;
+      event.currentTarget.scrollLeft += dominantDelta;
+    }
   };
 
   return (
@@ -132,7 +180,11 @@ export function TemplateEditorPage() {
           </section>
         </aside>
 
-        <section className="template-builder-canvas-shell">
+        <section
+          className="template-builder-canvas-shell"
+          onWheel={handleCanvasWheel}
+          ref={canvasShellRef}
+        >
           <div className="template-builder-canvas-header">
             <div>
               <span>{activeScreen?.providerRoute ?? layout.metadata.browserMappingKey}</span>
@@ -144,12 +196,39 @@ export function TemplateEditorPage() {
             </div>
           </div>
 
-          <TemplateLayoutCanvas
-            blocksByRegion={blocksByRegion}
-            onSelectBlock={setSelectedBlockId}
-            screen={activeScreen}
-            selectedBlockId={selectedBlockId}
-          />
+          <div
+            className="template-canvas-zoom-layer"
+            style={{ '--template-canvas-zoom': canvasZoom } as CSSProperties}
+          >
+            <TemplateLayoutCanvas
+              blocksByRegion={blocksByRegion}
+              onSelectBlock={setSelectedBlockId}
+              screen={activeScreen}
+              selectedBlockId={selectedBlockId}
+            />
+          </div>
+
+          <div className="template-canvas-controls" aria-label="Canvas controls">
+            <button
+              aria-label="Zoom out"
+              type="button"
+              onClick={() => updateCanvasZoom(canvasZoom - CANVAS_ZOOM_STEP)}
+            >
+              <Icon name="zoom_out" />
+            </button>
+            <strong>{Math.round(canvasZoom * 100)}%</strong>
+            <button
+              aria-label="Zoom in"
+              type="button"
+              onClick={() => updateCanvasZoom(canvasZoom + CANVAS_ZOOM_STEP)}
+            >
+              <Icon name="zoom_in" />
+            </button>
+            <span aria-hidden="true" />
+            <button aria-label="Reset zoom" type="button" onClick={() => updateCanvasZoom(1)}>
+              <Icon name="restart_alt" />
+            </button>
+          </div>
         </section>
 
         <TemplateEditPanel
