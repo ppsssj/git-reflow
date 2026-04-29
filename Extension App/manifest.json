@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "Git Reflow Preview",
+  "version": "0.1.0",
+  "description": "Applies locally synced git-reflow templates on GitHub for testing.",
+  "permissions": ["storage"],
+  "host_permissions": ["https://github.com/*", "http://localhost:8787/*"],
+  "content_scripts": [
+    {
+      "matches": ["https://github.com/*"],
+      "css": ["content.css"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

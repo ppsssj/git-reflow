@@ -6,6 +6,8 @@ interface AppTopNavProps {
   searchPlaceholder?: string;
   actionLabel?: string;
   actionTo?: string;
+  actionStatus?: string;
+  onActionClick?: () => void;
 }
 
 const avatarUrl =
@@ -15,7 +17,9 @@ export function AppTopNav({
   active,
   searchPlaceholder = 'Search resources...',
   actionLabel = 'Deploy',
+  actionStatus,
   actionTo,
+  onActionClick,
 }: AppTopNavProps) {
   return (
     <header className="topnav">
@@ -53,10 +57,11 @@ export function AppTopNav({
               {actionLabel}
             </Link>
           ) : (
-            <button className="topnav__deploy" type="button">
+            <button className="topnav__deploy" type="button" onClick={onActionClick}>
               {actionLabel}
             </button>
           )}
+          {actionStatus ? <span className="topnav__action-status">{actionStatus}</span> : null}
           <img alt="User avatar" className="topnav__avatar" src={avatarUrl} />
         </div>
       </div>

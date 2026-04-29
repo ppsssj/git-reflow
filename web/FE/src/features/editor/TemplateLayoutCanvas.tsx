@@ -1,11 +1,15 @@
-import type { TemplateBlock, TemplateRegion } from '../../types/template';
+import type { CSSProperties } from 'react';
+import type { TemplateBlock, TemplateColumnLayout, TemplateRegion } from '../../types/template';
 import type { TemplateScreen } from '../../types/template';
+import type { TemplateVariationId } from '../../types/template';
 import { githubBlockRegistry } from './blocks/GithubTemplateBlocks';
 
 interface TemplateLayoutCanvasProps {
   blocksByRegion: Record<TemplateRegion, TemplateBlock[]>;
   screen?: TemplateScreen;
   selectedBlockId: string;
+  columnLayout: TemplateColumnLayout;
+  variationId: TemplateVariationId;
   onSelectBlock: (blockId: string) => void;
 }
 
@@ -67,8 +71,10 @@ function RegionColumn({
 
 export function TemplateLayoutCanvas({
   blocksByRegion,
+  columnLayout,
   screen,
   selectedBlockId,
+  variationId,
   onSelectBlock,
 }: TemplateLayoutCanvasProps) {
   return (
@@ -80,7 +86,19 @@ export function TemplateLayoutCanvas({
         </div>
         <em>{screen?.description ?? 'Editable provider screen'}</em>
       </div>
-      <div className="github-home-preview">
+      <div
+        className={[
+          'github-home-preview',
+          `github-home-preview--${variationId}`,
+        ].join(' ')}
+        style={
+          {
+            '--github-preview-left-width': `${columnLayout.left}px`,
+            '--github-preview-main-min-width': `${columnLayout.main}px`,
+            '--github-preview-right-width': `${columnLayout.right}px`,
+          } as CSSProperties
+        }
+      >
         <RegionColumn
           blocks={blocksByRegion.topbar}
           onSelectBlock={onSelectBlock}

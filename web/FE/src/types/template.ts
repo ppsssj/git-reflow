@@ -25,6 +25,23 @@ export interface TemplateRecord {
 
 export type TemplateRegion = 'topbar' | 'left-sidebar' | 'main-feed' | 'right-sidebar';
 
+export type TemplateVariationId =
+  | 'github-default'
+  | 'feed-two-column';
+
+export interface TemplateVariation {
+  id: TemplateVariationId;
+  title: string;
+  description: string;
+  githubConstraint: string;
+}
+
+export interface TemplateColumnLayout {
+  left: number;
+  main: number;
+  right: number;
+}
+
 export type TemplateBlockType =
   | 'top-nav'
   | 'profile-summary'

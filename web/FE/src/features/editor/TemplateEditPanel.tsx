@@ -1,11 +1,26 @@
+import type { CSSProperties, PointerEvent } from 'react';
 import { Icon } from '../../components/ui/Icon';
-import type { TemplateBlock, TemplateLayout, TemplateRegion } from '../../types/template';
+import type {
+  TemplateBlock,
+  TemplateColumnLayout,
+  TemplateLayout,
+  TemplateRegion,
+  TemplateVariation,
+  TemplateVariationId,
+} from '../../types/template';
 
 interface TemplateEditPanelProps {
   layout: TemplateLayout;
   selectedBlockId: string;
   serializedLayout: string;
+  selectedVariationId: TemplateVariationId;
+  columnLayout: TemplateColumnLayout;
+  leftSidebarResizeEnabled: boolean;
+  variations: TemplateVariation[];
+  onChangeColumnLayout: (layout: TemplateColumnLayout) => void;
+  onToggleLeftSidebarResize: () => void;
   onSelectBlock: (blockId: string) => void;
+  onSelectVariation: (variationId: TemplateVariationId) => void;
   onToggleBlock: (blockId: string) => void;
   onMoveBlock: (blockId: string, direction: 'up' | 'down') => void;
   onReset: () => void;
@@ -17,6 +32,22 @@ const regionLabels: Record<TemplateRegion, string> = {
   'main-feed': 'Main feed',
   'right-sidebar': 'Right sidebar',
 };
+
+const COLUMN_MIN_WIDTHS: TemplateColumnLayout = {
+  left: 220,
+  main: 640,
+  right: 240,
+};
+
+const COLUMN_MAX_WIDTHS: TemplateColumnLayout = {
+  left: 420,
+  main: 1120,
+  right: 420,
+};
+
+function clampColumnWidth(region: keyof TemplateColumnLayout, value: number) {
+  return Math.min(COLUMN_MAX_WIDTHS[region], Math.max(COLUMN_MIN_WIDTHS[region], value));
+}
 
 function getBlockScreenId(layout: TemplateLayout, block: TemplateBlock) {
   return block.screenId ?? layout.screens[0]?.id ?? layout.activeScreenId;
@@ -38,9 +69,16 @@ function getMoveState(layout: TemplateLayout, block: TemplateBlock) {
 
 export function TemplateEditPanel({
   layout,
+  columnLayout,
+  leftSidebarResizeEnabled,
   selectedBlockId,
+  selectedVariationId,
   serializedLayout,
+  variations,
+  onChangeColumnLayout,
+  onToggleLeftSidebarResize,
   onSelectBlock,
+  onSelectVariation,
   onToggleBlock,
   onMoveBlock,
   onReset,
@@ -50,6 +88,82 @@ export function TemplateEditPanel({
   if (!selectedBlock) {
     return null;
   }
+
+  const totalColumnWidth = columnLayout.left + columnLayout.main + columnLayout.right;
+  const columnTemplate = `${columnLayout.left}fr ${columnLayout.main}fr ${columnLayout.right}fr`;
+  const columnMapStyle = {
+    '--column-left-ratio': columnLayout.left / totalColumnWidth,
+    '--column-main-boundary-ratio': (columnLayout.left + columnLayout.main) / totalColumnWidth,
+    gridTemplateColumns: columnTemplate,
+  } as CSSProperties;
+
+  const handleColumnInput = (region: keyof TemplateColumnLayout, value: string) => {
+    onChangeColumnLayout({
+      ...columnLayout,
+      [region]: clampColumnWidth(region, Number(value) || COLUMN_MIN_WIDTHS[region]),
+    });
+  };
+
+  const handleColumnDragStart = (
+    boundary: 'left-main' | 'main-right',
+    event: PointerEvent<HTMLButtonElement>,
+  ) => {
+    const map = event.currentTarget.closest('.column-layout-map');
+
+    if (!(map instanceof HTMLElement)) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const pointerId = event.pointerId;
+    const startX = event.clientX;
+    const startLayout = { ...columnLayout };
+    const mapWidth = map.getBoundingClientRect().width;
+    const pxPerScreenPixel = totalColumnWidth / mapWidth;
+
+    event.currentTarget.setPointerCapture(pointerId);
+    document.body.classList.add('is-dragging-column-layout');
+
+    const handlePointerMove = (moveEvent: globalThis.PointerEvent) => {
+      const delta = Math.round((moveEvent.clientX - startX) * pxPerScreenPixel);
+
+      if (boundary === 'left-main') {
+        const nextLeft = clampColumnWidth('left', startLayout.left + delta);
+        const appliedDelta = nextLeft - startLayout.left;
+        const nextMain = clampColumnWidth('main', startLayout.main - appliedDelta);
+
+        onChangeColumnLayout({
+          ...startLayout,
+          left: nextLeft,
+          main: nextMain,
+        });
+        return;
+      }
+
+      const nextMain = clampColumnWidth('main', startLayout.main + delta);
+      const appliedDelta = nextMain - startLayout.main;
+      const nextRight = clampColumnWidth('right', startLayout.right - appliedDelta);
+
+      onChangeColumnLayout({
+        ...startLayout,
+        main: nextMain,
+        right: nextRight,
+      });
+    };
+
+    const handlePointerUp = () => {
+      document.body.classList.remove('is-dragging-column-layout');
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+      window.removeEventListener('pointercancel', handlePointerUp);
+    };
+
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
+    window.addEventListener('pointercancel', handlePointerUp);
+  };
 
   return (
     <aside className="layout-edit-panel">
@@ -120,6 +234,80 @@ export function TemplateEditPanel({
             </div>
           ))}
         </div>
+      </section>
+
+      <section className="layout-edit-panel__section">
+        <p>GitHub-safe Variations</p>
+        <div className="variation-list">
+          {variations.map((variation) => (
+            <button
+              className={variation.id === selectedVariationId ? 'is-active' : ''}
+              key={variation.id}
+              type="button"
+              onClick={() => onSelectVariation(variation.id)}
+            >
+              <span>
+                <strong>{variation.title}</strong>
+                <em>{variation.description}</em>
+              </span>
+              <small>{variation.githubConstraint}</small>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section className="layout-edit-panel__section">
+        <p>GitHub-safe Controls</p>
+        <div className="column-layout-control">
+          <div className="column-layout-map" style={columnMapStyle}>
+            <div className="column-layout-map__region is-left">
+              <span>Left</span>
+            </div>
+            <button
+              aria-label="Resize left and main columns"
+              className="column-layout-map__handle is-left-main"
+              type="button"
+              onPointerDown={(event) => handleColumnDragStart('left-main', event)}
+            />
+            <div className="column-layout-map__region is-main">
+              <span>Main</span>
+            </div>
+            <button
+              aria-label="Resize main and right columns"
+              className="column-layout-map__handle is-main-right"
+              type="button"
+              onPointerDown={(event) => handleColumnDragStart('main-right', event)}
+            />
+            <div className="column-layout-map__region is-right">
+              <span>Right</span>
+            </div>
+          </div>
+          <div className="column-layout-inputs">
+            {(['left', 'main', 'right'] as Array<keyof TemplateColumnLayout>).map((region) => (
+              <label key={region}>
+                <span>{region}</span>
+                <input
+                  max={COLUMN_MAX_WIDTHS[region]}
+                  min={COLUMN_MIN_WIDTHS[region]}
+                  type="number"
+                  value={columnLayout[region]}
+                  onChange={(event) => handleColumnInput(region, event.target.value)}
+                />
+              </label>
+            ))}
+          </div>
+        </div>
+        <label className="controller-toggle">
+          <input
+            checked={leftSidebarResizeEnabled}
+            type="checkbox"
+            onChange={onToggleLeftSidebarResize}
+          />
+          <span>
+            <strong>Left sidebar resize controller</strong>
+            <em>Show a drag handle on the live GitHub page.</em>
+          </span>
+        </label>
       </section>
 
       <section className="layout-edit-panel__section">

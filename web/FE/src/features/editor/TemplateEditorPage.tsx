@@ -4,7 +4,12 @@ import { useParams } from 'react-router-dom';
 import { AppTopNav } from '../../components/layout/AppTopNav';
 import { Icon } from '../../components/ui/Icon';
 import { templates } from '../../mocks/templates';
-import type { TemplateRegion } from '../../types/template';
+import type {
+  TemplateColumnLayout,
+  TemplateRegion,
+  TemplateVariation,
+  TemplateVariationId,
+} from '../../types/template';
 import { TemplateEditPanel } from './TemplateEditPanel';
 import { TemplateLayoutCanvas } from './TemplateLayoutCanvas';
 import { defaultGithubTemplate } from './templates/defaultGithubTemplate';
@@ -27,6 +32,26 @@ const regionLabels: Record<TemplateRegion, string> = {
 const MIN_CANVAS_ZOOM = 0.5;
 const MAX_CANVAS_ZOOM = 2;
 const CANVAS_ZOOM_STEP = 0.1;
+const DEFAULT_COLUMN_LAYOUT: TemplateColumnLayout = {
+  left: 320,
+  main: 900,
+  right: 315,
+};
+
+const githubSafeVariations: TemplateVariation[] = [
+  {
+    id: 'github-default',
+    title: 'Current GitHub home',
+    description: 'Keep the captured dashboard structure as-is.',
+    githubConstraint: 'Baseline',
+  },
+  {
+    id: 'feed-two-column',
+    title: 'Two-column feed',
+    description: 'Split feed cards into two scannable columns.',
+    githubConstraint: 'Feed only',
+  },
+];
 
 function clampCanvasZoom(value: number) {
   return Math.min(MAX_CANVAS_ZOOM, Math.max(MIN_CANVAS_ZOOM, value));
@@ -39,7 +64,6 @@ export function TemplateEditorPage() {
     layout,
     activeScreen,
     blocksByRegion,
-    serializedLayout,
     setActiveScreen,
     toggleBlockVisibility,
     moveBlock,
@@ -47,6 +71,10 @@ export function TemplateEditorPage() {
   } = useTemplateLayout(defaultGithubTemplate);
   const [selectedBlockId, setSelectedBlockId] = useState('');
   const [canvasZoom, setCanvasZoom] = useState(1);
+  const [columnLayout, setColumnLayout] = useState<TemplateColumnLayout>(DEFAULT_COLUMN_LAYOUT);
+  const [leftSidebarResizeEnabled, setLeftSidebarResizeEnabled] = useState(true);
+  const [selectedVariationId, setSelectedVariationId] = useState<TemplateVariationId>('github-default');
+  const [syncStatus, setSyncStatus] = useState('Not synced');
   const canvasShellRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -64,9 +92,47 @@ export function TemplateEditorPage() {
     [layout.activeScreenId, layout.blocks, layout.screens],
   );
 
+  const serializedTemplateState = useMemo(
+    () =>
+      JSON.stringify(
+        {
+          ...layout,
+          columnLayout,
+          leftSidebarResizeEnabled,
+          selectedVariationId,
+        },
+        null,
+        2,
+      ),
+    [layout, columnLayout, leftSidebarResizeEnabled, selectedVariationId],
+  );
+
   const handleReset = () => {
     resetLayout();
     setSelectedBlockId('');
+    setColumnLayout(DEFAULT_COLUMN_LAYOUT);
+  };
+
+  const handleSyncTemplate = async () => {
+    setSyncStatus('Syncing...');
+
+    try {
+      const response = await fetch('http://localhost:8787/api/templates/github-home', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: serializedTemplateState,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Sync failed with ${response.status}`);
+      }
+
+      setSyncStatus('Synced to localhost:8787');
+    } catch {
+      setSyncStatus('Backend unavailable');
+    }
   };
 
   const updateCanvasZoom = (nextZoom: number) => {
@@ -74,9 +140,10 @@ export function TemplateEditorPage() {
   };
 
   const handleCanvasWheel = (event: WheelEvent<HTMLElement>) => {
-    if (event.ctrlKey || event.metaKey) {
-      event.preventDefault();
+    event.preventDefault();
+    event.stopPropagation();
 
+    if (event.ctrlKey || event.metaKey) {
       const shell = event.currentTarget;
       const rect = shell.getBoundingClientRect();
       const pointerX = event.clientX - rect.left + shell.scrollLeft;
@@ -100,15 +167,24 @@ export function TemplateEditorPage() {
     }
 
     if (event.shiftKey) {
-      event.preventDefault();
       const dominantDelta = Math.abs(event.deltaY) >= Math.abs(event.deltaX) ? event.deltaY : event.deltaX;
       event.currentTarget.scrollLeft += dominantDelta;
+      return;
     }
+
+    event.currentTarget.scrollLeft += event.deltaX;
+    event.currentTarget.scrollTop += event.deltaY;
   };
 
   return (
     <div className="editor-page template-builder-page">
-      <AppTopNav active="templates" actionLabel="Save Draft" searchPlaceholder="Search blocks..." />
+      <AppTopNav
+        active="templates"
+        actionLabel="Save Draft"
+        actionStatus={syncStatus}
+        searchPlaceholder="Search blocks..."
+        onActionClick={handleSyncTemplate}
+      />
 
       <main className="template-builder-main">
         <aside className="template-builder-rail">
@@ -202,9 +278,11 @@ export function TemplateEditorPage() {
           >
             <TemplateLayoutCanvas
               blocksByRegion={blocksByRegion}
+              columnLayout={columnLayout}
               onSelectBlock={setSelectedBlockId}
               screen={activeScreen}
               selectedBlockId={selectedBlockId}
+              variationId={selectedVariationId}
             />
           </div>
 
@@ -233,12 +311,19 @@ export function TemplateEditorPage() {
 
         <TemplateEditPanel
           layout={layout}
+          columnLayout={columnLayout}
+          leftSidebarResizeEnabled={leftSidebarResizeEnabled}
+          onChangeColumnLayout={setColumnLayout}
           onMoveBlock={moveBlock}
           onReset={handleReset}
           onSelectBlock={setSelectedBlockId}
+          onSelectVariation={setSelectedVariationId}
+          onToggleLeftSidebarResize={() => setLeftSidebarResizeEnabled((enabled) => !enabled)}
           onToggleBlock={toggleBlockVisibility}
           selectedBlockId={selectedBlockId}
-          serializedLayout={serializedLayout}
+          selectedVariationId={selectedVariationId}
+          serializedLayout={serializedTemplateState}
+          variations={githubSafeVariations}
         />
       </main>
     </div>
