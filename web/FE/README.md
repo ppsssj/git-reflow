@@ -39,3 +39,4 @@ The current editor is intentionally not a blank canvas. It is a structured works
 - right inspector panel
 
 That keeps the UI aligned with the product goal of customizing GitHub layouts rather than designing arbitrary screens.
+
