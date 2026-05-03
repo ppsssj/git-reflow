@@ -1,7 +1,12 @@
-import { Link } from 'react-router-dom';
+import type { FormEvent } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { AppTopNav } from '../../components/layout/AppTopNav';
 import { Icon } from '../../components/ui/Icon';
+import { apiGet, apiPost } from '../../lib/api';
 import { templates } from '../../mocks/templates';
+import type { ExtensionTemplatePayload, TemplateRecord } from '../../types/template';
+import { defaultGithubTemplate } from '../editor/templates/defaultGithubTemplate';
 import { TemplateCard } from './TemplateCard';
 
 const sidebarItems = [
@@ -13,7 +18,158 @@ const sidebarItems = [
   { icon: 'analytics', label: 'Analytics' },
 ];
 
+interface TemplateListResponse {
+  ok: true;
+  templates: TemplateRecord[];
+}
+
+interface CreateTemplateResponse {
+  ok: true;
+  template: ExtensionTemplatePayload;
+}
+
+const DEFAULT_TEMPLATE_ID = defaultGithubTemplate.id;
+const defaultTemplateRecord: TemplateRecord = {
+  id: defaultGithubTemplate.id,
+  name: defaultGithubTemplate.name,
+  description: defaultGithubTemplate.description,
+  thumbnail: '',
+  collaborators: [],
+  status: 'ACTIVE',
+  syncState: 'Ready to sync',
+  updatedAt: 'Default template',
+  owner: 'git-reflow',
+  highlights: [
+    'Base GitHub home layout',
+    'Use this as the starting point for saved templates',
+    `${defaultGithubTemplate.blocks.filter((block) => block.visible).length} visible blocks`,
+  ],
+  sections: defaultGithubTemplate.blocks
+    .filter((block) => block.visible)
+    .slice(0, 6)
+    .map((block, index) => ({
+      id: block.id,
+      label: block.title,
+      kind: block.region === 'topbar' ? 'header' : block.region === 'main-feed' ? 'content' : 'sidebar',
+      depth: index === 0 ? 0 : 1,
+      description: block.extensionSlot ?? block.region,
+      visible: block.visible,
+    })),
+};
+
+function slugify(value: string) {
+  const slug = value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+  return slug || 'github-template';
+}
+
+function createTemplateDraft(name: string): ExtensionTemplatePayload {
+  const now = new Date().toISOString();
+
+  return {
+    ...defaultGithubTemplate,
+    id: `${slugify(name)}-${Date.now().toString(36)}`,
+    name,
+    description: `Custom GitHub home layout based on the default template.`,
+    source: 'user',
+    version: 1,
+    metadata: {
+      ...defaultGithubTemplate.metadata,
+      updatedAt: now,
+    },
+    provider: 'github',
+    columnLayout: {
+      left: 320,
+      main: 900,
+      right: 315,
+    },
+    leftSidebarResizeEnabled: true,
+    selectedVariationId: 'github-default',
+    updatedAt: now,
+  };
+}
+
 export function TemplateListPage() {
+  const navigate = useNavigate();
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [remoteTemplates, setRemoteTemplates] = useState<TemplateRecord[]>([]);
+  const [isLoadingTemplates, setIsLoadingTemplates] = useState(true);
+  const [templateError, setTemplateError] = useState('');
+  const [newTemplateName, setNewTemplateName] = useState('');
+  const [createStatus, setCreateStatus] = useState('');
+  const visibleTemplates = useMemo(() => {
+    const userTemplates = remoteTemplates.filter((template) => template.id !== DEFAULT_TEMPLATE_ID);
+
+    return userTemplates.length > 0 ? [defaultTemplateRecord, ...userTemplates] : [defaultTemplateRecord, ...templates];
+  }, [remoteTemplates]);
+  const primaryTemplateId = visibleTemplates[0]?.id ?? 'github-dashboard-reference';
+
+  useEffect(() => {
+    let cancelled = false;
+
+    apiGet<TemplateListResponse>('/api/templates')
+      .then((result) => {
+        if (cancelled) {
+          return;
+        }
+
+        setRemoteTemplates(result.templates);
+        setTemplateError('');
+      })
+      .catch((error) => {
+        if (cancelled) {
+          return;
+        }
+
+        setTemplateError(error instanceof Error ? error.message : 'Failed to load templates');
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setIsLoadingTemplates(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleCreateTemplate = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const name = newTemplateName.trim();
+
+    if (name.length < 2) {
+      setCreateStatus('Enter a template name');
+      return;
+    }
+
+    const nameExists = visibleTemplates.some(
+      (template) => template.name.trim().toLowerCase() === name.toLowerCase(),
+    );
+
+    if (nameExists) {
+      setCreateStatus('Template name already exists');
+      return;
+    }
+
+    setCreateStatus('Creating...');
+
+    try {
+      const result = await apiPost<CreateTemplateResponse>('/api/templates/github-home', createTemplateDraft(name));
+
+      setNewTemplateName('');
+      setCreateStatus('Created');
+      navigate(`/templates/${result.template.id}`);
+    } catch (error) {
+      setCreateStatus(error instanceof Error ? error.message : 'Failed to create template');
+    }
+  };
+
   return (
     <div className="dashboard-page">
       <AppTopNav active="templates" searchPlaceholder="Search resources..." />
@@ -30,7 +186,7 @@ export function TemplateListPage() {
             </div>
           </div>
 
-          <Link className="sidebar-create" to={`/templates/${templates[0].id}`}>
+          <Link className="sidebar-create" to={`/templates/${primaryTemplateId}`}>
             <Icon name="add" />
             <span>Create New</span>
           </Link>
@@ -60,33 +216,57 @@ export function TemplateListPage() {
           <header className="dashboard-main__header">
             <div>
               <h1>Repository Templates</h1>
-              <p>Manage and deploy pre-configured development environments.</p>
+              <p>
+                {isLoadingTemplates
+                  ? 'Loading saved templates...'
+                  : templateError
+                    ? `Using local samples: ${templateError}`
+                    : 'Manage saved GitHub layout templates.'}
+              </p>
             </div>
 
             <div className="view-toggle">
-              <button className="is-active" type="button">
+              <button
+                className={viewMode === 'grid' ? 'is-active' : ''}
+                type="button"
+                onClick={() => setViewMode('grid')}
+              >
                 <Icon name="grid_view" />
                 <span>Grid</span>
               </button>
-              <button type="button">
+              <button
+                className={viewMode === 'list' ? 'is-active' : ''}
+                type="button"
+                onClick={() => setViewMode('list')}
+              >
                 <Icon name="list" />
                 <span>List</span>
               </button>
             </div>
           </header>
 
-          <section className="template-grid">
-            {templates.map((template) => (
-              <TemplateCard key={template.id} template={template} />
+          <section className={viewMode === 'grid' ? 'template-grid' : 'template-list'}>
+            {visibleTemplates.map((template) => (
+              <TemplateCard key={template.id} template={template} variant={viewMode} />
             ))}
 
-            <Link className="template-add-card" to={`/templates/${templates[0].id}`}>
+            <form className="template-add-card template-create-card" onSubmit={handleCreateTemplate}>
               <div className="template-add-card__icon">
                 <Icon name="add_circle" />
               </div>
               <strong>New Template</strong>
-              <span>Initialize from repository</span>
-            </Link>
+              <label>
+                <span>Template title</span>
+                <input
+                  placeholder="GitHub focus layout"
+                  type="text"
+                  value={newTemplateName}
+                  onChange={(event) => setNewTemplateName(event.target.value)}
+                />
+              </label>
+              <button type="submit">Create</button>
+              {createStatus ? <em>{createStatus}</em> : null}
+            </form>
           </section>
 
           <section className="activity-section">

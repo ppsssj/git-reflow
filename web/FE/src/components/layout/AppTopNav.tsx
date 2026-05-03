@@ -1,4 +1,7 @@
-import { Link } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { apiPost } from '../../lib/api';
+import { clearAuthSession, getAuthSession } from '../../lib/auth';
 import { Icon } from '../ui/Icon';
 
 interface AppTopNavProps {
@@ -10,9 +13,6 @@ interface AppTopNavProps {
   onActionClick?: () => void;
 }
 
-const avatarUrl =
-  'https://lh3.googleusercontent.com/aida-public/AB6AXuCJ3PyNuJ1mKlXCRnRfdxhrei8VKtLrQpDUSRieYEL3uk9IbCvaz6xEP3w6TbB9Kb51NOifdcoCKXehBQ-LAatrmu2k5FQb-DHxeEfWH6wIAi4ejaMVKT9mKLzSj-utAOSchRYtDrlCmej7ldAYL8QPC5Kl1sWokptc08SylG8tFD6x5gkjdKHThDUAa6v6OUNXqUsaaFhU0Db5UULx0z4z1FEglBvzxYz3ES3yQjMSHokPXOOlCltXmDLzlHwtsRP-hfie-2QuVyk';
-
 export function AppTopNav({
   active,
   searchPlaceholder = 'Search resources...',
@@ -21,6 +21,43 @@ export function AppTopNav({
   actionTo,
   onActionClick,
 }: AppTopNavProps) {
+  const navigate = useNavigate();
+  const settingsRef = useRef<HTMLDivElement | null>(null);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const session = getAuthSession();
+  const userName = session?.user.name ?? session?.user.email ?? 'User';
+  const userInitial = userName.slice(0, 1).toUpperCase();
+
+  useEffect(() => {
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!settingsRef.current?.contains(event.target as Node)) {
+        setIsSettingsOpen(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+    };
+  }, []);
+
+  const handleLogout = async () => {
+    const token = session?.token;
+
+    if (token) {
+      await apiPost('/api/auth/logout', {}, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }).catch(() => undefined);
+    }
+
+    clearAuthSession();
+    setIsSettingsOpen(false);
+    navigate('/login', { replace: true });
+  };
+
   return (
     <header className="topnav">
       <div className="topnav__inner">
@@ -49,9 +86,30 @@ export function AppTopNav({
           <button className="topnav__icon-button" type="button" aria-label="Notifications">
             <Icon name="notifications" />
           </button>
-          <button className="topnav__icon-button" type="button" aria-label="Settings">
-            <Icon name="settings" />
-          </button>
+          <div className="topnav__settings" ref={settingsRef}>
+            <button
+              aria-expanded={isSettingsOpen}
+              aria-haspopup="menu"
+              aria-label="Settings"
+              className="topnav__icon-button"
+              type="button"
+              onClick={() => setIsSettingsOpen((open) => !open)}
+            >
+              <Icon name="settings" />
+            </button>
+            {isSettingsOpen ? (
+              <div className="topnav__settings-menu" role="menu">
+                <div className="topnav__settings-user">
+                  <strong>{userName}</strong>
+                  {session?.user.email ? <span>{session.user.email}</span> : null}
+                </div>
+                <button role="menuitem" type="button" onClick={handleLogout}>
+                  <Icon name="logout" />
+                  <span>Log out</span>
+                </button>
+              </div>
+            ) : null}
+          </div>
           {actionTo ? (
             <Link className="topnav__deploy" to={actionTo}>
               {actionLabel}
@@ -62,7 +120,13 @@ export function AppTopNav({
             </button>
           )}
           {actionStatus ? <span className="topnav__action-status">{actionStatus}</span> : null}
-          <img alt="User avatar" className="topnav__avatar" src={avatarUrl} />
+          {session?.user.avatarUrl ? (
+            <img alt={`${userName} avatar`} className="topnav__avatar" src={session.user.avatarUrl} />
+          ) : (
+            <span aria-label={userName} className="topnav__avatar topnav__avatar-fallback">
+              {userInitial}
+            </span>
+          )}
         </div>
       </div>
     </header>

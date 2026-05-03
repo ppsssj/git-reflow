@@ -52,6 +52,8 @@ const iconPaths: Record<string, string> = {
   keyboard_arrow_down: 'M7.4 8.6 12 13.2l4.6-4.6L18 10l-6 6-6-6 1.4-1.4Z',
   keyboard_arrow_up: 'M7.4 15.4 12 10.8l4.6 4.6L18 14l-6-6-6 6 1.4 1.4Z',
   list: 'M5 7h14v2H5V7Zm0 4h14v2H5v-2Zm0 4h14v2H5v-2Z',
+  logout:
+    'M5 4h8v2H7v12h6v2H5V4Zm10.6 4.4L20.2 13l-4.6 4.6-1.4-1.4 2.2-2.2H10v-2h6.4l-2.2-2.2 1.4-1.4Z',
   menu: 'M4 6h16v2H4V6Zm0 5h16v2H4v-2Zm0 5h16v2H4v-2Z',
   merge_type:
     'M7 4a3 3 0 1 0-2 2.83v10.34a3 3 0 1 0 2 0V13a4 4 0 0 0 4-4V6.83A3 3 0 1 0 9 4v5a2 2 0 0 1-2 2V6.83A3 3 0 0 0 7 4Zm-2 0a1 1 0 1 1 2 0 1 1 0 0 1-2 0Zm6 0a1 1 0 1 1 2 0 1 1 0 0 1-2 0ZM5 20a1 1 0 1 1 2 0 1 1 0 0 1-2 0Z',

@@ -3,8 +3,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { AppTopNav } from '../../components/layout/AppTopNav';
 import { Icon } from '../../components/ui/Icon';
+import { API_BASE_URL, apiGet } from '../../lib/api';
 import { templates } from '../../mocks/templates';
 import type {
+  ExtensionTemplatePayload,
   TemplateColumnLayout,
   TemplateRegion,
   TemplateVariation,
@@ -67,6 +69,7 @@ export function TemplateEditorPage() {
     setActiveScreen,
     toggleBlockVisibility,
     moveBlock,
+    replaceLayout,
     resetLayout,
   } = useTemplateLayout(defaultGithubTemplate);
   const [selectedBlockId, setSelectedBlockId] = useState('');
@@ -82,6 +85,45 @@ export function TemplateEditorPage() {
       setSelectedBlockId(layout.blocks[0]?.id ?? '');
     }
   }, [layout.blocks, selectedBlockId]);
+
+  useEffect(() => {
+    if (!templateId) {
+      return;
+    }
+
+    if (templateId === defaultGithubTemplate.id) {
+      replaceLayout(defaultGithubTemplate);
+      setColumnLayout(DEFAULT_COLUMN_LAYOUT);
+      setLeftSidebarResizeEnabled(true);
+      setSelectedVariationId('github-default');
+      setSyncStatus('Loaded default template');
+      return;
+    }
+
+    let cancelled = false;
+
+    apiGet<ExtensionTemplatePayload>(`/api/templates/${encodeURIComponent(templateId)}`)
+      .then((template) => {
+        if (cancelled) {
+          return;
+        }
+
+        replaceLayout(template);
+        setColumnLayout(template.columnLayout ?? DEFAULT_COLUMN_LAYOUT);
+        setLeftSidebarResizeEnabled(template.leftSidebarResizeEnabled !== false);
+        setSelectedVariationId(template.selectedVariationId ?? 'github-default');
+        setSyncStatus('Loaded saved template');
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setSyncStatus('Using local fallback');
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [replaceLayout, templateId]);
 
   const visibleCount = useMemo(
     () =>
@@ -111,13 +153,20 @@ export function TemplateEditorPage() {
     resetLayout();
     setSelectedBlockId('');
     setColumnLayout(DEFAULT_COLUMN_LAYOUT);
+    setLeftSidebarResizeEnabled(true);
+    setSelectedVariationId('github-default');
   };
 
   const handleSyncTemplate = async () => {
+    if (templateId === defaultGithubTemplate.id) {
+      setSyncStatus('Create a named template before saving');
+      return;
+    }
+
     setSyncStatus('Syncing...');
 
     try {
-      const response = await fetch('http://localhost:8787/api/templates/github-home', {
+      const response = await fetch(`${API_BASE_URL}/api/templates/github-home`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -126,7 +175,8 @@ export function TemplateEditorPage() {
       });
 
       if (!response.ok) {
-        throw new Error(`Sync failed with ${response.status}`);
+        const result = await response.json().catch(() => null);
+        throw new Error(result?.error ?? `Sync failed with ${response.status}`);
       }
 
       setSyncStatus('Synced to localhost:8787');

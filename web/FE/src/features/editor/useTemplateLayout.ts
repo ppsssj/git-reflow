@@ -1,10 +1,11 @@
-import { useMemo, useReducer } from 'react';
+import { useCallback, useMemo, useReducer } from 'react';
 import type { TemplateBlock, TemplateLayout, TemplateRegion } from '../../types/template';
 
 type TemplateLayoutAction =
   | { type: 'toggle-block'; blockId: string }
   | { type: 'move-block'; blockId: string; direction: 'up' | 'down' }
   | { type: 'set-active-screen'; screenId: string }
+  | { type: 'replace'; layout: TemplateLayout }
   | { type: 'reset'; layout: TemplateLayout };
 
 function cloneLayout(layout: TemplateLayout): TemplateLayout {
@@ -78,6 +79,8 @@ function templateLayoutReducer(layout: TemplateLayout, action: TemplateLayoutAct
         ...layout,
         activeScreenId: action.screenId,
       };
+    case 'replace':
+      return cloneLayout(action.layout);
     case 'reset':
       return cloneLayout(action.layout);
     default:
@@ -106,16 +109,24 @@ export function useTemplateLayout(defaultLayout: TemplateLayout) {
   );
 
   const serializedLayout = useMemo(() => JSON.stringify(layout, null, 2), [layout]);
+  const setActiveScreen = useCallback((screenId: string) => dispatch({ type: 'set-active-screen', screenId }), []);
+  const replaceLayout = useCallback((nextLayout: TemplateLayout) => dispatch({ type: 'replace', layout: nextLayout }), []);
+  const toggleBlockVisibility = useCallback((blockId: string) => dispatch({ type: 'toggle-block', blockId }), []);
+  const moveBlockByDirection = useCallback(
+    (blockId: string, direction: 'up' | 'down') => dispatch({ type: 'move-block', blockId, direction }),
+    [],
+  );
+  const resetLayout = useCallback(() => dispatch({ type: 'reset', layout: defaultLayout }), [defaultLayout]);
 
   return {
     layout,
     activeScreen,
     blocksByRegion,
     serializedLayout,
-    setActiveScreen: (screenId: string) => dispatch({ type: 'set-active-screen', screenId }),
-    toggleBlockVisibility: (blockId: string) => dispatch({ type: 'toggle-block', blockId }),
-    moveBlock: (blockId: string, direction: 'up' | 'down') =>
-      dispatch({ type: 'move-block', blockId, direction }),
-    resetLayout: () => dispatch({ type: 'reset', layout: defaultLayout }),
+    setActiveScreen,
+    replaceLayout,
+    toggleBlockVisibility,
+    moveBlock: moveBlockByDirection,
+    resetLayout,
   };
 }

@@ -1,12 +1,23 @@
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Icon } from '../../components/ui/Icon';
-import { isAuthenticated, setAuthenticated } from '../../lib/auth';
+import { apiPost } from '../../lib/api';
+import { isAuthenticated, setAuthSession, type AuthSession } from '../../lib/auth';
 
 const footerLinks = ['Privacy Policy', 'Terms of Service', 'Security Standards', 'Platform Status'];
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? '';
+
+interface GoogleAuthResponse {
+  ok: true;
+  session: AuthSession;
+}
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const googleButtonRef = useRef<HTMLDivElement | null>(null);
+  const [loginStatus, setLoginStatus] = useState(
+    GOOGLE_CLIENT_ID ? 'Waiting for Google sign-in' : 'Google client id is not configured',
+  );
 
   useEffect(() => {
     if (isAuthenticated()) {
@@ -14,10 +25,66 @@ export function LoginPage() {
     }
   }, [navigate]);
 
-  const handleLogin = () => {
-    setAuthenticated(true);
-    navigate('/templates');
-  };
+  useEffect(() => {
+    if (!GOOGLE_CLIENT_ID || !googleButtonRef.current) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const initializeGoogleSignIn = () => {
+      if (cancelled || !window.google || !googleButtonRef.current) {
+        return;
+      }
+
+      window.google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: async (response) => {
+          setLoginStatus('Verifying Google account...');
+
+          try {
+            const result = await apiPost<GoogleAuthResponse>('/api/auth/google', {
+              credential: response.credential,
+            });
+
+            setAuthSession(result.session);
+            navigate('/templates');
+          } catch (error) {
+            setLoginStatus(error instanceof Error ? error.message : 'Google sign-in failed');
+          }
+        },
+      });
+
+      googleButtonRef.current.innerHTML = '';
+      window.google.accounts.id.renderButton(googleButtonRef.current, {
+        theme: 'outline',
+        size: 'large',
+        text: 'continue_with',
+        shape: 'rectangular',
+        width: 320,
+      });
+      setLoginStatus('Use your Google account to continue');
+    };
+
+    if (window.google) {
+      initializeGoogleSignIn();
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.onload = initializeGoogleSignIn;
+    script.onerror = () => setLoginStatus('Failed to load Google Identity Services');
+    document.head.append(script);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [navigate]);
 
   return (
     <div className="login-screen">
@@ -60,10 +127,8 @@ export function LoginPage() {
           </div>
 
           <div className="login-card">
-            <button className="login-google" type="button" onClick={handleLogin}>
-              <span className="google-mark">G</span>
-              <span>Continue with Google</span>
-            </button>
+            <div className="login-google-native" ref={googleButtonRef} />
+            <p className="login-auth-status">{loginStatus}</p>
 
             <div className="login-divider">
               <span>Secure Access</span>
@@ -71,11 +136,11 @@ export function LoginPage() {
 
             <label className="login-field">
               <span>Work Email</span>
-              <input placeholder="name@company.com" type="email" />
+              <input disabled placeholder="Google sign-in required" type="email" />
             </label>
 
-            <button className="login-email" type="button" onClick={handleLogin}>
-              Sign in with Email
+            <button className="login-email" disabled type="button">
+              Email sign-in unavailable
             </button>
 
             <div className="login-trust">

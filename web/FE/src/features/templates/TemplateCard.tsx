@@ -4,13 +4,53 @@ import type { TemplateRecord } from '../../types/template';
 
 interface TemplateCardProps {
   template: TemplateRecord;
+  variant?: 'grid' | 'list';
 }
 
-export function TemplateCard({ template }: TemplateCardProps) {
+function TemplatePreview({ template }: { template: TemplateRecord }) {
+  const visibleSections = template.sections.filter((section) => section.visible).slice(0, 5);
+
   return (
-    <Link className="template-tile" to={`/templates/${template.id}`}>
+    <div className="template-preview" aria-hidden="true">
+      <div className="template-preview__topbar">
+        <span />
+        <span />
+        <span />
+      </div>
+      <div className="template-preview__body">
+        <aside className="template-preview__left">
+          {visibleSections.slice(0, 3).map((section) => (
+            <span key={section.id} />
+          ))}
+        </aside>
+        <main className="template-preview__main">
+          <strong>{template.name.slice(0, 1).toUpperCase()}</strong>
+          <span />
+          <span />
+          <div>
+            <i />
+            <i />
+          </div>
+        </main>
+        <aside className="template-preview__right">
+          {template.highlights.slice(0, 3).map((highlight) => (
+            <span key={highlight} />
+          ))}
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+export function TemplateCard({ template, variant = 'grid' }: TemplateCardProps) {
+  return (
+    <Link className={`template-tile template-tile--${variant}`} to={`/templates/${template.id}`}>
       <div className="template-tile__thumb">
-        <img alt={template.name} src={template.thumbnail} />
+        {template.thumbnail ? (
+          <img alt={template.name} src={template.thumbnail} />
+        ) : (
+          <TemplatePreview template={template} />
+        )}
         <span className={`template-tile__status ${template.status === 'ACTIVE' ? 'is-active' : 'is-inactive'}`}>
           {template.status}
         </span>
@@ -34,6 +74,13 @@ export function TemplateCard({ template }: TemplateCardProps) {
           </div>
           <span>{template.updatedAt}</span>
         </div>
+        {variant === 'list' ? (
+          <div className="template-tile__highlights">
+            {template.highlights.slice(0, 3).map((highlight) => (
+              <span key={highlight}>{highlight}</span>
+            ))}
+          </div>
+        ) : null}
       </div>
     </Link>
   );
