@@ -4,6 +4,29 @@ const RESIZER_CLASS = 'git-reflow-left-resizer';
 const LEFT_WIDTH_STORAGE_KEY = 'gitReflowLeftSidebarWidthPx';
 const MIN_LEFT_SIDEBAR_WIDTH = 220;
 const MAX_LEFT_SIDEBAR_WIDTH = 420;
+const MIN_MAIN_COLUMN_WIDTH = 640;
+const MAX_MAIN_COLUMN_WIDTH = 1120;
+const MIN_RIGHT_SIDEBAR_WIDTH = 240;
+const MAX_RIGHT_SIDEBAR_WIDTH = 420;
+const SUPPORTED_VARIATIONS = new Set(['github-default', 'feed-two-column']);
+const DEFAULT_TEMPLATE = {
+  columnLayout: {
+    left: 320,
+    main: 900,
+    right: 315,
+  },
+  leftSidebarResizeEnabled: true,
+  selectedVariationId: 'github-default',
+};
+
+const githubHomeSelectors = {
+  dashboardRoot: ['.feed-background', 'feed-container', '#dashboard'],
+  leftSidebar: ['.feed-left-sidebar', '[data-target="dashboard.sidebar"]'],
+  feedMain: ['.feed-main'],
+  mainContent: ['.feed-main main', 'main#main-content'],
+  rightSidebar: ['.feed-right-sidebar'],
+  rightColumn: ['.feed-right-column'],
+};
 
 const leftSidebarWidths = {
   narrow: '256px',
@@ -28,7 +51,19 @@ let controllerCreated = false;
 let customLeftSidebarWidthPx = null;
 
 function isGitHubDashboard() {
-  return document.querySelector('.feed-background, feed-container, #dashboard') !== null;
+  return queryFirst(githubHomeSelectors.dashboardRoot) !== null;
+}
+
+function queryFirst(selectors, root = document) {
+  for (const selector of selectors) {
+    const element = root.querySelector(selector);
+
+    if (element) {
+      return element;
+    }
+  }
+
+  return null;
 }
 
 function setStatus(text) {
@@ -52,11 +87,34 @@ function clampWidth(width) {
 }
 
 function clampMainWidth(width) {
-  return Math.min(1120, Math.max(640, width));
+  return Math.min(MAX_MAIN_COLUMN_WIDTH, Math.max(MIN_MAIN_COLUMN_WIDTH, width));
 }
 
 function clampRightWidth(width) {
-  return Math.min(420, Math.max(240, width));
+  return Math.min(MAX_RIGHT_SIDEBAR_WIDTH, Math.max(MIN_RIGHT_SIDEBAR_WIDTH, width));
+}
+
+function isObject(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function normalizeTemplate(template) {
+  if (!isObject(template)) {
+    return DEFAULT_TEMPLATE;
+  }
+
+  return {
+    ...template,
+    columnLayout: {
+      left: clampWidth(Number(template.columnLayout?.left) || DEFAULT_TEMPLATE.columnLayout.left),
+      main: clampMainWidth(Number(template.columnLayout?.main) || DEFAULT_TEMPLATE.columnLayout.main),
+      right: clampRightWidth(Number(template.columnLayout?.right) || DEFAULT_TEMPLATE.columnLayout.right),
+    },
+    leftSidebarResizeEnabled: template.leftSidebarResizeEnabled !== false,
+    selectedVariationId: SUPPORTED_VARIATIONS.has(template.selectedVariationId)
+      ? template.selectedVariationId
+      : DEFAULT_TEMPLATE.selectedVariationId,
+  };
 }
 
 function getStoredLeftSidebarWidth() {
@@ -78,31 +136,31 @@ function clearStoredLeftSidebarWidth() {
 function applySidebarWidth(width) {
   document.documentElement.style.setProperty('--feed-sidebar', width);
 
-  const leftSidebar = document.querySelector('.feed-left-sidebar');
+  const leftSidebar = queryFirst(githubHomeSelectors.leftSidebar);
   if (leftSidebar instanceof HTMLElement) {
     leftSidebar.style.width = width;
   }
 }
 
 function applyMainColumnWidth(width) {
-  const feedMain = document.querySelector('.feed-main');
+  const feedMain = queryFirst(githubHomeSelectors.feedMain);
   if (feedMain instanceof HTMLElement) {
     feedMain.style.maxWidth = width;
   }
 
-  const mainContent = document.querySelector('.feed-main main, main#main-content');
+  const mainContent = queryFirst(githubHomeSelectors.mainContent);
   if (mainContent instanceof HTMLElement) {
     mainContent.style.maxWidth = width;
   }
 }
 
 function applyRightSidebarWidth(width) {
-  const rightSidebar = document.querySelector('.feed-right-sidebar');
+  const rightSidebar = queryFirst(githubHomeSelectors.rightSidebar);
   if (rightSidebar instanceof HTMLElement) {
     rightSidebar.style.width = width;
   }
 
-  const rightColumn = document.querySelector('.feed-right-column');
+  const rightColumn = queryFirst(githubHomeSelectors.rightColumn);
   if (rightColumn instanceof HTMLElement) {
     rightColumn.style.maxWidth = width;
   }
@@ -145,7 +203,7 @@ function removeLeftSidebarResizer() {
 }
 
 function ensureLeftSidebarResizer() {
-  const leftSidebar = document.querySelector('.feed-left-sidebar');
+  const leftSidebar = queryFirst(githubHomeSelectors.leftSidebar);
   if (!(leftSidebar instanceof HTMLElement) || leftSidebar.querySelector(`.${RESIZER_CLASS}`)) {
     return;
   }
@@ -191,13 +249,13 @@ function ensureLeftSidebarResizer() {
 }
 
 function applyTemplate(template) {
-  latestTemplate = template;
+  latestTemplate = normalizeTemplate(template);
 
-  document.body.classList.toggle('git-reflow-feed-two-column', template.selectedVariationId === 'feed-two-column');
-  applySidebarWidth(getTemplateSidebarWidth(template));
-  applyMainColumnWidth(getTemplateMainColumnWidth(template));
-  applyRightSidebarWidth(getTemplateRightSidebarWidth(template));
-  if (template.leftSidebarResizeEnabled === false) {
+  document.body.classList.toggle('git-reflow-feed-two-column', latestTemplate.selectedVariationId === 'feed-two-column');
+  applySidebarWidth(getTemplateSidebarWidth(latestTemplate));
+  applyMainColumnWidth(getTemplateMainColumnWidth(latestTemplate));
+  applyRightSidebarWidth(getTemplateRightSidebarWidth(latestTemplate));
+  if (latestTemplate.leftSidebarResizeEnabled === false) {
     removeLeftSidebarResizer();
     setControllerHint('Left sidebar drag handle is disabled by the saved draft.');
   } else {
@@ -206,13 +264,13 @@ function applyTemplate(template) {
   }
 
   const sidebarLabel =
-    template.leftSidebarResizeEnabled !== false && customLeftSidebarWidthPx
+    latestTemplate.leftSidebarResizeEnabled !== false && customLeftSidebarWidthPx
       ? `${customLeftSidebarWidthPx}px`
-      : (template.columnLayout?.left ? `${template.columnLayout.left}px` : (template.leftSidebarWidth ?? 'default'));
-  const mainLabel = template.columnLayout?.main ? `${template.columnLayout.main}px` : (template.mainColumnWidth ?? 'default');
-  const rightLabel = template.columnLayout?.right ? `${template.columnLayout.right}px` : (template.rightSidebarWidth ?? 'default');
+      : (latestTemplate.columnLayout?.left ? `${latestTemplate.columnLayout.left}px` : (latestTemplate.leftSidebarWidth ?? 'default'));
+  const mainLabel = latestTemplate.columnLayout?.main ? `${latestTemplate.columnLayout.main}px` : (latestTemplate.mainColumnWidth ?? 'default');
+  const rightLabel = latestTemplate.columnLayout?.right ? `${latestTemplate.columnLayout.right}px` : (latestTemplate.rightSidebarWidth ?? 'default');
   setStatus(
-    `Applied ${template.selectedVariationId ?? 'github-default'} / L:${sidebarLabel} M:${mainLabel} R:${rightLabel}`,
+    `Applied ${latestTemplate.selectedVariationId ?? 'github-default'} / L:${sidebarLabel} M:${mainLabel} R:${rightLabel}`,
   );
 }
 
@@ -249,42 +307,36 @@ function createController() {
   `;
 
   controller.querySelector('[data-git-reflow-refresh]')?.addEventListener('click', refreshTemplate);
-  controller.querySelector('[data-git-reflow-reset]')?.addEventListener('click', () => {
-    customLeftSidebarWidthPx = null;
-    clearStoredLeftSidebarWidth();
-    document.body.classList.remove('git-reflow-feed-two-column');
-    document.documentElement.style.removeProperty('--feed-sidebar');
-
-    const leftSidebar = document.querySelector('.feed-left-sidebar');
-    if (leftSidebar instanceof HTMLElement) {
-      leftSidebar.style.removeProperty('width');
-    }
-
-    const feedMain = document.querySelector('.feed-main');
-    if (feedMain instanceof HTMLElement) {
-      feedMain.style.removeProperty('max-width');
-    }
-
-    const mainContent = document.querySelector('.feed-main main, main#main-content');
-    if (mainContent instanceof HTMLElement) {
-      mainContent.style.removeProperty('max-width');
-    }
-
-    const rightSidebar = document.querySelector('.feed-right-sidebar');
-    if (rightSidebar instanceof HTMLElement) {
-      rightSidebar.style.removeProperty('width');
-    }
-
-    const rightColumn = document.querySelector('.feed-right-column');
-    if (rightColumn instanceof HTMLElement) {
-      rightColumn.style.removeProperty('max-width');
-    }
-
-    setStatus('Reset locally');
-  });
+  controller.querySelector('[data-git-reflow-reset]')?.addEventListener('click', resetAppliedStyles);
 
   document.body.append(controller);
   controllerCreated = true;
+}
+
+function resetAppliedStyles() {
+  customLeftSidebarWidthPx = null;
+  clearStoredLeftSidebarWidth();
+  document.body.classList.remove('git-reflow-feed-two-column');
+  document.documentElement.style.removeProperty('--feed-sidebar');
+  removeLeftSidebarResizer();
+
+  const styleTargets = [
+    [githubHomeSelectors.leftSidebar, 'width'],
+    [githubHomeSelectors.feedMain, 'max-width'],
+    [githubHomeSelectors.mainContent, 'max-width'],
+    [githubHomeSelectors.rightSidebar, 'width'],
+    [githubHomeSelectors.rightColumn, 'max-width'],
+  ];
+
+  styleTargets.forEach(([selectors, property]) => {
+    const element = queryFirst(selectors);
+
+    if (element instanceof HTMLElement) {
+      element.style.removeProperty(property);
+    }
+  });
+
+  setStatus('Reset locally');
 }
 
 function boot() {
