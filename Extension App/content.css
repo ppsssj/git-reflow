@@ -5,7 +5,7 @@
   z-index: 2147483647;
   display: grid;
   gap: 8px;
-  width: 212px;
+  width: 248px;
   padding: 12px;
   border: 1px solid var(--borderColor-default, #d0d7de);
   border-radius: 8px;
@@ -23,15 +23,27 @@
   color: var(--fgColor-muted, #656d76);
 }
 
-.git-reflow-controller button {
+.git-reflow-controller button,
+.git-reflow-controller input,
+.git-reflow-controller select {
   min-height: 30px;
   border: 1px solid var(--borderColor-default, #d0d7de);
   border-radius: 6px;
-  background: var(--button-default-bgColor-rest, #f6f8fa);
   color: var(--fgColor-default, #1f2328);
   font: inherit;
+}
+
+.git-reflow-controller button {
+  background: var(--button-default-bgColor-rest, #f6f8fa);
   font-weight: 600;
   cursor: pointer;
+}
+
+.git-reflow-controller input,
+.git-reflow-controller select {
+  width: 100%;
+  padding: 0 8px;
+  background: var(--bgColor-default, #ffffff);
 }
 
 .git-reflow-controller button:hover {

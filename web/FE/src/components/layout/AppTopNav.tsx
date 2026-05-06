@@ -24,6 +24,7 @@ export function AppTopNav({
   const navigate = useNavigate();
   const settingsRef = useRef<HTMLDivElement | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [copyStatus, setCopyStatus] = useState('');
   const session = getAuthSession();
   const userName = session?.user.name ?? session?.user.email ?? 'User';
   const userInitial = userName.slice(0, 1).toUpperCase();
@@ -56,6 +57,16 @@ export function AppTopNav({
     clearAuthSession();
     setIsSettingsOpen(false);
     navigate('/login', { replace: true });
+  };
+
+  const handleCopyExtensionToken = async () => {
+    if (!session?.token) {
+      return;
+    }
+
+    await navigator.clipboard.writeText(session.token);
+    setCopyStatus('Copied');
+    window.setTimeout(() => setCopyStatus(''), 1600);
   };
 
   return (
@@ -103,6 +114,12 @@ export function AppTopNav({
                   <strong>{userName}</strong>
                   {session?.user.email ? <span>{session.user.email}</span> : null}
                 </div>
+                {session?.token ? (
+                  <button role="menuitem" type="button" onClick={handleCopyExtensionToken}>
+                    <Icon name="extension" />
+                    <span>{copyStatus || 'Copy extension token'}</span>
+                  </button>
+                ) : null}
                 <button role="menuitem" type="button" onClick={handleLogout}>
                   <Icon name="logout" />
                   <span>Log out</span>

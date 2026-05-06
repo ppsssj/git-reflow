@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { AppTopNav } from '../../components/layout/AppTopNav';
 import { Icon } from '../../components/ui/Icon';
-import { API_BASE_URL, apiGet } from '../../lib/api';
+import { apiGet, apiPost } from '../../lib/api';
 import { templates } from '../../mocks/templates';
 import type {
   ExtensionTemplatePayload,
@@ -166,18 +166,7 @@ export function TemplateEditorPage() {
     setSyncStatus('Syncing...');
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/templates/github-home`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: serializedTemplateState,
-      });
-
-      if (!response.ok) {
-        const result = await response.json().catch(() => null);
-        throw new Error(result?.error ?? `Sync failed with ${response.status}`);
-      }
+      await apiPost('/api/templates/github-home', JSON.parse(serializedTemplateState));
 
       setSyncStatus('Synced to localhost:8787');
     } catch {

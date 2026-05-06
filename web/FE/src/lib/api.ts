@@ -1,12 +1,21 @@
+import { getAuthSession } from './auth';
+
 export const API_BASE_URL = import.meta.env.VITE_GIT_REFLOW_API_URL ?? 'http://localhost:8787';
+
+function getDefaultHeaders(init?: RequestInit) {
+  const session = getAuthSession();
+
+  return {
+    Accept: 'application/json',
+    ...(session?.token ? { Authorization: `Bearer ${session.token}` } : {}),
+    ...init?.headers,
+  };
+}
 
 export async function apiGet<TResponse>(path: string, init?: RequestInit): Promise<TResponse> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
-    headers: {
-      Accept: 'application/json',
-      ...init?.headers,
-    },
+    headers: getDefaultHeaders(init),
   });
 
   if (!response.ok) {
@@ -22,9 +31,8 @@ export async function apiPost<TResponse>(path: string, body: unknown, init?: Req
     ...init,
     method: 'POST',
     headers: {
-      Accept: 'application/json',
       'Content-Type': 'application/json',
-      ...init?.headers,
+      ...getDefaultHeaders(init),
     },
     body: JSON.stringify(body),
   });

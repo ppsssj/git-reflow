@@ -88,7 +88,7 @@ async function writeSessionStore(store) {
 
 function sendJson(response, status, body) {
   response.writeHead(status, {
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Authorization, Content-Type',
     'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
     'Access-Control-Allow-Origin': '*',
     'Content-Type': 'application/json; charset=utf-8',
@@ -155,6 +155,50 @@ function getBearerToken(request) {
   }
 
   return authorization.slice('Bearer '.length).trim();
+}
+
+async function getSessionFromRequest(request) {
+  const token = getBearerToken(request);
+
+  if (!token) {
+    return null;
+  }
+
+  const store = await readSessionStore();
+
+  return store.sessions.find((item) => item.token === token) ?? null;
+}
+
+async function requireSession(request, response) {
+  const session = await getSessionFromRequest(request);
+
+  if (!session) {
+    sendError(response, 401, 'Missing or invalid session');
+    return null;
+  }
+
+  return session;
+}
+
+function getTemplateOwnerId(template) {
+  return template.ownerUserId ?? template.metadata?.ownerUserId ?? '';
+}
+
+function belongsToUser(template, userId) {
+  const ownerUserId = getTemplateOwnerId(template);
+
+  return ownerUserId === userId || ownerUserId === '';
+}
+
+function withTemplateOwner(template, userId) {
+  return {
+    ...template,
+    ownerUserId: userId,
+    metadata: {
+      ...template.metadata,
+      ownerUserId: userId,
+    },
+  };
 }
 
 function toTemplateRecord(template) {
@@ -232,16 +276,30 @@ function createTemplateFromName(name, existingTemplates) {
   }, new Date(now));
 }
 
-async function handleGetLatest(response) {
+async function handleGetLatest(request, response) {
   const store = await readTemplateStore();
-  sendJson(response, 200, store.latest);
+  const session = await getSessionFromRequest(request);
+
+  if (!session) {
+    sendJson(response, 200, store.latest);
+    return;
+  }
+
+  const template = store.templates.find((item) => belongsToUser(item, session.user.id)) ?? store.latest;
+  sendJson(response, 200, template);
 }
 
-async function handleGetTemplates(response) {
+async function handleGetTemplates(request, response) {
+  const session = await requireSession(request, response);
+
+  if (!session) {
+    return;
+  }
+
   const store = await readTemplateStore();
   const templatesById = new Map();
 
-  for (const template of store.templates) {
+  for (const template of store.templates.filter((item) => belongsToUser(item, session.user.id))) {
     templatesById.set(template.id, toTemplateRecord(template));
   }
 
@@ -251,9 +309,15 @@ async function handleGetTemplates(response) {
   });
 }
 
-async function handleGetTemplate(response, templateId) {
+async function handleGetTemplate(request, response, templateId) {
+  const session = await requireSession(request, response);
+
+  if (!session) {
+    return;
+  }
+
   const store = await readTemplateStore();
-  const template = store.templates.find((item) => item.id === templateId);
+  const template = store.templates.find((item) => item.id === templateId && belongsToUser(item, session.user.id));
 
   if (!template) {
     sendError(response, 404, 'Template not found');
@@ -264,6 +328,12 @@ async function handleGetTemplate(response, templateId) {
 }
 
 async function handlePostTemplate(request, response) {
+  const session = await requireSession(request, response);
+
+  if (!session) {
+    return;
+  }
+
   let body;
 
   try {
@@ -281,10 +351,13 @@ async function handlePostTemplate(request, response) {
   }
 
   const store = await readTemplateStore();
-  const template = normalizeTemplatePayload(validation.value);
+  const template = withTemplateOwner(normalizeTemplatePayload(validation.value), session.user.id);
   const normalizedName = template.name.trim().toLowerCase();
   const nameExists = store.templates.some(
-    (item) => item.id !== template.id && item.name.trim().toLowerCase() === normalizedName,
+    (item) =>
+      item.id !== template.id &&
+      belongsToUser(item, session.user.id) &&
+      item.name.trim().toLowerCase() === normalizedName,
   );
 
   if (nameExists) {
@@ -305,6 +378,12 @@ async function handlePostTemplate(request, response) {
 }
 
 async function handleCreateTemplate(request, response) {
+  const session = await requireSession(request, response);
+
+  if (!session) {
+    return;
+  }
+
   let body;
 
   try {
@@ -322,7 +401,7 @@ async function handleCreateTemplate(request, response) {
   }
 
   const store = await readTemplateStore();
-  const template = createTemplateFromName(name, store.templates);
+  const template = withTemplateOwner(createTemplateFromName(name, store.templates), session.user.id);
   const templates = [template, ...store.templates];
   const nextStore = {
     latest: template,
@@ -443,12 +522,12 @@ async function handleRequest(request, response) {
   }
 
   if (request.method === 'GET' && url.pathname === '/api/templates/github-home/latest') {
-    await handleGetLatest(response);
+    await handleGetLatest(request, response);
     return;
   }
 
   if (request.method === 'GET' && url.pathname === '/api/templates') {
-    await handleGetTemplates(response);
+    await handleGetTemplates(request, response);
     return;
   }
 
@@ -459,7 +538,7 @@ async function handleRequest(request, response) {
 
   if (request.method === 'GET' && url.pathname.startsWith('/api/templates/')) {
     const templateId = decodeURIComponent(url.pathname.replace('/api/templates/', ''));
-    await handleGetTemplate(response, templateId);
+    await handleGetTemplate(request, response, templateId);
     return;
   }
 

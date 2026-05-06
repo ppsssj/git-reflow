@@ -1,7 +1,10 @@
-const API_URL = 'http://localhost:8787/api/templates/github-home/latest';
+const API_BASE_URL = 'http://localhost:8787';
+const LATEST_TEMPLATE_URL = `${API_BASE_URL}/api/templates/github-home/latest`;
 const CONTROLLER_ID = 'git-reflow-controller';
 const RESIZER_CLASS = 'git-reflow-left-resizer';
 const LEFT_WIDTH_STORAGE_KEY = 'gitReflowLeftSidebarWidthPx';
+const AUTH_TOKEN_STORAGE_KEY = 'gitReflowAuthToken';
+const SELECTED_TEMPLATE_STORAGE_KEY = 'gitReflowSelectedTemplateId';
 const MIN_LEFT_SIDEBAR_WIDTH = 220;
 const MAX_LEFT_SIDEBAR_WIDTH = 420;
 const MIN_MAIN_COLUMN_WIDTH = 640;
@@ -47,6 +50,7 @@ const rightSidebarWidths = {
 };
 
 let latestTemplate = null;
+let availableTemplates = [];
 let controllerCreated = false;
 let customLeftSidebarWidthPx = null;
 
@@ -131,6 +135,91 @@ function setStoredLeftSidebarWidth(width) {
 
 function clearStoredLeftSidebarWidth() {
   chrome.storage.local.remove([LEFT_WIDTH_STORAGE_KEY]);
+}
+
+function getStoredExtensionState() {
+  return new Promise((resolve) => {
+    chrome.storage.local.get([AUTH_TOKEN_STORAGE_KEY, SELECTED_TEMPLATE_STORAGE_KEY], (items) => {
+      resolve({
+        token: typeof items[AUTH_TOKEN_STORAGE_KEY] === 'string' ? items[AUTH_TOKEN_STORAGE_KEY] : '',
+        selectedTemplateId:
+          typeof items[SELECTED_TEMPLATE_STORAGE_KEY] === 'string' ? items[SELECTED_TEMPLATE_STORAGE_KEY] : '',
+      });
+    });
+  });
+}
+
+function setStoredAuthToken(token) {
+  chrome.storage.local.set({ [AUTH_TOKEN_STORAGE_KEY]: token });
+}
+
+function setStoredSelectedTemplateId(templateId) {
+  chrome.storage.local.set({ [SELECTED_TEMPLATE_STORAGE_KEY]: templateId });
+}
+
+function getAuthHeaders(token) {
+  return token
+    ? {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      }
+    : {
+        Accept: 'application/json',
+      };
+}
+
+async function fetchJson(path, token) {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    cache: 'no-store',
+    headers: getAuthHeaders(token),
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
+  }
+
+  return response.json();
+}
+
+function getControllerElement(selector) {
+  return document.querySelector(`#${CONTROLLER_ID} ${selector}`);
+}
+
+function setTokenInputValue(token) {
+  const input = getControllerElement('[data-git-reflow-token]');
+
+  if (input instanceof HTMLInputElement && input.value !== token) {
+    input.value = token;
+  }
+}
+
+function setTemplateSelectOptions(selectedTemplateId = '') {
+  const select = getControllerElement('[data-git-reflow-template-select]');
+
+  if (!(select instanceof HTMLSelectElement)) {
+    return;
+  }
+
+  select.replaceChildren();
+
+  if (availableTemplates.length === 0) {
+    const option = document.createElement('option');
+    option.value = '';
+    option.textContent = 'No templates';
+    select.append(option);
+    select.disabled = true;
+    return;
+  }
+
+  select.disabled = false;
+
+  for (const template of availableTemplates) {
+    const option = document.createElement('option');
+    option.value = template.id;
+    option.textContent = template.name ?? template.id;
+    option.selected = template.id === selectedTemplateId;
+    select.append(option);
+  }
 }
 
 function applySidebarWidth(width) {
@@ -276,17 +365,67 @@ function applyTemplate(template) {
 
 async function refreshTemplate() {
   try {
-    setStatus('Loading localhost:8787...');
-    const response = await fetch(API_URL, { cache: 'no-store' });
+    setStatus('Loading latest template...');
+    const template = await fetch(LATEST_TEMPLATE_URL, { cache: 'no-store' }).then((response) => {
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
 
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-
-    const template = await response.json();
+      return response.json();
+    });
     applyTemplate(template);
   } catch {
     setStatus('Backend unavailable');
+  }
+}
+
+async function loadAndApplySelectedTemplate(token, templateId) {
+  if (!token) {
+    setStatus('Paste extension token');
+    return;
+  }
+
+  if (!templateId) {
+    setStatus('Choose a template');
+    return;
+  }
+
+  try {
+    setStatus('Applying selected template...');
+    const template = await fetchJson(`/api/templates/${encodeURIComponent(templateId)}`, token);
+    setStoredSelectedTemplateId(templateId);
+    applyTemplate(template);
+  } catch {
+    setStatus('Template unavailable');
+  }
+}
+
+async function refreshTemplateList() {
+  const { token, selectedTemplateId } = await getStoredExtensionState();
+  setTokenInputValue(token);
+
+  if (!token) {
+    availableTemplates = [];
+    setTemplateSelectOptions('');
+    setStatus('Paste extension token');
+    setControllerHint('Copy the token from the web app settings menu.');
+    return;
+  }
+
+  try {
+    setStatus('Loading your templates...');
+    const result = await fetchJson('/api/templates', token);
+    availableTemplates = Array.isArray(result.templates) ? result.templates : [];
+    const nextTemplateId =
+      availableTemplates.find((template) => template.id === selectedTemplateId)?.id ?? availableTemplates[0]?.id ?? '';
+
+    setTemplateSelectOptions(nextTemplateId);
+    await loadAndApplySelectedTemplate(token, nextTemplateId);
+  } catch {
+    availableTemplates = [];
+    setTemplateSelectOptions('');
+    setStatus('Token or backend unavailable');
+    setControllerHint('Check localhost:8787 and paste a fresh extension token.');
   }
 }
 
@@ -302,11 +441,37 @@ function createController() {
     <strong>Git Reflow Preview</strong>
     <span data-git-reflow-status>Ready</span>
     <span data-git-reflow-hint>Drag the left sidebar edge to resize.</span>
-    <button type="button" data-git-reflow-refresh>Refresh template</button>
+    <input type="password" data-git-reflow-token placeholder="Extension token" aria-label="Extension token" />
+    <button type="button" data-git-reflow-save-token>Connect account</button>
+    <select data-git-reflow-template-select aria-label="Template"></select>
+    <button type="button" data-git-reflow-apply>Apply selected</button>
+    <button type="button" data-git-reflow-refresh>Refresh templates</button>
     <button type="button" data-git-reflow-reset>Reset page styles</button>
   `;
 
-  controller.querySelector('[data-git-reflow-refresh]')?.addEventListener('click', refreshTemplate);
+  controller.querySelector('[data-git-reflow-save-token]')?.addEventListener('click', () => {
+    const input = controller.querySelector('[data-git-reflow-token]');
+    const token = input instanceof HTMLInputElement ? input.value.trim() : '';
+
+    setStoredAuthToken(token);
+    refreshTemplateList();
+  });
+  controller.querySelector('[data-git-reflow-template-select]')?.addEventListener('change', (event) => {
+    const select = event.currentTarget;
+
+    if (!(select instanceof HTMLSelectElement)) {
+      return;
+    }
+
+    getStoredExtensionState().then(({ token }) => loadAndApplySelectedTemplate(token, select.value));
+  });
+  controller.querySelector('[data-git-reflow-apply]')?.addEventListener('click', () => {
+    const select = controller.querySelector('[data-git-reflow-template-select]');
+    const templateId = select instanceof HTMLSelectElement ? select.value : '';
+
+    getStoredExtensionState().then(({ token }) => loadAndApplySelectedTemplate(token, templateId));
+  });
+  controller.querySelector('[data-git-reflow-refresh]')?.addEventListener('click', refreshTemplateList);
   controller.querySelector('[data-git-reflow-reset]')?.addEventListener('click', resetAppliedStyles);
 
   document.body.append(controller);
@@ -345,7 +510,7 @@ function boot() {
   if (document.getElementById(CONTROLLER_ID)) {
     getStoredLeftSidebarWidth().then((storedWidth) => {
       customLeftSidebarWidthPx = storedWidth ? clampWidth(storedWidth) : null;
-      refreshTemplate();
+      refreshTemplateList();
     });
   }
 }
