@@ -4285,7 +4285,8 @@ img {
 }
 
 .template-canvas-zoom-layer {
-  min-width: max-content;
+  width: 100%;
+  min-width: 0;
   padding-bottom: 72px;
   zoom: var(--template-canvas-zoom, 1);
 }
@@ -4399,9 +4400,10 @@ img {
 }
 
 .template-screen-frame {
+  width: 100%;
   max-width: 1160px;
   margin: 0 auto;
-  overflow: auto;
+  overflow: hidden;
   border: 1px solid #d0d7de;
   border-radius: 8px;
   background: #ffffff;
@@ -4413,7 +4415,7 @@ img {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  min-width: 1080px;
+  min-width: 0;
   min-height: 42px;
   padding: 8px 12px;
   border-bottom: 1px solid #d8dee4;
@@ -4449,11 +4451,11 @@ img {
   --github-preview-main-min-width: 900px;
   --github-preview-right-width: 315px;
   width: 100%;
-  max-width: none;
-  min-width: 1080px;
+  max-width: 1160px;
+  min-width: 0;
   min-height: 100%;
   margin: 0;
-  overflow: visible;
+  overflow: hidden;
   border: 0;
   border-radius: 0;
   background: #f6f8fa;
@@ -4471,9 +4473,9 @@ img {
 
 .github-home-preview__body {
   grid-template-columns:
-    var(--github-preview-left-width)
-    minmax(var(--github-preview-main-min-width), 1fr)
-    var(--github-preview-right-width);
+    minmax(0, var(--github-preview-left-width))
+    minmax(0, var(--github-preview-main-min-width))
+    minmax(0, var(--github-preview-right-width));
   min-height: 760px;
   background: #f6f8fa;
 }

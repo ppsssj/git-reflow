@@ -2,6 +2,11 @@ const API_BASE_URL = 'http://localhost:8787';
 const LATEST_TEMPLATE_URL = `${API_BASE_URL}/api/templates/github-home/latest`;
 const CONTROLLER_ID = 'git-reflow-controller';
 const RESIZER_CLASS = 'git-reflow-left-resizer';
+const BLOCK_CLASS = 'git-reflow-template-block';
+const GENERATED_BLOCK_CLASS = 'git-reflow-generated-block';
+const HIDDEN_CLASS = 'git-reflow-template-hidden';
+const ORIGINAL_TEXT_ATTR = 'data-git-reflow-original-text';
+const ORIGINAL_PLACEHOLDER_ATTR = 'data-git-reflow-original-placeholder';
 const LEFT_WIDTH_STORAGE_KEY = 'gitReflowLeftSidebarWidthPx';
 const AUTH_TOKEN_STORAGE_KEY = 'gitReflowAuthToken';
 const SELECTED_TEMPLATE_STORAGE_KEY = 'gitReflowSelectedTemplateId';
@@ -25,11 +30,65 @@ const DEFAULT_TEMPLATE = {
 const githubHomeSelectors = {
   dashboardRoot: ['.feed-background', 'feed-container', '#dashboard'],
   leftSidebar: ['.feed-left-sidebar', '[data-target="dashboard.sidebar"]'],
+  leftSidebarContent: ['.feed-left-sidebar .dashboard-sidebar', '.dashboard-sidebar'],
   feedMain: ['.feed-main'],
   mainContent: ['.feed-main main', 'main#main-content'],
   rightSidebar: ['.feed-right-sidebar'],
   rightColumn: ['.feed-right-column'],
+  topbar: ['react-partial[partial-name="global-nav-bar"]', '.AppHeader', '.GlobalNav', '.js-global-bar'],
+  topbarContext: [
+    '.AppHeader-context-item-label',
+    '.styles-module__contextCrumbLast__tI2e3',
+    '[data-testid="context-region"] span',
+  ],
+  topbarSearch: [
+    '.AppHeader-search input',
+    '.AppHeader-search textarea',
+    'qbsearch-input input',
+    'input[aria-label*="Search"]',
+    'input[placeholder*="Search"]',
+  ],
 };
+
+const regionContainers = {
+  topbar: githubHomeSelectors.topbar,
+  'left-sidebar': githubHomeSelectors.leftSidebarContent,
+  'main-feed': githubHomeSelectors.mainContent,
+  'right-sidebar': githubHomeSelectors.rightColumn,
+};
+
+const blockSelectorRegistry = {
+  'top-nav': githubHomeSelectors.topbar,
+  'profile-summary': ['.dashboard-sidebar > div:first-child', '.feed-left-sidebar .dashboard-sidebar > *:first-child'],
+  'recent-repos': [
+    '.dashboard-sidebar .js-repos-container',
+    '.dashboard-sidebar [data-filterable-for]',
+  ],
+  'copilot-prompt': [
+    '.CopilotChatInputPartial-module__inputContainer__ULM7D',
+    '[class*="CopilotChatInputPartial-module__inputContainer"]',
+    '[class*="CopilotImmersiveEmbedded-module__CopilotChatContainer"]',
+  ],
+  'activity-feed': ['#conduit-feed-frame', '.js-for-you-feed-items', 'turbo-frame.js-for-you-feed-items'],
+  'repo-updates': [],
+  'pinned-repos': [],
+  'issue-pr-updates': [],
+  'trending-repos': [],
+  'recommended-repos': [],
+};
+
+const blockTextMatchers = {
+  'recent-repos': ['Top Repositories', 'Repositories'],
+  'copilot-prompt': ['Copilot'],
+  'activity-feed': ['For you', 'Feed'],
+  'repo-updates': ['Repository updates'],
+  'pinned-repos': ['Pinned'],
+  'issue-pr-updates': ['Issues', 'Pull requests'],
+  'trending-repos': ['Latest changes', 'Changelog'],
+  'recommended-repos': ['Explore repositories', 'Recommended'],
+};
+
+const topbarActionLabels = ['Copilot', 'Create', 'Issues', 'Pull requests', 'Repositories', 'Inbox'];
 
 const leftSidebarWidths = {
   narrow: '256px',
@@ -118,7 +177,338 @@ function normalizeTemplate(template) {
     selectedVariationId: SUPPORTED_VARIATIONS.has(template.selectedVariationId)
       ? template.selectedVariationId
       : DEFAULT_TEMPLATE.selectedVariationId,
+    blocks: Array.isArray(template.blocks) ? template.blocks.filter(isObject) : [],
+    regions: Array.isArray(template.regions) ? template.regions : [],
   };
+}
+
+function getText(value, fallback = '') {
+  return typeof value === 'string' && value.trim() ? value.trim() : fallback;
+}
+
+function getArray(value) {
+  return Array.isArray(value) ? value : [];
+}
+
+function findClosestSection(element) {
+  if (!(element instanceof HTMLElement)) {
+    return null;
+  }
+
+  return element.closest('section, article, turbo-frame, react-partial, aside, header, div') ?? element;
+}
+
+function findRegionBlockRoot(element, regionRoot) {
+  if (!(element instanceof HTMLElement)) {
+    return null;
+  }
+
+  if (!(regionRoot instanceof HTMLElement) || element === regionRoot) {
+    return findClosestSection(element);
+  }
+
+  let current = element;
+
+  while (current.parentElement && current.parentElement !== regionRoot && current.parentElement !== document.body) {
+    current = current.parentElement;
+  }
+
+  return current.parentElement === regionRoot ? current : findClosestSection(element);
+}
+
+function findElementByText(root, texts) {
+  if (!(root instanceof Element) || !Array.isArray(texts) || texts.length === 0) {
+    return null;
+  }
+
+  const candidates = root.querySelectorAll('h1, h2, h3, h4, strong, a, span, div');
+
+  for (const candidate of candidates) {
+    const content = candidate.textContent?.replace(/\s+/g, ' ').trim() ?? '';
+
+    if (texts.some((text) => content.includes(text))) {
+      return findClosestSection(candidate);
+    }
+  }
+
+  return null;
+}
+
+function findBlockElement(block) {
+  const selectors = blockSelectorRegistry[block.type] ?? [];
+  const regionRoot = queryFirst(regionContainers[block.region] ?? []);
+
+  for (const selector of selectors) {
+    const element = queryFirst([selector], regionRoot ?? document);
+
+    if (element instanceof HTMLElement) {
+      return findRegionBlockRoot(element, regionRoot);
+    }
+  }
+
+  const textMatched = findElementByText(regionRoot ?? document, blockTextMatchers[block.type]);
+  return textMatched instanceof HTMLElement ? findRegionBlockRoot(textMatched, regionRoot) : null;
+}
+
+function getRegionContainer(region) {
+  const container = queryFirst(regionContainers[region] ?? []);
+  return container instanceof HTMLElement ? container : null;
+}
+
+function rememberText(element) {
+  if (!element.hasAttribute(ORIGINAL_TEXT_ATTR)) {
+    element.setAttribute(ORIGINAL_TEXT_ATTR, element.textContent ?? '');
+  }
+}
+
+function rememberPlaceholder(element) {
+  if (!element.hasAttribute(ORIGINAL_PLACEHOLDER_ATTR)) {
+    element.setAttribute(ORIGINAL_PLACEHOLDER_ATTR, element.getAttribute('placeholder') ?? '');
+  }
+}
+
+function setTextIfPossible(element, text) {
+  if (!(element instanceof HTMLElement) || !text) {
+    return;
+  }
+
+  rememberText(element);
+  element.textContent = text;
+}
+
+function setPlaceholderIfPossible(element, placeholder) {
+  if (!(element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) || !placeholder) {
+    return;
+  }
+
+  rememberPlaceholder(element);
+  element.setAttribute('placeholder', placeholder);
+}
+
+function createTextElement(tagName, text, className = '') {
+  const element = document.createElement(tagName);
+  element.textContent = text;
+
+  if (className) {
+    element.className = className;
+  }
+
+  return element;
+}
+
+function createRepoList(repositories = []) {
+  const list = document.createElement('div');
+  list.className = 'git-reflow-block-list';
+
+  repositories.slice(0, 8).forEach((repo) => {
+    const item = document.createElement('a');
+    item.href = `/${encodeURIComponent(getText(repo.name, 'repository')).replace('%2F', '/')}`;
+    item.className = 'git-reflow-block-row';
+    item.textContent = getText(repo.name, 'Repository');
+
+    const meta = getText(repo.visibility || repo.language || repo.reason || repo.stars);
+    if (meta) {
+      item.append(createTextElement('span', meta));
+    }
+
+    list.append(item);
+  });
+
+  return list;
+}
+
+function createGeneratedBlock(block) {
+  const props = isObject(block.props) ? block.props : {};
+  const wrapper = document.createElement('section');
+  wrapper.className = `${BLOCK_CLASS} ${GENERATED_BLOCK_CLASS}`;
+  wrapper.dataset.gitReflowBlockId = block.id;
+  wrapper.dataset.gitReflowBlockType = block.type;
+
+  const title = document.createElement('h2');
+  title.textContent = getText(block.title, block.type);
+  wrapper.append(title);
+
+  if (block.type === 'recent-repos' || block.type === 'pinned-repos' || block.type === 'recommended-repos') {
+    wrapper.append(createRepoList(getArray(props.repositories)));
+  } else if (block.type === 'activity-feed') {
+    const list = document.createElement('div');
+    list.className = 'git-reflow-block-list';
+    getArray(props.events).slice(0, 5).forEach((event) => {
+      const item = document.createElement('article');
+      item.className = 'git-reflow-block-row';
+      item.textContent = `${getText(event.actor, 'Someone')} ${getText(event.action)} ${getText(event.subject)}`;
+      list.append(item);
+    });
+    wrapper.append(list);
+  } else if (block.type === 'repo-updates') {
+    const list = document.createElement('div');
+    list.className = 'git-reflow-block-list';
+    getArray(props.updates).slice(0, 5).forEach((update) => {
+      const item = document.createElement('article');
+      item.className = 'git-reflow-block-row';
+      item.textContent = `${getText(update.status)} ${getText(update.repo)} ${getText(update.message)}`;
+      list.append(item);
+    });
+    wrapper.append(list);
+  } else if (block.type === 'issue-pr-updates') {
+    const list = document.createElement('div');
+    list.className = 'git-reflow-block-list';
+    getArray(props.items).slice(0, 5).forEach((item) => {
+      const row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'git-reflow-block-row';
+      row.textContent = `${getText(item.label)} ${Number(item.count) || 0}`;
+      list.append(row);
+    });
+    wrapper.append(list);
+  } else if (block.type === 'trending-repos') {
+    wrapper.append(createRepoList(getArray(props.repositories)));
+  } else if (block.type === 'copilot-prompt') {
+    wrapper.append(createTextElement('p', getText(props.placeholder, 'Ask Copilot from your saved template.')));
+    const chips = getArray(props.chips);
+    if (chips.length) {
+      const chipList = document.createElement('div');
+      chipList.className = 'git-reflow-chip-list';
+      chips.slice(0, 6).forEach((chip) => chipList.append(createTextElement('span', getText(chip))));
+      wrapper.append(chipList);
+    }
+  } else if (block.type === 'profile-summary') {
+    wrapper.append(createTextElement('strong', getText(props.name, 'Profile')));
+    wrapper.append(createTextElement('p', getText(props.handle || props.bio, 'GitHub dashboard context')));
+  }
+
+  return wrapper;
+}
+
+function getOrCreateGeneratedBlock(block) {
+  const existing = document.querySelector(`.${GENERATED_BLOCK_CLASS}[data-git-reflow-block-id="${CSS.escape(block.id)}"]`);
+
+  if (existing instanceof HTMLElement) {
+    existing.replaceChildren(...createGeneratedBlock(block).childNodes);
+    return existing;
+  }
+
+  return createGeneratedBlock(block);
+}
+
+function applyTopbarProps(block) {
+  const props = isObject(block.props) ? block.props : {};
+  const contextElement = queryFirst(githubHomeSelectors.topbarContext);
+  const searchElement = queryFirst(githubHomeSelectors.topbarSearch);
+  const topbar = queryFirst(githubHomeSelectors.topbar);
+
+  setTextIfPossible(contextElement, getText(props.context));
+  setPlaceholderIfPossible(searchElement, getText(props.searchPlaceholder));
+
+  if (!(topbar instanceof HTMLElement)) {
+    return;
+  }
+
+  topbar.querySelectorAll('.git-reflow-topbar-links').forEach((element) => element.remove());
+
+  const links = getArray(props.links);
+  if (links.length) {
+    const nav = document.createElement('nav');
+    nav.className = 'git-reflow-topbar-links';
+    nav.setAttribute('aria-label', 'git-reflow template links');
+
+    links.slice(0, 6).forEach((link) => {
+      const anchor = document.createElement('a');
+      anchor.href = `/${encodeURIComponent(getText(link).toLowerCase().replace(/\s+/g, '-'))}`;
+      anchor.textContent = getText(link);
+      nav.append(anchor);
+    });
+
+    topbar.append(nav);
+  }
+
+  const actions = getArray(props.actions).map((action) => getText(action));
+  if (actions.length) {
+    topbarActionLabels.forEach((label) => {
+      topbar
+        .querySelectorAll(`button[aria-label*="${label}"], a[aria-label*="${label}"], button[title*="${label}"], a[title*="${label}"]`)
+        .forEach((element) => {
+          if (element instanceof HTMLElement) {
+            element.classList.toggle(HIDDEN_CLASS, !actions.includes(label));
+          }
+        });
+    });
+  }
+}
+
+function applyBlockProps(block, element) {
+  const props = isObject(block.props) ? block.props : {};
+
+  if (block.type === 'top-nav') {
+    applyTopbarProps(block);
+    return;
+  }
+
+  if (block.type === 'copilot-prompt') {
+    const input = element?.querySelector('textarea, input');
+    setPlaceholderIfPossible(input, getText(props.placeholder));
+  }
+
+  if (block.type === 'recent-repos') {
+    const input = element?.querySelector('input[type="text"], input[type="search"], input');
+    setPlaceholderIfPossible(input, getText(props.searchPlaceholder));
+  }
+}
+
+function applyTemplateBlocks(template) {
+  document.querySelectorAll(`.${GENERATED_BLOCK_CLASS}`).forEach((element) => element.remove());
+  document.querySelectorAll('.git-reflow-topbar-links').forEach((element) => element.remove());
+  document.querySelectorAll(`.${BLOCK_CLASS}`).forEach((element) => {
+    element.classList.remove(BLOCK_CLASS, HIDDEN_CLASS);
+    element.style.removeProperty('order');
+    delete element.dataset.gitReflowBlockId;
+    delete element.dataset.gitReflowBlockType;
+  });
+  document.querySelectorAll('.git-reflow-region-container').forEach((element) => {
+    element.classList.remove('git-reflow-region-container');
+  });
+
+  const blocks = Array.isArray(template.blocks) ? template.blocks : [];
+  const visibleByRegion = new Map();
+
+  blocks.forEach((block) => {
+    if (!block.region || !block.type) {
+      return;
+    }
+
+    const regionBlocks = visibleByRegion.get(block.region) ?? [];
+    regionBlocks.push(block);
+    visibleByRegion.set(block.region, regionBlocks);
+  });
+
+  visibleByRegion.forEach((regionBlocks, region) => {
+    const container = getRegionContainer(region);
+
+    if (container && region !== 'topbar') {
+      container.classList.add('git-reflow-region-container');
+    }
+
+    regionBlocks.forEach((block, index) => {
+      let element = findBlockElement(block);
+
+      if (!(element instanceof HTMLElement) && block.visible !== false && block.type !== 'top-nav' && container) {
+        element = getOrCreateGeneratedBlock(block);
+        container.append(element);
+      }
+
+      if (!(element instanceof HTMLElement)) {
+        return;
+      }
+
+      element.classList.add(BLOCK_CLASS);
+      element.dataset.gitReflowBlockId = block.id;
+      element.dataset.gitReflowBlockType = block.type;
+      element.style.order = String(index);
+      element.classList.toggle(HIDDEN_CLASS, block.visible === false);
+
+      applyBlockProps(block, element);
+    });
+  });
 }
 
 function getStoredLeftSidebarWidth() {
@@ -344,6 +734,7 @@ function applyTemplate(template) {
   applySidebarWidth(getTemplateSidebarWidth(latestTemplate));
   applyMainColumnWidth(getTemplateMainColumnWidth(latestTemplate));
   applyRightSidebarWidth(getTemplateRightSidebarWidth(latestTemplate));
+  applyTemplateBlocks(latestTemplate);
   if (latestTemplate.leftSidebarResizeEnabled === false) {
     removeLeftSidebarResizer();
     setControllerHint('Left sidebar drag handle is disabled by the saved draft.');
@@ -484,6 +875,30 @@ function resetAppliedStyles() {
   document.body.classList.remove('git-reflow-feed-two-column');
   document.documentElement.style.removeProperty('--feed-sidebar');
   removeLeftSidebarResizer();
+  document.querySelectorAll(`.${GENERATED_BLOCK_CLASS}`).forEach((element) => element.remove());
+  document.querySelectorAll(`.${BLOCK_CLASS}`).forEach((element) => {
+    element.classList.remove(BLOCK_CLASS, HIDDEN_CLASS);
+    element.style.removeProperty('order');
+    delete element.dataset.gitReflowBlockId;
+    delete element.dataset.gitReflowBlockType;
+  });
+  document.querySelectorAll('.git-reflow-region-container').forEach((element) => {
+    element.classList.remove('git-reflow-region-container');
+  });
+  document.querySelectorAll('.git-reflow-topbar-links').forEach((element) => element.remove());
+  document.querySelectorAll(`[${ORIGINAL_TEXT_ATTR}]`).forEach((element) => {
+    element.textContent = element.getAttribute(ORIGINAL_TEXT_ATTR) ?? '';
+    element.removeAttribute(ORIGINAL_TEXT_ATTR);
+  });
+  document.querySelectorAll(`[${ORIGINAL_PLACEHOLDER_ATTR}]`).forEach((element) => {
+    const placeholder = element.getAttribute(ORIGINAL_PLACEHOLDER_ATTR) ?? '';
+    if (placeholder) {
+      element.setAttribute('placeholder', placeholder);
+    } else {
+      element.removeAttribute('placeholder');
+    }
+    element.removeAttribute(ORIGINAL_PLACEHOLDER_ATTR);
+  });
 
   const styleTargets = [
     [githubHomeSelectors.leftSidebar, 'width'],

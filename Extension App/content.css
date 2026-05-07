@@ -90,6 +90,93 @@ body.git-reflow-resizing-left-sidebar {
   user-select: none !important;
 }
 
+.git-reflow-region-container {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.git-reflow-template-hidden {
+  display: none !important;
+}
+
+.git-reflow-generated-block {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 16px;
+  padding: 16px;
+  border: 1px solid var(--borderColor-default, #d0d7de);
+  border-radius: 6px;
+  background: var(--bgColor-default, #ffffff);
+  color: var(--fgColor-default, #1f2328);
+}
+
+.git-reflow-generated-block h2 {
+  margin: 0;
+  color: var(--fgColor-default, #1f2328);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.git-reflow-generated-block p {
+  margin: 0;
+  color: var(--fgColor-muted, #656d76);
+}
+
+.git-reflow-block-list {
+  display: grid;
+  gap: 8px;
+}
+
+.git-reflow-block-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-height: 28px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--fgColor-default, #1f2328);
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+}
+
+.git-reflow-block-row span {
+  color: var(--fgColor-muted, #656d76);
+  font-size: 11px;
+}
+
+.git-reflow-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.git-reflow-chip-list span {
+  padding: 4px 8px;
+  border: 1px solid var(--borderColor-default, #d0d7de);
+  border-radius: 999px;
+  color: var(--fgColor-muted, #656d76);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.git-reflow-topbar-links {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 12px;
+}
+
+.git-reflow-topbar-links a {
+  color: var(--fgColor-default, #1f2328);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
 body.git-reflow-feed-two-column .js-for-you-feed-items,
 body.git-reflow-feed-two-column turbo-frame.js-for-you-feed-items {
   display: block !important;
