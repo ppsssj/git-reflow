@@ -8,6 +8,7 @@ import { templates } from '../../mocks/templates';
 import type {
   ExtensionTemplatePayload,
   TemplateColumnLayout,
+  TemplateLayout,
   TemplateRegion,
   TemplateVariation,
   TemplateVariationId,
@@ -55,6 +56,18 @@ const githubSafeVariations: TemplateVariation[] = [
   },
 ];
 
+interface SaveTemplateResponse {
+  ok: true;
+  template: ExtensionTemplatePayload;
+}
+
+interface TemplateResetSnapshot {
+  layout: TemplateLayout;
+  columnLayout: TemplateColumnLayout;
+  leftSidebarResizeEnabled: boolean;
+  selectedVariationId: TemplateVariationId;
+}
+
 function clampCanvasZoom(value: number) {
   return Math.min(MAX_CANVAS_ZOOM, Math.max(MIN_CANVAS_ZOOM, value));
 }
@@ -81,6 +94,15 @@ function createEditableFallbackTemplate(templateId: string, templateName: string
   };
 }
 
+function getTemplateResetSnapshot(template: TemplateLayout & Partial<ExtensionTemplatePayload>): TemplateResetSnapshot {
+  return {
+    layout: template,
+    columnLayout: template.columnLayout ?? DEFAULT_COLUMN_LAYOUT,
+    leftSidebarResizeEnabled: template.leftSidebarResizeEnabled !== false,
+    selectedVariationId: template.selectedVariationId ?? 'github-default',
+  };
+}
+
 export function TemplateEditorPage() {
   const { templateId } = useParams();
   const templateRecord = templates.find((item) => item.id === templateId) ?? templates[0];
@@ -92,7 +114,6 @@ export function TemplateEditorPage() {
     toggleBlockVisibility,
     moveBlock,
     replaceLayout,
-    resetLayout,
   } = useTemplateLayout(defaultGithubTemplate);
   const [selectedBlockId, setSelectedBlockId] = useState('');
   const [canvasZoom, setCanvasZoom] = useState(1);
@@ -100,7 +121,20 @@ export function TemplateEditorPage() {
   const [leftSidebarResizeEnabled, setLeftSidebarResizeEnabled] = useState(true);
   const [selectedVariationId, setSelectedVariationId] = useState<TemplateVariationId>('github-default');
   const [syncStatus, setSyncStatus] = useState('Not synced');
+  const [resetSnapshot, setResetSnapshot] = useState<TemplateResetSnapshot>(() =>
+    getTemplateResetSnapshot(defaultGithubTemplate),
+  );
   const canvasShellRef = useRef<HTMLElement | null>(null);
+
+  const applyTemplateState = (template: TemplateLayout & Partial<ExtensionTemplatePayload>) => {
+    const snapshot = getTemplateResetSnapshot(template);
+
+    replaceLayout(snapshot.layout);
+    setColumnLayout(snapshot.columnLayout);
+    setLeftSidebarResizeEnabled(snapshot.leftSidebarResizeEnabled);
+    setSelectedVariationId(snapshot.selectedVariationId);
+    setResetSnapshot(snapshot);
+  };
 
   useEffect(() => {
     if (selectedBlockId && !layout.blocks.some((block) => block.id === selectedBlockId)) {
@@ -114,10 +148,7 @@ export function TemplateEditorPage() {
     }
 
     if (templateId === defaultGithubTemplate.id) {
-      replaceLayout(defaultGithubTemplate);
-      setColumnLayout(DEFAULT_COLUMN_LAYOUT);
-      setLeftSidebarResizeEnabled(true);
-      setSelectedVariationId('github-default');
+      applyTemplateState(defaultGithubTemplate);
       setSyncStatus('Loaded default template');
       return;
     }
@@ -130,20 +161,14 @@ export function TemplateEditorPage() {
           return;
         }
 
-        replaceLayout(template);
-        setColumnLayout(template.columnLayout ?? DEFAULT_COLUMN_LAYOUT);
-        setLeftSidebarResizeEnabled(template.leftSidebarResizeEnabled !== false);
-        setSelectedVariationId(template.selectedVariationId ?? 'github-default');
+        applyTemplateState(template);
         setSyncStatus('Loaded saved template');
       })
       .catch(() => {
         if (!cancelled) {
           const fallbackTemplate = createEditableFallbackTemplate(templateId, templateRecord.name);
 
-          replaceLayout(fallbackTemplate);
-          setColumnLayout(fallbackTemplate.columnLayout);
-          setLeftSidebarResizeEnabled(fallbackTemplate.leftSidebarResizeEnabled);
-          setSelectedVariationId(fallbackTemplate.selectedVariationId);
+          applyTemplateState(fallbackTemplate);
           setSyncStatus('Using editable local fallback');
         }
       });
@@ -151,7 +176,7 @@ export function TemplateEditorPage() {
     return () => {
       cancelled = true;
     };
-  }, [replaceLayout, templateId]);
+  }, [replaceLayout, templateId, templateRecord.name]);
 
   const visibleCount = useMemo(
     () =>
@@ -178,11 +203,12 @@ export function TemplateEditorPage() {
   );
 
   const handleReset = () => {
-    resetLayout();
+    replaceLayout(resetSnapshot.layout);
     setSelectedBlockId('');
-    setColumnLayout(DEFAULT_COLUMN_LAYOUT);
-    setLeftSidebarResizeEnabled(true);
-    setSelectedVariationId('github-default');
+    setColumnLayout(resetSnapshot.columnLayout);
+    setLeftSidebarResizeEnabled(resetSnapshot.leftSidebarResizeEnabled);
+    setSelectedVariationId(resetSnapshot.selectedVariationId);
+    setSyncStatus('Reset to loaded draft');
   };
 
   const handleSyncTemplate = async () => {
@@ -194,8 +220,12 @@ export function TemplateEditorPage() {
     setSyncStatus('Syncing...');
 
     try {
-      await apiPost('/api/templates/github-home', JSON.parse(serializedTemplateState));
+      const result = await apiPost<SaveTemplateResponse>(
+        '/api/templates/github-home',
+        JSON.parse(serializedTemplateState),
+      );
 
+      setResetSnapshot(getTemplateResetSnapshot(result.template));
       setSyncStatus('Synced to localhost:8787');
     } catch {
       setSyncStatus('Backend unavailable');
