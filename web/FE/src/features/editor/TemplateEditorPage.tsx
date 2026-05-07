@@ -59,6 +59,28 @@ function clampCanvasZoom(value: number) {
   return Math.min(MAX_CANVAS_ZOOM, Math.max(MIN_CANVAS_ZOOM, value));
 }
 
+function createEditableFallbackTemplate(templateId: string, templateName: string): ExtensionTemplatePayload {
+  const now = new Date().toISOString();
+
+  return {
+    ...defaultGithubTemplate,
+    id: templateId,
+    name: templateName,
+    description: `Custom GitHub home layout based on ${templateName}.`,
+    source: 'user',
+    version: defaultGithubTemplate.version,
+    metadata: {
+      ...defaultGithubTemplate.metadata,
+      updatedAt: now,
+    },
+    provider: 'github',
+    columnLayout: DEFAULT_COLUMN_LAYOUT,
+    leftSidebarResizeEnabled: true,
+    selectedVariationId: 'github-default',
+    updatedAt: now,
+  };
+}
+
 export function TemplateEditorPage() {
   const { templateId } = useParams();
   const templateRecord = templates.find((item) => item.id === templateId) ?? templates[0];
@@ -116,7 +138,13 @@ export function TemplateEditorPage() {
       })
       .catch(() => {
         if (!cancelled) {
-          setSyncStatus('Using local fallback');
+          const fallbackTemplate = createEditableFallbackTemplate(templateId, templateRecord.name);
+
+          replaceLayout(fallbackTemplate);
+          setColumnLayout(fallbackTemplate.columnLayout);
+          setLeftSidebarResizeEnabled(fallbackTemplate.leftSidebarResizeEnabled);
+          setSelectedVariationId(fallbackTemplate.selectedVariationId);
+          setSyncStatus('Using editable local fallback');
         }
       });
 

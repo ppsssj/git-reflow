@@ -182,6 +182,72 @@ function normalizeTemplate(template) {
   };
 }
 
+function hasExtensionContext() {
+  try {
+    return typeof chrome !== 'undefined' && Boolean(chrome.runtime?.id) && Boolean(chrome.storage?.local);
+  } catch {
+    return false;
+  }
+}
+
+function hasRuntimeError() {
+  try {
+    return Boolean(chrome.runtime?.lastError);
+  } catch {
+    return true;
+  }
+}
+
+function safeStorageGet(keys) {
+  return new Promise((resolve) => {
+    if (!hasExtensionContext()) {
+      resolve({});
+      return;
+    }
+
+    try {
+      chrome.storage.local.get(keys, (items) => {
+        if (hasRuntimeError()) {
+          resolve({});
+          return;
+        }
+
+        resolve(items ?? {});
+      });
+    } catch {
+      resolve({});
+    }
+  });
+}
+
+function safeStorageSet(items) {
+  if (!hasExtensionContext()) {
+    return;
+  }
+
+  try {
+    chrome.storage.local.set(items, () => {
+      hasRuntimeError();
+    });
+  } catch {
+    // The content script can outlive its extension context after a reload.
+  }
+}
+
+function safeStorageRemove(keys) {
+  if (!hasExtensionContext()) {
+    return;
+  }
+
+  try {
+    chrome.storage.local.remove(keys, () => {
+      hasRuntimeError();
+    });
+  } catch {
+    // The content script can outlive its extension context after a reload.
+  }
+}
+
 function getText(value, fallback = '') {
   return typeof value === 'string' && value.trim() ? value.trim() : fallback;
 }
@@ -512,39 +578,31 @@ function applyTemplateBlocks(template) {
 }
 
 function getStoredLeftSidebarWidth() {
-  return new Promise((resolve) => {
-    chrome.storage.local.get([LEFT_WIDTH_STORAGE_KEY], (items) => {
-      resolve(Number(items[LEFT_WIDTH_STORAGE_KEY]) || null);
-    });
-  });
+  return safeStorageGet([LEFT_WIDTH_STORAGE_KEY]).then((items) => Number(items[LEFT_WIDTH_STORAGE_KEY]) || null);
 }
 
 function setStoredLeftSidebarWidth(width) {
-  chrome.storage.local.set({ [LEFT_WIDTH_STORAGE_KEY]: width });
+  safeStorageSet({ [LEFT_WIDTH_STORAGE_KEY]: width });
 }
 
 function clearStoredLeftSidebarWidth() {
-  chrome.storage.local.remove([LEFT_WIDTH_STORAGE_KEY]);
+  safeStorageRemove([LEFT_WIDTH_STORAGE_KEY]);
 }
 
 function getStoredExtensionState() {
-  return new Promise((resolve) => {
-    chrome.storage.local.get([AUTH_TOKEN_STORAGE_KEY, SELECTED_TEMPLATE_STORAGE_KEY], (items) => {
-      resolve({
-        token: typeof items[AUTH_TOKEN_STORAGE_KEY] === 'string' ? items[AUTH_TOKEN_STORAGE_KEY] : '',
-        selectedTemplateId:
-          typeof items[SELECTED_TEMPLATE_STORAGE_KEY] === 'string' ? items[SELECTED_TEMPLATE_STORAGE_KEY] : '',
-      });
-    });
-  });
+  return safeStorageGet([AUTH_TOKEN_STORAGE_KEY, SELECTED_TEMPLATE_STORAGE_KEY]).then((items) => ({
+    token: typeof items[AUTH_TOKEN_STORAGE_KEY] === 'string' ? items[AUTH_TOKEN_STORAGE_KEY] : '',
+    selectedTemplateId:
+      typeof items[SELECTED_TEMPLATE_STORAGE_KEY] === 'string' ? items[SELECTED_TEMPLATE_STORAGE_KEY] : '',
+  }));
 }
 
 function setStoredAuthToken(token) {
-  chrome.storage.local.set({ [AUTH_TOKEN_STORAGE_KEY]: token });
+  safeStorageSet({ [AUTH_TOKEN_STORAGE_KEY]: token });
 }
 
 function setStoredSelectedTemplateId(templateId) {
-  chrome.storage.local.set({ [SELECTED_TEMPLATE_STORAGE_KEY]: templateId });
+  safeStorageSet({ [SELECTED_TEMPLATE_STORAGE_KEY]: templateId });
 }
 
 function getAuthHeaders(token) {
