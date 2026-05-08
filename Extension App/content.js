@@ -112,6 +112,7 @@ let latestTemplate = null;
 let availableTemplates = [];
 let controllerCreated = false;
 let customLeftSidebarWidthPx = null;
+let templateListViewMode = 'preview';
 
 function isGitHubDashboard() {
   return queryFirst(githubHomeSelectors.dashboardRoot) !== null;
@@ -642,32 +643,135 @@ function setTokenInputValue(token) {
 }
 
 function setTemplateSelectOptions(selectedTemplateId = '') {
-  const select = getControllerElement('[data-git-reflow-template-select]');
+  const list = getControllerElement('[data-git-reflow-template-list]');
 
-  if (!(select instanceof HTMLSelectElement)) {
+  if (!(list instanceof HTMLElement)) {
     return;
   }
 
-  select.replaceChildren();
+  list.replaceChildren();
 
   if (availableTemplates.length === 0) {
-    const option = document.createElement('option');
-    option.value = '';
-    option.textContent = 'No templates';
-    select.append(option);
-    select.disabled = true;
+    const empty = document.createElement('p');
+    empty.className = 'git-reflow-empty-state';
+    empty.textContent = 'No saved templates yet.';
+    list.append(empty);
     return;
   }
 
-  select.disabled = false;
-
   for (const template of availableTemplates) {
-    const option = document.createElement('option');
-    option.value = template.id;
-    option.textContent = template.name ?? template.id;
-    option.selected = template.id === selectedTemplateId;
-    select.append(option);
+    const item = document.createElement('button');
+    item.className = ['git-reflow-template-item', template.id === selectedTemplateId ? 'is-active' : '']
+      .join(' ')
+      .trim();
+    item.type = 'button';
+    item.dataset.gitReflowTemplateId = template.id;
+    item.innerHTML = `
+      <span class="git-reflow-template-item__content">
+        <strong>${escapeHtml(template.name ?? template.id)}</strong>
+        ${getTemplateRecordPreviewHtml(template)}
+      </span>
+      <small class="git-reflow-template-item__action">${template.id === selectedTemplateId ? 'Previewing' : 'Preview'}</small>
+      <em class="git-reflow-template-item__updated">${escapeHtml(template.updatedAt ?? 'Not synced yet')}</em>
+    `;
+    list.append(item);
   }
+}
+
+function getTemplateRecordPreviewHtml(template) {
+  const sections = Array.isArray(template.sections)
+    ? template.sections.filter((section) => section?.visible !== false)
+    : [];
+  const highlights = Array.isArray(template.highlights) ? template.highlights : [];
+  const columnHighlight = highlights.find((item) => typeof item === 'string' && item.startsWith('Columns '));
+  const columns = columnHighlight?.replace('Columns ', '').split('/').map((value) => Number(value)) ?? [320, 900, 315];
+  const total = columns.reduce((sum, value) => sum + (Number.isFinite(value) ? value : 0), 0) || 1;
+  const variation = highlights.find((item) => typeof item === 'string' && item.includes('variation')) ?? 'github-default variation';
+  const sectionLabels = sections
+    .slice(0, 4)
+    .map((section) => `<span>${escapeHtml(section.label)}</span>`)
+    .join('');
+  const readableColumns = [
+    `Left ${columns[0] ?? 320}px`,
+    `Feed ${columns[1] ?? 900}px`,
+    `Right ${columns[2] ?? 315}px`,
+  ];
+  const headline = highlights.find((item) => typeof item === 'string' && !item.startsWith('Columns ') && !item.includes('variation'))
+    ?? `${sections.length} visible GitHub sections`;
+
+  return `
+    <div class="git-reflow-template-preview" aria-hidden="true">
+      <p>${escapeHtml(headline)}</p>
+      <div class="git-reflow-template-preview__layout">
+        ${columns.slice(0, 3).map((width, index) => `
+          <span style="width: ${(width / total) * 100}%">
+            <em>${escapeHtml(readableColumns[index])}</em>
+          </span>
+        `).join('')}
+      </div>
+      <div class="git-reflow-template-preview__meta">
+        <span>${escapeHtml(variation)}</span>
+        <span>${sections.length} visible sections</span>
+      </div>
+      <div class="git-reflow-template-preview__sections">
+        ${sectionLabels || '<span>GitHub dashboard layout</span>'}
+      </div>
+    </div>
+  `;
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
+function setControllerConnected(connected) {
+  const controller = document.getElementById(CONTROLLER_ID);
+
+  if (controller instanceof HTMLElement) {
+    controller.dataset.gitReflowConnected = connected ? 'true' : 'false';
+  }
+}
+
+function setTemplateListViewMode(mode) {
+  templateListViewMode = mode === 'list' ? 'list' : 'preview';
+
+  const controller = document.getElementById(CONTROLLER_ID);
+  if (controller instanceof HTMLElement) {
+    controller.dataset.gitReflowView = templateListViewMode;
+  }
+
+  document.querySelectorAll(`#${CONTROLLER_ID} [data-git-reflow-view-mode]`).forEach((button) => {
+    if (button instanceof HTMLButtonElement) {
+      button.classList.toggle('is-active', button.dataset.gitReflowViewMode === templateListViewMode);
+    }
+  });
+}
+
+function setControllerOpen(open) {
+  const controller = document.getElementById(CONTROLLER_ID);
+  const launcher = getControllerElement('[data-git-reflow-launcher]');
+  const panel = getControllerElement('[data-git-reflow-panel]');
+
+  if (controller instanceof HTMLElement) {
+    controller.classList.toggle('is-open', open);
+  }
+
+  if (launcher instanceof HTMLButtonElement) {
+    launcher.setAttribute('aria-expanded', String(open));
+  }
+
+  if (panel instanceof HTMLElement) {
+    panel.hidden = !open;
+  }
+}
+
+function clearStoredAuthState() {
+  safeStorageRemove([AUTH_TOKEN_STORAGE_KEY, SELECTED_TEMPLATE_STORAGE_KEY]);
 }
 
 function applySidebarWidth(width) {
@@ -795,10 +899,10 @@ function applyTemplate(template) {
   applyTemplateBlocks(latestTemplate);
   if (latestTemplate.leftSidebarResizeEnabled === false) {
     removeLeftSidebarResizer();
-    setControllerHint('Left sidebar drag handle is disabled by the saved draft.');
+    setControllerHint('Preview applied. Left sidebar drag handle is disabled.');
   } else {
     ensureLeftSidebarResizer();
-    setControllerHint('Drag the left sidebar edge to resize.');
+    setControllerHint('Preview applied. Drag the left sidebar edge to resize.');
   }
 
   const sidebarLabel =
@@ -844,6 +948,7 @@ async function loadAndApplySelectedTemplate(token, templateId) {
     const template = await fetchJson(`/api/templates/${encodeURIComponent(templateId)}`, token);
     setStoredSelectedTemplateId(templateId);
     applyTemplate(template);
+    setTemplateSelectOptions(templateId);
   } catch {
     setStatus('Template unavailable');
   }
@@ -852,12 +957,13 @@ async function loadAndApplySelectedTemplate(token, templateId) {
 async function refreshTemplateList() {
   const { token, selectedTemplateId } = await getStoredExtensionState();
   setTokenInputValue(token);
+  setControllerConnected(Boolean(token));
 
   if (!token) {
     availableTemplates = [];
     setTemplateSelectOptions('');
-    setStatus('Paste extension token');
-    setControllerHint('Copy the token from the web app settings menu.');
+    setStatus('Connect your account');
+    setControllerHint('Paste the extension token from git-reflow web.');
     return;
   }
 
@@ -874,7 +980,7 @@ async function refreshTemplateList() {
     availableTemplates = [];
     setTemplateSelectOptions('');
     setStatus('Token or backend unavailable');
-    setControllerHint('Check localhost:8787 and paste a fresh extension token.');
+    setControllerHint('Check localhost:8787 or reconnect with a fresh token.');
   }
 }
 
@@ -886,42 +992,99 @@ function createController() {
   const controller = document.createElement('div');
   controller.id = CONTROLLER_ID;
   controller.className = 'git-reflow-controller';
+  controller.dataset.gitReflowConnected = 'false';
+  controller.dataset.gitReflowView = templateListViewMode;
   controller.innerHTML = `
-    <strong>Git Reflow Preview</strong>
-    <span data-git-reflow-status>Ready</span>
-    <span data-git-reflow-hint>Drag the left sidebar edge to resize.</span>
-    <input type="password" data-git-reflow-token placeholder="Extension token" aria-label="Extension token" />
-    <button type="button" data-git-reflow-save-token>Connect account</button>
-    <select data-git-reflow-template-select aria-label="Template"></select>
-    <button type="button" data-git-reflow-apply>Apply selected</button>
-    <button type="button" data-git-reflow-refresh>Refresh templates</button>
-    <button type="button" data-git-reflow-reset>Reset page styles</button>
+    <button class="git-reflow-launcher" type="button" data-git-reflow-launcher aria-label="Open git-reflow" aria-expanded="false">
+      <span aria-hidden="true">gr</span>
+    </button>
+    <section class="git-reflow-panel" data-git-reflow-panel aria-label="git-reflow templates" hidden>
+      <header class="git-reflow-panel__header">
+        <div>
+          <strong>git-reflow</strong>
+          <span data-git-reflow-status>Ready</span>
+        </div>
+        <button type="button" data-git-reflow-close aria-label="Close git-reflow">×</button>
+      </header>
+
+      <div class="git-reflow-token-view">
+        <p>Connect this browser to preview saved templates on GitHub.</p>
+        <input type="password" data-git-reflow-token placeholder="Extension token" aria-label="Extension token" />
+        <button type="button" data-git-reflow-save-token>Connect</button>
+      </div>
+
+      <div class="git-reflow-template-view">
+        <div class="git-reflow-template-view__bar">
+          <span>Templates</span>
+          <div class="git-reflow-view-toggle" aria-label="Template display mode">
+            <button class="is-active" type="button" data-git-reflow-view-mode="preview">Preview</button>
+            <button type="button" data-git-reflow-view-mode="list">List</button>
+          </div>
+          <button type="button" data-git-reflow-refresh>Refresh</button>
+        </div>
+        <div class="git-reflow-template-list" data-git-reflow-template-list></div>
+        <div class="git-reflow-panel__actions">
+          <button type="button" data-git-reflow-reset>Reset page</button>
+          <button type="button" data-git-reflow-disconnect>Disconnect</button>
+        </div>
+      </div>
+
+      <span class="git-reflow-panel__hint" data-git-reflow-hint>Choose a template to preview it here.</span>
+    </section>
   `;
 
+  controller.querySelector('[data-git-reflow-launcher]')?.addEventListener('click', () => {
+    const panel = controller.querySelector('[data-git-reflow-panel]');
+    setControllerOpen(panel instanceof HTMLElement ? panel.hidden : true);
+  });
+  controller.querySelector('[data-git-reflow-close]')?.addEventListener('click', () => {
+    setControllerOpen(false);
+  });
   controller.querySelector('[data-git-reflow-save-token]')?.addEventListener('click', () => {
     const input = controller.querySelector('[data-git-reflow-token]');
     const token = input instanceof HTMLInputElement ? input.value.trim() : '';
 
-    setStoredAuthToken(token);
-    refreshTemplateList();
-  });
-  controller.querySelector('[data-git-reflow-template-select]')?.addEventListener('change', (event) => {
-    const select = event.currentTarget;
-
-    if (!(select instanceof HTMLSelectElement)) {
+    if (!token) {
+      setStatus('Paste extension token');
       return;
     }
 
-    getStoredExtensionState().then(({ token }) => loadAndApplySelectedTemplate(token, select.value));
+    setStoredAuthToken(token);
+    refreshTemplateList();
   });
-  controller.querySelector('[data-git-reflow-apply]')?.addEventListener('click', () => {
-    const select = controller.querySelector('[data-git-reflow-template-select]');
-    const templateId = select instanceof HTMLSelectElement ? select.value : '';
+  controller.querySelector('[data-git-reflow-token]')?.addEventListener('keydown', (event) => {
+    if (event instanceof KeyboardEvent && event.key === 'Enter') {
+      event.preventDefault();
+      controller.querySelector('[data-git-reflow-save-token]')?.dispatchEvent(new MouseEvent('click'));
+    }
+  });
+  controller.querySelector('[data-git-reflow-template-list]')?.addEventListener('click', (event) => {
+    const item = event.target instanceof Element ? event.target.closest('[data-git-reflow-template-id]') : null;
 
-    getStoredExtensionState().then(({ token }) => loadAndApplySelectedTemplate(token, templateId));
+    if (!(item instanceof HTMLElement)) {
+      return;
+    }
+
+    getStoredExtensionState().then(({ token }) => loadAndApplySelectedTemplate(token, item.dataset.gitReflowTemplateId ?? ''));
+  });
+  controller.querySelectorAll('[data-git-reflow-view-mode]').forEach((button) => {
+    button.addEventListener('click', () => {
+      if (button instanceof HTMLButtonElement) {
+        setTemplateListViewMode(button.dataset.gitReflowViewMode ?? 'preview');
+      }
+    });
   });
   controller.querySelector('[data-git-reflow-refresh]')?.addEventListener('click', refreshTemplateList);
   controller.querySelector('[data-git-reflow-reset]')?.addEventListener('click', resetAppliedStyles);
+  controller.querySelector('[data-git-reflow-disconnect]')?.addEventListener('click', () => {
+    clearStoredAuthState();
+    availableTemplates = [];
+    setTemplateSelectOptions('');
+    setTokenInputValue('');
+    setControllerConnected(false);
+    setStatus('Disconnected');
+    setControllerHint('Paste a token to connect again.');
+  });
 
   document.body.append(controller);
   controllerCreated = true;
