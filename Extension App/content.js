@@ -4,6 +4,7 @@ const CONTROLLER_ID = 'git-reflow-controller';
 const RESIZER_CLASS = 'git-reflow-left-resizer';
 const BLOCK_CLASS = 'git-reflow-template-block';
 const GENERATED_BLOCK_CLASS = 'git-reflow-generated-block';
+const APPEARANCE_CLASS = 'git-reflow-appearance-target';
 const HIDDEN_CLASS = 'git-reflow-template-hidden';
 const ORIGINAL_TEXT_ATTR = 'data-git-reflow-original-text';
 const ORIGINAL_PLACEHOLDER_ATTR = 'data-git-reflow-original-placeholder';
@@ -270,10 +271,16 @@ function applyAppearance(element, appearance) {
   }
 
   const marginY = Number(appearance.marginY);
+  const padding = Number(appearance.padding);
+  const elementGap = Number(appearance.elementGap);
   const fontSize = Number(appearance.fontSize);
+  const borderRadius = Number(appearance.borderRadius);
+
+  element.classList.add(APPEARANCE_CLASS);
 
   if (typeof appearance.backgroundColor === 'string') {
-    element.style.backgroundColor = appearance.backgroundColor;
+    element.style.setProperty('background', appearance.backgroundColor, 'important');
+    element.style.setProperty('background-color', appearance.backgroundColor, 'important');
   }
 
   if (Number.isFinite(marginY)) {
@@ -281,13 +288,134 @@ function applyAppearance(element, appearance) {
     element.style.marginBottom = `${Math.max(0, Math.min(48, marginY))}px`;
   }
 
+  if (Number.isFinite(padding)) {
+    element.style.setProperty('padding', `${Math.max(0, Math.min(48, padding))}px`, 'important');
+  }
+
+  if (Number.isFinite(elementGap)) {
+    element.style.setProperty('gap', `${Math.max(0, Math.min(32, elementGap))}px`, 'important');
+  }
+
   if (typeof appearance.fontFamily === 'string') {
-    element.style.fontFamily = appearance.fontFamily;
+    element.style.setProperty('font-family', appearance.fontFamily, 'important');
   }
 
   if (Number.isFinite(fontSize)) {
-    element.style.fontSize = `${Math.max(10, Math.min(24, fontSize))}px`;
+    element.style.setProperty('font-size', `${Math.max(10, Math.min(24, fontSize))}px`, 'important');
   }
+
+  if (Number.isFinite(borderRadius)) {
+    element.style.setProperty('border-radius', `${Math.max(0, Math.min(32, borderRadius))}px`, 'important');
+  }
+}
+
+function clearAppearance(element) {
+  if (!(element instanceof HTMLElement)) {
+    return;
+  }
+
+  element.classList.remove(APPEARANCE_CLASS);
+  element.style.removeProperty('background');
+  element.style.removeProperty('background-color');
+  element.style.removeProperty('margin-top');
+  element.style.removeProperty('margin-bottom');
+  element.style.removeProperty('padding');
+  element.style.removeProperty('gap');
+  element.style.removeProperty('font-family');
+  element.style.removeProperty('font-size');
+  element.style.removeProperty('border-radius');
+}
+
+function applyTopbarAppearance(topbar, appearance) {
+  applyAppearance(topbar, appearance);
+
+  if (!(topbar instanceof HTMLElement) || !isObject(appearance)) {
+    return;
+  }
+
+  const shell = topbar.querySelector('.AppHeader, .GlobalNav, header, [class*="Header"], [class*="GlobalNav"]');
+
+  if (shell instanceof HTMLElement) {
+    applyAppearance(shell, appearance);
+  }
+}
+
+function applyInnerAppearance(element, appearance) {
+  if (!(element instanceof HTMLElement) || !isObject(appearance) || typeof appearance.innerBackgroundColor !== 'string') {
+    return;
+  }
+
+  element
+    .querySelectorAll('button, input, textarea, a, article, .Box, .Box-row, [class*="Card"], [class*="Box"]')
+    .forEach((target) => {
+      if (target instanceof HTMLElement) {
+        target.classList.add(APPEARANCE_CLASS);
+        target.style.setProperty('background', appearance.innerBackgroundColor, 'important');
+        target.style.setProperty('background-color', appearance.innerBackgroundColor, 'important');
+      }
+    });
+}
+
+function applyElementSpacing(element, appearance) {
+  if (!(element instanceof HTMLElement) || !isObject(appearance)) {
+    return;
+  }
+
+  const elementGap = Number(appearance.elementGap);
+
+  if (!Number.isFinite(elementGap)) {
+    return;
+  }
+
+  element
+    .querySelectorAll('.git-reflow-block-list, ul, ol, [role="list"], [class*="list"], [class*="List"]')
+    .forEach((target) => {
+      if (target instanceof HTMLElement) {
+        target.classList.add(APPEARANCE_CLASS);
+        target.style.setProperty('gap', `${Math.max(0, Math.min(32, elementGap))}px`, 'important');
+      }
+    });
+}
+
+function applyPageAppearance(appearance) {
+  if (!isObject(appearance) || typeof appearance.backgroundColor !== 'string') {
+    return;
+  }
+
+  const targets = [
+    document.body,
+    document.documentElement,
+    queryFirst(githubHomeSelectors.dashboardRoot),
+    queryFirst(githubHomeSelectors.feedMain),
+    queryFirst(githubHomeSelectors.mainContent),
+  ];
+
+  targets.forEach((target) => {
+    if (target instanceof HTMLElement) {
+      target.classList.add(APPEARANCE_CLASS);
+      target.style.setProperty('background', appearance.backgroundColor, 'important');
+      target.style.setProperty('background-color', appearance.backgroundColor, 'important');
+    }
+  });
+}
+
+function getAppearanceTargets(block, element) {
+  if (!(element instanceof HTMLElement)) {
+    return [];
+  }
+
+  if (block.type === 'top-nav') {
+    const topbar = queryFirst(githubHomeSelectors.topbar);
+    return topbar instanceof HTMLElement ? [topbar] : [element];
+  }
+
+  const selectorTarget = queryFirst(blockSelectorRegistry[block.type] ?? [], document);
+
+  if (selectorTarget instanceof HTMLElement) {
+    return [selectorTarget];
+  }
+
+  return [element];
 }
 
 function findClosestSection(element) {
@@ -506,6 +634,8 @@ function applyTopbarProps(block) {
     return;
   }
 
+  applyTopbarAppearance(topbar, props.appearance);
+
   topbar.querySelectorAll('.git-reflow-topbar-links').forEach((element) => element.remove());
 
   const links = getArray(props.links);
@@ -541,12 +671,17 @@ function applyTopbarProps(block) {
 function applyBlockProps(block, element) {
   const props = isObject(block.props) ? block.props : {};
 
-  applyAppearance(element, props.appearance);
-
   if (block.type === 'top-nav') {
     applyTopbarProps(block);
+    applyInnerAppearance(queryFirst(githubHomeSelectors.topbar), props.appearance);
     return;
   }
+
+  getAppearanceTargets(block, element).forEach((target) => {
+    applyAppearance(target, props.appearance);
+    applyInnerAppearance(target, props.appearance);
+    applyElementSpacing(target, props.appearance);
+  });
 
   if (block.type === 'copilot-prompt') {
     const input = element?.querySelector('textarea, input');
@@ -572,16 +707,13 @@ function applyTemplateBlocks(template) {
   document.querySelectorAll(`.${HIDDEN_CLASS}`).forEach((element) => {
     element.classList.remove(HIDDEN_CLASS);
   });
+  document.querySelectorAll(`.${APPEARANCE_CLASS}`).forEach(clearAppearance);
   document.querySelectorAll(`.${GENERATED_BLOCK_CLASS}`).forEach((element) => element.remove());
   document.querySelectorAll('.git-reflow-topbar-links').forEach((element) => element.remove());
   document.querySelectorAll(`.${BLOCK_CLASS}`).forEach((element) => {
     element.classList.remove(BLOCK_CLASS, HIDDEN_CLASS);
     element.style.removeProperty('order');
-    element.style.removeProperty('background-color');
-    element.style.removeProperty('margin-top');
-    element.style.removeProperty('margin-bottom');
-    element.style.removeProperty('font-family');
-    element.style.removeProperty('font-size');
+    clearAppearance(element);
     delete element.dataset.gitReflowBlockId;
     delete element.dataset.gitReflowBlockType;
   });
@@ -946,6 +1078,8 @@ function ensureLeftSidebarResizer() {
 function applyTemplate(template) {
   latestTemplate = normalizeTemplate(template);
 
+  document.querySelectorAll(`.${APPEARANCE_CLASS}`).forEach(clearAppearance);
+  applyPageAppearance(latestTemplate.pageAppearance);
   document.body.classList.toggle('git-reflow-feed-two-column', latestTemplate.selectedVariationId === 'feed-two-column');
   applySidebarWidth(getTemplateSidebarWidth(latestTemplate));
   applyMainColumnWidth(getTemplateMainColumnWidth(latestTemplate));
@@ -1156,14 +1290,11 @@ function resetAppliedStyles() {
   document.querySelectorAll(`.${HIDDEN_CLASS}`).forEach((element) => {
     element.classList.remove(HIDDEN_CLASS);
   });
+  document.querySelectorAll(`.${APPEARANCE_CLASS}`).forEach(clearAppearance);
   document.querySelectorAll(`.${BLOCK_CLASS}`).forEach((element) => {
     element.classList.remove(BLOCK_CLASS, HIDDEN_CLASS);
     element.style.removeProperty('order');
-    element.style.removeProperty('background-color');
-    element.style.removeProperty('margin-top');
-    element.style.removeProperty('margin-bottom');
-    element.style.removeProperty('font-family');
-    element.style.removeProperty('font-size');
+    clearAppearance(element);
     delete element.dataset.gitReflowBlockId;
     delete element.dataset.gitReflowBlockType;
   });

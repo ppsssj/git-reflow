@@ -50,17 +50,60 @@ function getAppearanceStyle(block: TemplateBlock) {
 
   const styles = appearance as Record<string, unknown>;
   const marginY = Number(styles.marginY);
+  const padding = Number(styles.padding);
+  const elementGap = Number(styles.elementGap);
   const fontSize = Number(styles.fontSize);
+  const borderRadius = Number(styles.borderRadius);
   const style: CSSProperties = {};
 
   if (typeof styles.backgroundColor === 'string' && styles.backgroundColor) {
+    style.background = styles.backgroundColor;
     style.backgroundColor = styles.backgroundColor;
+    style['--github-block-background' as keyof CSSProperties] = styles.backgroundColor;
+  }
+
+  if (typeof styles.innerBackgroundColor === 'string' && styles.innerBackgroundColor) {
+    style['--github-block-inner-background' as keyof CSSProperties] = styles.innerBackgroundColor;
   }
 
   if (Number.isFinite(marginY)) {
     style.marginTop = `${marginY}px`;
     style.marginBottom = `${marginY}px`;
   }
+
+  if (Number.isFinite(padding)) {
+    style.padding = `${padding}px`;
+  }
+
+  if (Number.isFinite(elementGap)) {
+    style['--github-block-gap' as keyof CSSProperties] = `${elementGap}px`;
+  }
+
+  if (typeof styles.fontFamily === 'string' && styles.fontFamily) {
+    style.fontFamily = styles.fontFamily;
+  }
+
+  if (Number.isFinite(fontSize)) {
+    style.fontSize = `${fontSize}px`;
+  }
+
+  if (Number.isFinite(borderRadius)) {
+    style.borderRadius = `${borderRadius}px`;
+  }
+
+  return style;
+}
+
+function getTextAppearanceStyle(block: TemplateBlock) {
+  const appearance = block.props.appearance;
+
+  if (!appearance || typeof appearance !== 'object' || Array.isArray(appearance)) {
+    return undefined;
+  }
+
+  const styles = appearance as Record<string, unknown>;
+  const fontSize = Number(styles.fontSize);
+  const style: CSSProperties = {};
 
   if (typeof styles.fontFamily === 'string' && styles.fontFamily) {
     style.fontFamily = styles.fontFamily;
@@ -97,7 +140,9 @@ function BlockFrame({ block, selected, children, onSelect, onOpenContextMenu }: 
       onClick={() => onSelect(block.id)}
       onContextMenu={(event) => handleContextMenu(block, onOpenContextMenu, event)}
     >
+      <div className="github-block__style-scope" style={getTextAppearanceStyle(block)}>
       {children}
+      </div>
     </section>
   );
 }
@@ -159,6 +204,7 @@ function TopNavBlock({ block, selected, onSelect, onOpenContextMenu }: TemplateB
       onClick={() => onSelect(block.id)}
       onContextMenu={(event) => handleContextMenu(block, onOpenContextMenu, event)}
     >
+      <div className="github-block__style-scope" style={getTextAppearanceStyle(block)}>
       <div className="github-home-topnav__brand">
         <button aria-label="Open navigation" type="button">
           <Icon name="menu" />
@@ -203,6 +249,7 @@ function TopNavBlock({ block, selected, onSelect, onOpenContextMenu }: TemplateB
           </button>
         ))}
         <span aria-hidden="true" />
+      </div>
       </div>
     </header>
   );

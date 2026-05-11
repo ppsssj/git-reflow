@@ -4557,7 +4557,7 @@ img {
 }
 
 .block-style-menu__header button:hover {
-  background: #f6f8fa;
+  background: var(--github-block-background, #f6f8fa);
   color: #0969da;
 }
 
@@ -4584,8 +4584,16 @@ img {
   gap: 5px;
 }
 
-.block-style-menu__controls label:nth-child(3) {
+.block-style-menu__controls label:nth-child(5) {
   grid-column: span 2;
+}
+
+.block-style-menu__controls--page {
+  grid-template-columns: 1fr;
+}
+
+.block-style-menu__controls--page label {
+  grid-column: auto;
 }
 
 .block-style-menu__controls span {
@@ -4726,6 +4734,7 @@ img {
   --github-preview-left-width: 320px;
   --github-preview-main-min-width: 900px;
   --github-preview-right-width: 315px;
+  --github-preview-page-background: #f6f8fa;
   width: 100%;
   max-width: 1160px;
   min-width: 0;
@@ -4734,7 +4743,7 @@ img {
   overflow: hidden;
   border: 0;
   border-radius: 0;
-  background: #f6f8fa;
+  background: var(--github-preview-page-background);
   box-shadow: none;
   color: #1f2328;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -4753,7 +4762,7 @@ img {
     minmax(0, var(--github-preview-main-min-width))
     minmax(0, var(--github-preview-right-width));
   min-height: 760px;
-  background: #f6f8fa;
+  background: var(--github-preview-page-background);
 }
 
 .github-home-region {
@@ -4770,18 +4779,49 @@ img {
 .github-home-region--main-feed {
   gap: 12px;
   padding: 22px 20px 48px;
-  background: #f6f8fa;
+  background: var(--github-preview-page-background);
 }
 
 .github-home-region--right-sidebar {
   gap: 16px;
   padding: 22px 20px 48px 0;
-  background: #f6f8fa;
+  background: var(--github-preview-page-background);
 }
 
 .github-block {
   border-radius: 6px;
   cursor: pointer;
+}
+
+.github-block .compact-list,
+.github-block .activity-feed-list,
+.github-block .repo-update-list,
+.github-block .work-queue,
+.github-block .changelog-list,
+.github-block .recommendation-list,
+.github-block .pinned-repo-grid,
+.github-block .copilot-prompt,
+.github-block .copilot-prompt__chips {
+  gap: var(--github-block-gap, 8px);
+}
+
+.github-block .github-home-topnav__search,
+.github-block .github-home-topnav__brand button,
+.github-block .github-home-topnav__actions button,
+.github-block .top-repositories-search,
+.github-block .compact-list a,
+.github-block .repo-card,
+.github-block .copilot-prompt__field,
+.github-block .copilot-prompt__toolbar button,
+.github-block .copilot-prompt__chips button,
+.github-block .activity-feed-list article,
+.github-block .activity-feed-list__summary,
+.github-block .activity-feed-list__footer button,
+.github-block .repo-update-list article,
+.github-block .work-queue button,
+.github-block .recommendation-list article,
+.github-block .changelog-list article {
+  background: var(--github-block-inner-background, revert-layer);
 }
 
 .github-block:hover,
@@ -4812,7 +4852,7 @@ img {
   padding: 16px;
   border: 1px solid #d0d7de;
   border-radius: 6px;
-  background: #ffffff;
+  background: var(--github-block-background, #ffffff);
   box-shadow: none;
 }
 
@@ -4830,6 +4870,10 @@ img {
 .github-block__header .material-symbols-outlined {
   color: #656d76;
   font-size: 16px;
+}
+
+.github-block__style-scope {
+  display: contents;
 }
 
 .github-home-topnav {

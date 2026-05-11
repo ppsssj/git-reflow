@@ -67,6 +67,7 @@ interface TemplateResetSnapshot {
   columnLayout: TemplateColumnLayout;
   leftSidebarResizeEnabled: boolean;
   selectedVariationId: TemplateVariationId;
+  pageAppearance: Record<string, unknown>;
 }
 
 function clampCanvasZoom(value: number) {
@@ -101,6 +102,10 @@ function getTemplateResetSnapshot(template: TemplateLayout & Partial<ExtensionTe
     columnLayout: template.columnLayout ?? DEFAULT_COLUMN_LAYOUT,
     leftSidebarResizeEnabled: template.leftSidebarResizeEnabled !== false,
     selectedVariationId: template.selectedVariationId ?? 'github-default',
+    pageAppearance:
+      typeof template.pageAppearance === 'object' && template.pageAppearance !== null && !Array.isArray(template.pageAppearance)
+        ? template.pageAppearance as Record<string, unknown>
+        : {},
   };
 }
 
@@ -124,11 +129,13 @@ export function TemplateEditorPage() {
   const [columnLayout, setColumnLayout] = useState<TemplateColumnLayout>(DEFAULT_COLUMN_LAYOUT);
   const [leftSidebarResizeEnabled, setLeftSidebarResizeEnabled] = useState(true);
   const [selectedVariationId, setSelectedVariationId] = useState<TemplateVariationId>('github-default');
+  const [pageAppearance, setPageAppearance] = useState<Record<string, unknown>>({});
   const [syncStatus, setSyncStatus] = useState('Not synced');
   const [resetSnapshot, setResetSnapshot] = useState<TemplateResetSnapshot>(() =>
     getTemplateResetSnapshot(defaultGithubTemplate),
   );
   const [blockStyleMenu, setBlockStyleMenu] = useState<{ blockId: string; x: number; y: number } | null>(null);
+  const [pageStyleMenu, setPageStyleMenu] = useState<{ x: number; y: number } | null>(null);
   const canvasShellRef = useRef<HTMLElement | null>(null);
   const styleMenuBlock = blockStyleMenu
     ? layout.blocks.find((block) => block.id === blockStyleMenu.blockId)
@@ -141,6 +148,7 @@ export function TemplateEditorPage() {
     setColumnLayout(snapshot.columnLayout);
     setLeftSidebarResizeEnabled(snapshot.leftSidebarResizeEnabled);
     setSelectedVariationId(snapshot.selectedVariationId);
+    setPageAppearance(snapshot.pageAppearance);
     setResetSnapshot(snapshot);
   };
 
@@ -203,11 +211,12 @@ export function TemplateEditorPage() {
           columnLayout,
           leftSidebarResizeEnabled,
           selectedVariationId,
+          pageAppearance,
         },
         null,
         2,
       ),
-    [layout, columnLayout, leftSidebarResizeEnabled, selectedVariationId],
+    [layout, columnLayout, leftSidebarResizeEnabled, selectedVariationId, pageAppearance],
   );
 
   const handleReset = () => {
@@ -216,6 +225,7 @@ export function TemplateEditorPage() {
     setColumnLayout(resetSnapshot.columnLayout);
     setLeftSidebarResizeEnabled(resetSnapshot.leftSidebarResizeEnabled);
     setSelectedVariationId(resetSnapshot.selectedVariationId);
+    setPageAppearance(resetSnapshot.pageAppearance);
     setSyncStatus('Reset to loaded draft');
   };
 
@@ -283,7 +293,13 @@ export function TemplateEditorPage() {
 
   const handleOpenBlockStyleMenu = (blockId: string, x: number, y: number) => {
     setSelectedBlockId(blockId);
+    setPageStyleMenu(null);
     setBlockStyleMenu({ blockId, x, y });
+  };
+
+  const handleOpenPageStyleMenu = (x: number, y: number) => {
+    setBlockStyleMenu(null);
+    setPageStyleMenu({ x, y });
   };
 
   const handleUpdateBlockAppearance = (block: TemplateBlock, appearance: Record<string, unknown>) => {
@@ -295,6 +311,13 @@ export function TemplateEditorPage() {
         ...appearance,
       },
     });
+  };
+
+  const handleUpdatePageAppearance = (appearance: Record<string, unknown>) => {
+    setPageAppearance((current) => ({
+      ...current,
+      ...appearance,
+    }));
   };
 
   return (
@@ -401,7 +424,9 @@ export function TemplateEditorPage() {
               blocksByRegion={blocksByRegion}
               columnLayout={columnLayout}
               onOpenBlockMenu={handleOpenBlockStyleMenu}
+              onOpenPageMenu={handleOpenPageStyleMenu}
               onSelectBlock={setSelectedBlockId}
+              pageAppearance={pageAppearance}
               screen={activeScreen}
               selectedBlockId={selectedBlockId}
               variationId={selectedVariationId}
@@ -425,6 +450,23 @@ export function TemplateEditorPage() {
                 block={styleMenuBlock}
                 onChange={(appearance) => handleUpdateBlockAppearance(styleMenuBlock, appearance)}
               />
+            </div>
+          ) : null}
+
+          {pageStyleMenu ? (
+            <div
+              className="block-style-menu block-style-menu--page"
+              style={{ left: pageStyleMenu.x, top: pageStyleMenu.y } as CSSProperties}
+            >
+              <div className="block-style-menu__header">
+                <span>Page Style</span>
+                <strong>GitHub Home background</strong>
+                <button aria-label="Close page style menu" type="button" onClick={() => setPageStyleMenu(null)}>
+                  <Icon name="close" />
+                </button>
+              </div>
+              <p>Applied to the GitHub Home page background.</p>
+              <PageStyleMenuControls pageAppearance={pageAppearance} onChange={handleUpdatePageAppearance} />
             </div>
           ) : null}
 
@@ -494,18 +536,30 @@ function BlockStyleMenuControls({
   onChange: (appearance: Record<string, unknown>) => void;
 }) {
   const backgroundColor = getAppearanceValue(block, 'backgroundColor', '#ffffff') as string;
+  const innerBackgroundColor = getAppearanceValue(block, 'innerBackgroundColor', '#ffffff') as string;
   const marginY = getAppearanceValue(block, 'marginY', 0) as number;
+  const padding = getAppearanceValue(block, 'padding', 0) as number;
+  const elementGap = getAppearanceValue(block, 'elementGap', 8) as number;
+  const borderRadius = getAppearanceValue(block, 'borderRadius', 6) as number;
   const fontFamily = getAppearanceValue(block, 'fontFamily', '-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif') as string;
   const fontSize = getAppearanceValue(block, 'fontSize', 14) as number;
 
   return (
     <div className="block-style-menu__controls">
       <label>
-        <span>Background</span>
+        <span>Outer bg</span>
         <input
           type="color"
           value={backgroundColor}
           onChange={(event) => onChange({ backgroundColor: event.target.value })}
+        />
+      </label>
+      <label>
+        <span>Inner bg</span>
+        <input
+          type="color"
+          value={innerBackgroundColor}
+          onChange={(event) => onChange({ innerBackgroundColor: event.target.value })}
         />
       </label>
       <label>
@@ -516,6 +570,36 @@ function BlockStyleMenuControls({
           type="number"
           value={marginY}
           onChange={(event) => onChange({ marginY: Math.max(0, Math.min(48, Number(event.target.value) || 0)) })}
+        />
+      </label>
+      <label>
+        <span>Padding</span>
+        <input
+          max={48}
+          min={0}
+          type="number"
+          value={padding}
+          onChange={(event) => onChange({ padding: Math.max(0, Math.min(48, Number(event.target.value) || 0)) })}
+        />
+      </label>
+      <label>
+        <span>Gap</span>
+        <input
+          max={32}
+          min={0}
+          type="number"
+          value={elementGap}
+          onChange={(event) => onChange({ elementGap: Math.max(0, Math.min(32, Number(event.target.value) || 0)) })}
+        />
+      </label>
+      <label>
+        <span>Round</span>
+        <input
+          max={32}
+          min={0}
+          type="number"
+          value={borderRadius}
+          onChange={(event) => onChange({ borderRadius: Math.max(0, Math.min(32, Number(event.target.value) || 0)) })}
         />
       </label>
       <label>
@@ -535,6 +619,30 @@ function BlockStyleMenuControls({
           type="number"
           value={fontSize}
           onChange={(event) => onChange({ fontSize: Math.max(10, Math.min(24, Number(event.target.value) || 14)) })}
+        />
+      </label>
+    </div>
+  );
+}
+
+function PageStyleMenuControls({
+  pageAppearance,
+  onChange,
+}: {
+  pageAppearance: Record<string, unknown>;
+  onChange: (appearance: Record<string, unknown>) => void;
+}) {
+  const pageBackgroundColor =
+    typeof pageAppearance.backgroundColor === 'string' ? pageAppearance.backgroundColor : '#f6f8fa';
+
+  return (
+    <div className="block-style-menu__controls block-style-menu__controls--page">
+      <label>
+        <span>Page bg</span>
+        <input
+          type="color"
+          value={pageBackgroundColor}
+          onChange={(event) => onChange({ backgroundColor: event.target.value })}
         />
       </label>
     </div>

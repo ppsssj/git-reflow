@@ -10,8 +10,10 @@ interface TemplateLayoutCanvasProps {
   selectedBlockId: string;
   columnLayout: TemplateColumnLayout;
   variationId: TemplateVariationId;
+  pageAppearance?: Record<string, unknown>;
   onSelectBlock: (blockId: string) => void;
   onOpenBlockMenu: (blockId: string, x: number, y: number) => void;
+  onOpenPageMenu: (x: number, y: number) => void;
 }
 
 const regionLabels: Record<TemplateRegion, string> = {
@@ -88,9 +90,14 @@ export function TemplateLayoutCanvas({
   screen,
   selectedBlockId,
   variationId,
+  pageAppearance,
   onOpenBlockMenu,
+  onOpenPageMenu,
   onSelectBlock,
 }: TemplateLayoutCanvasProps) {
+  const pageBackground =
+    typeof pageAppearance?.backgroundColor === 'string' ? pageAppearance.backgroundColor : undefined;
+
   return (
     <div className="template-screen-frame">
       <div className="template-screen-frame__toolbar">
@@ -105,11 +112,21 @@ export function TemplateLayoutCanvas({
           'github-home-preview',
           `github-home-preview--${variationId}`,
         ].join(' ')}
+        onContextMenu={(event) => {
+          if (event.target instanceof Element && event.target.closest('.github-block')) {
+            return;
+          }
+
+          event.preventDefault();
+          event.stopPropagation();
+          onOpenPageMenu(event.clientX, event.clientY);
+        }}
         style={
           {
             '--github-preview-left-width': `${columnLayout.left}px`,
             '--github-preview-main-min-width': `${columnLayout.main}px`,
             '--github-preview-right-width': `${columnLayout.right}px`,
+            ...(pageBackground ? { '--github-preview-page-background': pageBackground } : {}),
           } as CSSProperties
         }
       >
