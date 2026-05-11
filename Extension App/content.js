@@ -386,6 +386,7 @@ function applyPageAppearance(appearance) {
     document.body,
     document.documentElement,
     queryFirst(githubHomeSelectors.dashboardRoot),
+    queryFirst(['.application-main', '#js-pjax-container', '[data-turbo-body]']),
     queryFirst(githubHomeSelectors.feedMain),
     queryFirst(githubHomeSelectors.mainContent),
   ];
@@ -1079,12 +1080,12 @@ function applyTemplate(template) {
   latestTemplate = normalizeTemplate(template);
 
   document.querySelectorAll(`.${APPEARANCE_CLASS}`).forEach(clearAppearance);
-  applyPageAppearance(latestTemplate.pageAppearance);
   document.body.classList.toggle('git-reflow-feed-two-column', latestTemplate.selectedVariationId === 'feed-two-column');
   applySidebarWidth(getTemplateSidebarWidth(latestTemplate));
   applyMainColumnWidth(getTemplateMainColumnWidth(latestTemplate));
   applyRightSidebarWidth(getTemplateRightSidebarWidth(latestTemplate));
   applyTemplateBlocks(latestTemplate);
+  applyPageAppearance(latestTemplate.pageAppearance);
   if (latestTemplate.leftSidebarResizeEnabled === false) {
     removeLeftSidebarResizer();
     setControllerHint('Preview applied. Left sidebar drag handle is disabled.');

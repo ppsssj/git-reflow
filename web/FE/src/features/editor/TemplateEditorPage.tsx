@@ -17,6 +17,7 @@ import type {
 import { TemplateEditPanel } from './TemplateEditPanel';
 import { TemplateLayoutCanvas } from './TemplateLayoutCanvas';
 import { defaultGithubTemplate } from './templates/defaultGithubTemplate';
+import { starterGithubTemplate, starterGithubTemplateRecord } from './templates/starterGithubTemplate';
 import { useTemplateLayout } from './useTemplateLayout';
 
 const regionIcons: Record<TemplateRegion, string> = {
@@ -111,7 +112,10 @@ function getTemplateResetSnapshot(template: TemplateLayout & Partial<ExtensionTe
 
 export function TemplateEditorPage() {
   const { templateId } = useParams();
-  const templateRecord = templates.find((item) => item.id === templateId) ?? templates[0];
+  const templateRecord =
+    templateId === starterGithubTemplate.id
+      ? starterGithubTemplateRecord
+      : templates.find((item) => item.id === templateId) ?? starterGithubTemplateRecord;
   const {
     layout,
     activeScreen,
@@ -166,6 +170,12 @@ export function TemplateEditorPage() {
     if (templateId === defaultGithubTemplate.id) {
       applyTemplateState(defaultGithubTemplate);
       setSyncStatus('Loaded default template');
+      return;
+    }
+
+    if (templateId === starterGithubTemplate.id) {
+      applyTemplateState(starterGithubTemplate);
+      setSyncStatus('Loaded starter preset');
       return;
     }
 

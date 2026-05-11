@@ -25,6 +25,8 @@ const iconPaths: Record<string, string> = {
     'M7 18a5 5 0 0 1 .6-10A6 6 0 0 1 19 10.2 4 4 0 0 1 18 18H7Zm4-3 5-5-1.4-1.4L11 12.2 9.4 10.6 8 12l3 3Z',
   close: 'M6.4 5 12 10.6 17.6 5 19 6.4 13.4 12 19 17.6 17.6 19 12 13.4 6.4 19 5 17.6 10.6 12 5 6.4 6.4 5Z',
   code: 'M9.4 16.6 4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4Zm5.2 0L19.2 12l-4.6-4.6L16 6l6 6-6 6-1.4-1.4Z',
+  content_copy:
+    'M7 7V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-2v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h2Zm2 0h6a2 2 0 0 1 2 2v6h2V5H9v2Zm-4 2v10h10V9H5Z',
   dashboard_customize:
     'M4 4h7v7H4V4Zm9 0h7v5h-7V4ZM4 13h7v7H4v-7Zm9-2h7v9h-7v-9Z',
   devices: 'M3 5h14v10H3V5Zm2 2v6h10V7H5Zm13 3h3v8h-8v-2h6v-4h-1v-2Z',

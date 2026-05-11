@@ -6,6 +6,7 @@ import { Icon } from '../../components/ui/Icon';
 import { apiDelete, apiGet, apiPost } from '../../lib/api';
 import type { ExtensionTemplatePayload, TemplateRecord } from '../../types/template';
 import { defaultGithubTemplate } from '../editor/templates/defaultGithubTemplate';
+import { starterGithubTemplate, starterGithubTemplateRecord } from '../editor/templates/starterGithubTemplate';
 import { TemplateCard } from './TemplateCard';
 
 const sidebarItems = [
@@ -69,6 +70,56 @@ function createTemplateDraft(name: string): ExtensionTemplatePayload {
   };
 }
 
+function getUniqueTemplateName(baseName: string, templates: TemplateRecord[]) {
+  const existingNames = new Set(templates.map((template) => template.name.trim().toLowerCase()));
+
+  if (!existingNames.has(baseName.trim().toLowerCase())) {
+    return baseName;
+  }
+
+  let index = 1;
+  let nextName = `${baseName} (${index})`;
+
+  while (existingNames.has(nextName.trim().toLowerCase())) {
+    index += 1;
+    nextName = `${baseName} (${index})`;
+  }
+
+  return nextName;
+}
+
+function getCopyTemplateName(templateName: string, templates: TemplateRecord[]) {
+  const existingNames = new Set(templates.map((template) => template.name.trim().toLowerCase()));
+  let index = 1;
+  let nextName = `${templateName} (${index})`;
+
+  while (existingNames.has(nextName.trim().toLowerCase())) {
+    index += 1;
+    nextName = `${templateName} (${index})`;
+  }
+
+  return nextName;
+}
+
+function createCopiedTemplatePayload(source: ExtensionTemplatePayload, name: string): ExtensionTemplatePayload {
+  const now = new Date().toISOString();
+
+  return {
+    ...source,
+    id: `${slugify(name)}-${Date.now().toString(36)}`,
+    name,
+    description: source.description || `Copied GitHub home layout based on ${source.name}.`,
+    source: 'user',
+    version: source.version || 1,
+    metadata: {
+      ...source.metadata,
+      updatedAt: now,
+    },
+    provider: 'github',
+    updatedAt: now,
+  };
+}
+
 export function TemplateListPage() {
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -79,7 +130,10 @@ export function TemplateListPage() {
   const [createStatus, setCreateStatus] = useState('');
   const remoteTemplateIds = useMemo(() => new Set(remoteTemplates.map((template) => template.id)), [remoteTemplates]);
   const visibleTemplates = useMemo(() => {
-    return remoteTemplates.filter((template) => template.id !== DEFAULT_TEMPLATE_ID);
+    const userTemplates = remoteTemplates.filter((template) => template.id !== DEFAULT_TEMPLATE_ID);
+    const hasStarterSaved = userTemplates.some((template) => template.id === starterGithubTemplateRecord.id);
+
+    return hasStarterSaved ? userTemplates : [starterGithubTemplateRecord, ...userTemplates];
   }, [remoteTemplates]);
   const primaryTemplateId = visibleTemplates[0]?.id ?? 'github-dashboard-reference';
 
@@ -219,6 +273,49 @@ export function TemplateListPage() {
     }
   };
 
+  const handleCopyTemplate = async (template: TemplateRecord) => {
+    const generatedName = getCopyTemplateName(template.name, visibleTemplates);
+    const nextNameInput = window.prompt('Copy template as', '')?.trim();
+
+    if (nextNameInput === undefined) {
+      return;
+    }
+
+    const nextName = nextNameInput ? getUniqueTemplateName(nextNameInput, visibleTemplates) : generatedName;
+
+    if (nextName.length < 2) {
+      setCreateStatus('Template name must be at least 2 characters');
+      return;
+    }
+
+    setCreateStatus('Copying...');
+
+    try {
+      const sourcePayload =
+        template.id === starterGithubTemplate.id
+          ? starterGithubTemplate
+          : await apiGet<ExtensionTemplatePayload>(`/api/templates/${encodeURIComponent(template.id)}`);
+      const payload = createCopiedTemplatePayload(sourcePayload, nextName);
+      const result = await apiPost<CreateTemplateResponse>('/api/templates/github-home', payload);
+
+      setRemoteTemplates((current) => [
+        {
+          ...template,
+          id: result.template.id,
+          name: result.template.name,
+          description: result.template.description,
+          updatedAt: `Updated ${new Date(result.template.updatedAt).toLocaleString()}`,
+          owner: 'Personal Workspace',
+        },
+        ...current,
+      ]);
+      setCreateStatus('Copied');
+      navigate(`/templates/${result.template.id}`);
+    } catch (error) {
+      setCreateStatus(error instanceof Error ? error.message : 'Failed to copy template');
+    }
+  };
+
   return (
     <div className="dashboard-page">
       <AppTopNav active="templates" searchPlaceholder="Search resources..." />
@@ -298,9 +395,15 @@ export function TemplateListPage() {
             {visibleTemplates.map((template) => (
               <TemplateCard
                 key={template.id}
-                canManage={template.id !== DEFAULT_TEMPLATE_ID && remoteTemplateIds.has(template.id)}
+                canManage={
+                  template.id !== DEFAULT_TEMPLATE_ID &&
+                  template.id !== starterGithubTemplateRecord.id &&
+                  remoteTemplateIds.has(template.id)
+                }
+                canCopy={template.id === starterGithubTemplateRecord.id || remoteTemplateIds.has(template.id)}
                 template={template}
                 variant={viewMode}
+                onCopy={handleCopyTemplate}
                 onDelete={handleDeleteTemplate}
                 onOpen={handleOpenTemplate}
                 onRename={handleRenameTemplate}

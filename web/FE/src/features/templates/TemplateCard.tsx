@@ -7,6 +7,8 @@ interface TemplateCardProps {
   template: TemplateRecord;
   variant?: 'grid' | 'list';
   canManage?: boolean;
+  canCopy?: boolean;
+  onCopy?: (template: TemplateRecord, name: string) => void;
   onDelete?: (template: TemplateRecord) => void;
   onOpen?: (template: TemplateRecord) => void;
   onRename?: (template: TemplateRecord) => void;
@@ -51,11 +53,15 @@ export function TemplateCard({
   template,
   variant = 'grid',
   canManage = true,
+  canCopy = true,
+  onCopy,
   onDelete,
   onOpen,
   onRename,
 }: TemplateCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [copyOpen, setCopyOpen] = useState(false);
+  const [copyName, setCopyName] = useState('');
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -69,11 +75,13 @@ export function TemplateCard({
       }
 
       setMenuOpen(false);
+      setCopyOpen(false);
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        setMenuOpen(false);
+      setMenuOpen(false);
+      setCopyOpen(false);
       }
     };
 
@@ -88,7 +96,15 @@ export function TemplateCard({
 
   const handleMenuAction = (action?: (template: TemplateRecord) => void) => {
     setMenuOpen(false);
+    setCopyOpen(false);
     action?.(template);
+  };
+
+  const handleCopySubmit = () => {
+    setMenuOpen(false);
+    setCopyOpen(false);
+    onCopy?.(template, copyName.trim());
+    setCopyName('');
   };
 
   return (
@@ -138,6 +154,18 @@ export function TemplateCard({
                   <span>Rename</span>
                 </button>
                 <button
+                  disabled={!canCopy}
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setCopyOpen(true);
+                    setCopyName('');
+                  }}
+                >
+                  <Icon name="content_copy" />
+                  <span>Copy</span>
+                </button>
+                <button
                   className="is-danger"
                   disabled={!canManage}
                   type="button"
@@ -147,6 +175,38 @@ export function TemplateCard({
                   <Icon name="delete" />
                   <span>Delete</span>
                 </button>
+              </div>
+            ) : null}
+            {copyOpen ? (
+              <div className="template-tile__copy-popover">
+                <label>
+                  <span>Copy as</span>
+                  <input
+                    autoFocus
+                    placeholder={`${template.name} (1)`}
+                    type="text"
+                    value={copyName}
+                    onChange={(event) => setCopyName(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault();
+                        handleCopySubmit();
+                      }
+
+                      if (event.key === 'Escape') {
+                        setCopyOpen(false);
+                      }
+                    }}
+                  />
+                </label>
+                <div>
+                  <button type="button" onClick={() => setCopyOpen(false)}>
+                    Cancel
+                  </button>
+                  <button type="button" onClick={handleCopySubmit}>
+                    Copy
+                  </button>
+                </div>
               </div>
             ) : null}
           </div>
