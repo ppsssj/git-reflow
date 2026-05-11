@@ -273,15 +273,9 @@ export function TemplateListPage() {
     }
   };
 
-  const handleCopyTemplate = async (template: TemplateRecord) => {
+  const handleCopyTemplate = async (template: TemplateRecord, requestedName: string) => {
     const generatedName = getCopyTemplateName(template.name, visibleTemplates);
-    const nextNameInput = window.prompt('Copy template as', '')?.trim();
-
-    if (nextNameInput === undefined) {
-      return;
-    }
-
-    const nextName = nextNameInput ? getUniqueTemplateName(nextNameInput, visibleTemplates) : generatedName;
+    const nextName = requestedName ? getUniqueTemplateName(requestedName, visibleTemplates) : generatedName;
 
     if (nextName.length < 2) {
       setCreateStatus('Template name must be at least 2 characters');

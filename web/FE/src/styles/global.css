@@ -1622,6 +1622,10 @@ img {
   box-shadow: var(--shadow-soft);
 }
 
+.template-tile.is-menu-open {
+  z-index: 20;
+}
+
 .template-tile--list {
   display: grid;
   grid-template-columns: 220px minmax(0, 1fr);
@@ -1861,6 +1865,7 @@ img {
   border-radius: 10px;
   background: white;
   box-shadow: 0 18px 40px rgba(15, 23, 42, 0.16);
+  z-index: 25;
 }
 
 .template-tile__menu-popover button {
@@ -1898,6 +1903,75 @@ img {
 .template-tile__menu-popover .material-symbols-outlined {
   width: 16px;
   height: 16px;
+}
+
+.template-tile__copy-popover {
+  position: absolute;
+  top: 42px;
+  left: calc(100% + 8px);
+  z-index: 30;
+  display: grid;
+  width: 220px;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid rgba(191, 199, 212, 0.38);
+  border-radius: 10px;
+  background: white;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.16);
+}
+
+.template-tile__copy-popover label {
+  display: grid;
+  gap: 6px;
+}
+
+.template-tile__copy-popover span {
+  color: var(--text-muted);
+  font-size: 0.625rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.template-tile__copy-popover input {
+  width: 100%;
+  height: 34px;
+  padding: 0 9px;
+  border: 1px solid rgba(191, 199, 212, 0.45);
+  border-radius: 8px;
+  background: white;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.75rem;
+  outline: none;
+}
+
+.template-tile__copy-popover input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(0, 98, 158, 0.12);
+}
+
+.template-tile__copy-popover div {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.template-tile__copy-popover button {
+  min-height: 30px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--surface-low);
+  color: var(--text-soft);
+  font: inherit;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.template-tile__copy-popover button:last-child {
+  background: var(--primary);
+  color: white;
 }
 
 .template-tile__description {

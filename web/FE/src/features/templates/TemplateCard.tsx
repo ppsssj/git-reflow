@@ -108,7 +108,13 @@ export function TemplateCard({
   };
 
   return (
-    <article className={`template-tile template-tile--${variant}`}>
+    <article
+      className={[
+        'template-tile',
+        `template-tile--${variant}`,
+        menuOpen || copyOpen ? 'is-menu-open' : '',
+      ].join(' ').trim()}
+    >
       <Link className="template-tile__link" to={`/templates/${template.id}`}>
         <div className="template-tile__thumb">
           {template.thumbnail ? (
