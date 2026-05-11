@@ -22,6 +22,8 @@ interface TemplateEditPanelProps {
   onSelectBlock: (blockId: string) => void;
   onSelectVariation: (variationId: TemplateVariationId) => void;
   onToggleBlock: (blockId: string) => void;
+  onUpdateBlock: (blockId: string, updates: Partial<TemplateBlock>) => void;
+  onUpdateBlockProps: (blockId: string, props: Record<string, unknown>) => void;
   onMoveBlock: (blockId: string, direction: 'up' | 'down') => void;
   onReset: () => void;
 }
@@ -67,6 +69,201 @@ function getMoveState(layout: TemplateLayout, block: TemplateBlock) {
   };
 }
 
+function getStringProp(block: TemplateBlock, key: string, fallback = '') {
+  const value = block.props[key];
+
+  return typeof value === 'string' ? value : fallback;
+}
+
+function getNumberProp(block: TemplateBlock, key: string, fallback: number) {
+  const value = Number(block.props[key]);
+
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function getStringArrayProp(block: TemplateBlock, key: string) {
+  const value = block.props[key];
+
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
+}
+
+function parseCsv(value: string) {
+  return value
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function clampItemLimit(value: string, fallback: number) {
+  const parsed = Number(value);
+
+  if (!Number.isFinite(parsed)) {
+    return fallback;
+  }
+
+  return Math.min(12, Math.max(1, Math.round(parsed)));
+}
+
+const topbarActions = ['Copilot', 'Create', 'Issues', 'Pull requests', 'Repositories', 'Inbox'];
+
+interface BlockInspectorProps {
+  block: TemplateBlock;
+  onUpdateBlock: (blockId: string, updates: Partial<TemplateBlock>) => void;
+  onUpdateBlockProps: (blockId: string, props: Record<string, unknown>) => void;
+}
+
+function BlockInspector({ block, onUpdateBlock, onUpdateBlockProps }: BlockInspectorProps) {
+  const updateProps = (props: Record<string, unknown>) => onUpdateBlockProps(block.id, props);
+  const itemLimit = getNumberProp(block, 'itemLimit', Array.isArray(block.props.repositories) ? block.props.repositories.length : 4);
+
+  return (
+    <div className="block-inspector">
+      <label>
+        <span>Block title</span>
+        <input
+          type="text"
+          value={block.title}
+          onChange={(event) => onUpdateBlock(block.id, { title: event.target.value })}
+        />
+      </label>
+
+      {block.type === 'top-nav' ? (
+        <>
+          <label>
+            <span>Context label</span>
+            <input
+              type="text"
+              value={getStringProp(block, 'context', 'Dashboard')}
+              onChange={(event) => updateProps({ context: event.target.value })}
+            />
+          </label>
+          <label>
+            <span>Search placeholder</span>
+            <input
+              type="text"
+              value={getStringProp(block, 'searchPlaceholder', 'Type / to search')}
+              onChange={(event) => updateProps({ searchPlaceholder: event.target.value })}
+            />
+          </label>
+          <label>
+            <span>Extra links</span>
+            <input
+              placeholder="Pull requests, Issues"
+              type="text"
+              value={getStringArrayProp(block, 'links').join(', ')}
+              onChange={(event) => updateProps({ links: parseCsv(event.target.value) })}
+            />
+          </label>
+          <div className="block-inspector__checks">
+            <span>Header actions</span>
+            {topbarActions.map((action) => {
+              const actions = getStringArrayProp(block, 'actions');
+
+              return (
+                <label key={action}>
+                  <input
+                    checked={actions.includes(action)}
+                    type="checkbox"
+                    onChange={(event) =>
+                      updateProps({
+                        actions: event.target.checked
+                          ? [...actions, action]
+                          : actions.filter((item) => item !== action),
+                      })
+                    }
+                  />
+                  <strong>{action}</strong>
+                </label>
+              );
+            })}
+          </div>
+        </>
+      ) : null}
+
+      {block.type === 'profile-summary' ? (
+        <>
+          <label>
+            <span>Profile name</span>
+            <input
+              type="text"
+              value={getStringProp(block, 'name', 'alex-placeholder')}
+              onChange={(event) => updateProps({ name: event.target.value })}
+            />
+          </label>
+          <label>
+            <span>Handle</span>
+            <input
+              type="text"
+              value={getStringProp(block, 'handle', 'Personal dashboard')}
+              onChange={(event) => updateProps({ handle: event.target.value })}
+            />
+          </label>
+          <label>
+            <span>Bio</span>
+            <textarea
+              value={getStringProp(block, 'bio')}
+              onChange={(event) => updateProps({ bio: event.target.value })}
+            />
+          </label>
+        </>
+      ) : null}
+
+      {block.type === 'copilot-prompt' ? (
+        <>
+          <label>
+            <span>Prompt placeholder</span>
+            <input
+              type="text"
+              value={getStringProp(block, 'placeholder', 'Ask anything or type @ to add context')}
+              onChange={(event) => updateProps({ placeholder: event.target.value })}
+            />
+          </label>
+          <label>
+            <span>Model label</span>
+            <input
+              type="text"
+              value={getStringProp(block, 'model')}
+              onChange={(event) => updateProps({ model: event.target.value })}
+            />
+          </label>
+          <label>
+            <span>Prompt chips</span>
+            <input
+              type="text"
+              value={getStringArrayProp(block, 'chips').join(', ')}
+              onChange={(event) => updateProps({ chips: parseCsv(event.target.value) })}
+            />
+          </label>
+        </>
+      ) : null}
+
+      {['recent-repos', 'pinned-repos', 'activity-feed', 'repo-updates', 'issue-pr-updates', 'trending-repos', 'recommended-repos'].includes(block.type) ? (
+        <label>
+          <span>Visible items</span>
+          <input
+            max={12}
+            min={1}
+            type="number"
+            value={itemLimit}
+            onChange={(event) => updateProps({ itemLimit: clampItemLimit(event.target.value, itemLimit) })}
+          />
+        </label>
+      ) : null}
+
+      {block.type === 'recent-repos' ? (
+        <label>
+          <span>Repository search placeholder</span>
+          <input
+            type="text"
+            value={getStringProp(block, 'searchPlaceholder', 'Find a repository...')}
+            onChange={(event) => updateProps({ searchPlaceholder: event.target.value })}
+          />
+        </label>
+      ) : null}
+    </div>
+  );
+}
+
 export function TemplateEditPanel({
   layout,
   columnLayout,
@@ -80,6 +277,8 @@ export function TemplateEditPanel({
   onSelectBlock,
   onSelectVariation,
   onToggleBlock,
+  onUpdateBlock,
+  onUpdateBlockProps,
   onMoveBlock,
   onReset,
 }: TemplateEditPanelProps) {
@@ -312,6 +511,11 @@ export function TemplateEditPanel({
 
       <section className="layout-edit-panel__section">
         <p>Selected Block</p>
+        <BlockInspector
+          block={selectedBlock}
+          onUpdateBlock={onUpdateBlock}
+          onUpdateBlockProps={onUpdateBlockProps}
+        />
         <dl className="selected-block-meta">
           <div>
             <dt>Type</dt>

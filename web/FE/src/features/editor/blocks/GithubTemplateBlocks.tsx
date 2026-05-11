@@ -90,6 +90,12 @@ function RepoName({ name }: { name: string }) {
   );
 }
 
+function getItemLimit(value: unknown, fallback: number) {
+  const parsed = Number(value);
+
+  return Number.isFinite(parsed) ? Math.min(12, Math.max(1, Math.round(parsed))) : fallback;
+}
+
 function TopNavBlock({ block, selected, onSelect }: TemplateBlockComponentProps) {
   const props = block.props as { context?: string; searchPlaceholder?: string; links?: string[]; actions?: string[] };
   const links = props.links ?? [];
@@ -227,12 +233,14 @@ function CopilotPromptBlock({ block, selected, onSelect }: TemplateBlockComponen
 
 function PinnedReposBlock({ block, selected, onSelect }: TemplateBlockComponentProps) {
   const props = block.props as { repositories?: RepoSummary[] };
+  const repositories = props.repositories ?? [];
+  const itemLimit = getItemLimit(block.props.itemLimit, repositories.length);
 
   return (
     <BlockFrame block={block} selected={selected} onSelect={onSelect}>
       <BlockHeader icon="push_pin" title="Pinned" />
       <div className="pinned-repo-grid">
-        {(props.repositories ?? []).map((repo) => (
+        {repositories.slice(0, itemLimit).map((repo) => (
           <article className="repo-card" key={repo.name}>
             <div className="repo-card__title">
               <Icon name="folder" />
@@ -254,6 +262,8 @@ function PinnedReposBlock({ block, selected, onSelect }: TemplateBlockComponentP
 
 function RecentReposBlock({ block, selected, onSelect }: TemplateBlockComponentProps) {
   const props = block.props as { searchPlaceholder?: string; repositories?: RepoSummary[] };
+  const repositories = props.repositories ?? [];
+  const itemLimit = getItemLimit(block.props.itemLimit, repositories.length);
 
   return (
     <BlockFrame block={block} selected={selected} onSelect={onSelect}>
@@ -269,7 +279,7 @@ function RecentReposBlock({ block, selected, onSelect }: TemplateBlockComponentP
         <input readOnly value={props.searchPlaceholder ?? 'Find a repository...'} />
       </label>
       <div className="compact-list">
-        {(props.repositories ?? []).map((repo) => (
+        {repositories.slice(0, itemLimit).map((repo) => (
           <a href={`#${repo.name}`} key={repo.name}>
             <span className="compact-list__avatar">{repo.name.slice(0, 1).toUpperCase()}</span>
             <RepoName name={repo.name} />
@@ -286,6 +296,8 @@ function RecentReposBlock({ block, selected, onSelect }: TemplateBlockComponentP
 
 function ActivityFeedBlock({ block, selected, onSelect }: TemplateBlockComponentProps) {
   const props = block.props as { filters?: string[]; events?: ActivityEvent[] };
+  const events = props.events ?? [];
+  const itemLimit = getItemLimit(block.props.itemLimit, events.length);
 
   return (
     <BlockFrame block={block} selected={selected} onSelect={onSelect}>
@@ -304,7 +316,7 @@ function ActivityFeedBlock({ block, selected, onSelect }: TemplateBlockComponent
         </div>
       </div>
       <div className="activity-feed-list">
-        {(props.events ?? []).map((event) => (
+        {events.slice(0, itemLimit).map((event) => (
           <article key={`${event.actor}-${event.subject}-${event.time}`}>
             <span className="activity-feed-list__avatar">{event.actor.slice(0, 1).toUpperCase()}</span>
             <div className="activity-feed-list__content">
@@ -335,12 +347,14 @@ function ActivityFeedBlock({ block, selected, onSelect }: TemplateBlockComponent
 
 function RepoUpdatesBlock({ block, selected, onSelect }: TemplateBlockComponentProps) {
   const props = block.props as { updates?: RepoUpdate[] };
+  const updates = props.updates ?? [];
+  const itemLimit = getItemLimit(block.props.itemLimit, updates.length);
 
   return (
     <BlockFrame block={block} selected={selected} onSelect={onSelect}>
       <BlockHeader icon="campaign" title="Repository updates" />
       <div className="repo-update-list">
-        {(props.updates ?? []).map((update) => (
+        {updates.slice(0, itemLimit).map((update) => (
           <article key={`${update.repo}-${update.status}`}>
             <Icon name={update.status === 'Release' ? 'sell' : 'merge_type'} />
             <div>
@@ -357,12 +371,14 @@ function RepoUpdatesBlock({ block, selected, onSelect }: TemplateBlockComponentP
 
 function IssuePrUpdatesBlock({ block, selected, onSelect }: TemplateBlockComponentProps) {
   const props = block.props as { items?: WorkQueueItem[] };
+  const items = props.items ?? [];
+  const itemLimit = getItemLimit(block.props.itemLimit, items.length);
 
   return (
     <BlockFrame block={block} selected={selected} onSelect={onSelect}>
       <BlockHeader icon="merge_type" title="Issues and PRs" />
       <div className="work-queue">
-        {(props.items ?? []).map((item) => (
+        {items.slice(0, itemLimit).map((item) => (
           <button key={item.label} type="button">
             <Icon name={item.label.includes('issues') ? 'radio_button_unchecked' : 'merge_type'} />
             <span>{item.label}</span>
@@ -376,12 +392,14 @@ function IssuePrUpdatesBlock({ block, selected, onSelect }: TemplateBlockCompone
 
 function TrendingReposBlock({ block, selected, onSelect }: TemplateBlockComponentProps) {
   const props = block.props as { repositories?: RepoSummary[] };
+  const repositories = props.repositories ?? [];
+  const itemLimit = getItemLimit(block.props.itemLimit, repositories.length);
 
   return (
     <BlockFrame block={block} selected={selected} onSelect={onSelect}>
       <BlockHeader icon="history" title={block.title} />
       <div className="changelog-list">
-        {(props.repositories ?? []).map((repo) => (
+        {repositories.slice(0, itemLimit).map((repo) => (
           <article key={repo.name}>
             <span />
             <time>{repo.stars}</time>
@@ -398,12 +416,14 @@ function TrendingReposBlock({ block, selected, onSelect }: TemplateBlockComponen
 
 function RecommendedReposBlock({ block, selected, onSelect }: TemplateBlockComponentProps) {
   const props = block.props as { repositories?: RepoSummary[] };
+  const repositories = props.repositories ?? [];
+  const itemLimit = getItemLimit(block.props.itemLimit, repositories.length);
 
   return (
     <BlockFrame block={block} selected={selected} onSelect={onSelect}>
       <BlockHeader icon="explore" title="Recommended" />
       <div className="recommendation-list">
-        {(props.repositories ?? []).map((repo) => (
+        {repositories.slice(0, itemLimit).map((repo) => (
           <article key={repo.name}>
             <Icon name="folder" />
             <strong>{repo.name}</strong>

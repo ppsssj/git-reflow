@@ -258,6 +258,12 @@ function getArray(value) {
   return Array.isArray(value) ? value : [];
 }
 
+function getItemLimit(value, fallback = 8) {
+  const parsed = Number(value);
+
+  return Number.isFinite(parsed) ? Math.min(12, Math.max(1, Math.round(parsed))) : fallback;
+}
+
 function findClosestSection(element) {
   if (!(element instanceof HTMLElement)) {
     return null;
@@ -368,7 +374,7 @@ function createRepoList(repositories = []) {
   const list = document.createElement('div');
   list.className = 'git-reflow-block-list';
 
-  repositories.slice(0, 8).forEach((repo) => {
+  repositories.forEach((repo) => {
     const item = document.createElement('a');
     item.href = `/${encodeURIComponent(getText(repo.name, 'repository')).replace('%2F', '/')}`;
     item.className = 'git-reflow-block-row';
@@ -387,6 +393,7 @@ function createRepoList(repositories = []) {
 
 function createGeneratedBlock(block) {
   const props = isObject(block.props) ? block.props : {};
+  const itemLimit = getItemLimit(props.itemLimit, 8);
   const wrapper = document.createElement('section');
   wrapper.className = `${BLOCK_CLASS} ${GENERATED_BLOCK_CLASS}`;
   wrapper.dataset.gitReflowBlockId = block.id;
@@ -397,11 +404,11 @@ function createGeneratedBlock(block) {
   wrapper.append(title);
 
   if (block.type === 'recent-repos' || block.type === 'pinned-repos' || block.type === 'recommended-repos') {
-    wrapper.append(createRepoList(getArray(props.repositories)));
+    wrapper.append(createRepoList(getArray(props.repositories).slice(0, itemLimit)));
   } else if (block.type === 'activity-feed') {
     const list = document.createElement('div');
     list.className = 'git-reflow-block-list';
-    getArray(props.events).slice(0, 5).forEach((event) => {
+    getArray(props.events).slice(0, itemLimit).forEach((event) => {
       const item = document.createElement('article');
       item.className = 'git-reflow-block-row';
       item.textContent = `${getText(event.actor, 'Someone')} ${getText(event.action)} ${getText(event.subject)}`;
@@ -411,7 +418,7 @@ function createGeneratedBlock(block) {
   } else if (block.type === 'repo-updates') {
     const list = document.createElement('div');
     list.className = 'git-reflow-block-list';
-    getArray(props.updates).slice(0, 5).forEach((update) => {
+    getArray(props.updates).slice(0, itemLimit).forEach((update) => {
       const item = document.createElement('article');
       item.className = 'git-reflow-block-row';
       item.textContent = `${getText(update.status)} ${getText(update.repo)} ${getText(update.message)}`;
@@ -421,7 +428,7 @@ function createGeneratedBlock(block) {
   } else if (block.type === 'issue-pr-updates') {
     const list = document.createElement('div');
     list.className = 'git-reflow-block-list';
-    getArray(props.items).slice(0, 5).forEach((item) => {
+    getArray(props.items).slice(0, itemLimit).forEach((item) => {
       const row = document.createElement('button');
       row.type = 'button';
       row.className = 'git-reflow-block-row';
@@ -430,7 +437,7 @@ function createGeneratedBlock(block) {
     });
     wrapper.append(list);
   } else if (block.type === 'trending-repos') {
-    wrapper.append(createRepoList(getArray(props.repositories)));
+    wrapper.append(createRepoList(getArray(props.repositories).slice(0, itemLimit)));
   } else if (block.type === 'copilot-prompt') {
     wrapper.append(createTextElement('p', getText(props.placeholder, 'Ask Copilot from your saved template.')));
     const chips = getArray(props.chips);
@@ -520,10 +527,22 @@ function applyBlockProps(block, element) {
   if (block.type === 'recent-repos') {
     const input = element?.querySelector('input[type="text"], input[type="search"], input');
     setPlaceholderIfPossible(input, getText(props.searchPlaceholder));
+
+    const rows = element?.querySelectorAll('li, a, [role="listitem"], .Box-row') ?? [];
+    const itemLimit = getItemLimit(props.itemLimit, rows.length || 8);
+
+    rows.forEach((row, index) => {
+      if (row instanceof HTMLElement) {
+        row.classList.toggle(HIDDEN_CLASS, index >= itemLimit);
+      }
+    });
   }
 }
 
 function applyTemplateBlocks(template) {
+  document.querySelectorAll(`.${HIDDEN_CLASS}`).forEach((element) => {
+    element.classList.remove(HIDDEN_CLASS);
+  });
   document.querySelectorAll(`.${GENERATED_BLOCK_CLASS}`).forEach((element) => element.remove());
   document.querySelectorAll('.git-reflow-topbar-links').forEach((element) => element.remove());
   document.querySelectorAll(`.${BLOCK_CLASS}`).forEach((element) => {
@@ -1100,6 +1119,9 @@ function resetAppliedStyles() {
   document.documentElement.style.removeProperty('--feed-sidebar');
   removeLeftSidebarResizer();
   document.querySelectorAll(`.${GENERATED_BLOCK_CLASS}`).forEach((element) => element.remove());
+  document.querySelectorAll(`.${HIDDEN_CLASS}`).forEach((element) => {
+    element.classList.remove(HIDDEN_CLASS);
+  });
   document.querySelectorAll(`.${BLOCK_CLASS}`).forEach((element) => {
     element.classList.remove(BLOCK_CLASS, HIDDEN_CLASS);
     element.style.removeProperty('order');

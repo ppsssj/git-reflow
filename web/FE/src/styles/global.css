@@ -4322,7 +4322,7 @@ img {
 .selected-block-meta {
   display: grid;
   gap: 8px;
-  margin: 0;
+  margin: 12px 0 0;
 }
 
 .selected-block-meta div {
@@ -4361,6 +4361,85 @@ img {
   font-size: 0.625rem;
   line-height: 1.5;
   outline: none;
+}
+
+.block-inspector {
+  display: grid;
+  gap: 10px;
+}
+
+.block-inspector label {
+  display: grid;
+  gap: 6px;
+}
+
+.block-inspector label span,
+.block-inspector__checks > span {
+  color: #57606a;
+  font-size: 0.625rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.block-inspector input,
+.block-inspector textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 0 9px;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #24292f;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  outline: none;
+}
+
+.block-inspector input {
+  height: 34px;
+}
+
+.block-inspector textarea {
+  min-height: 72px;
+  resize: vertical;
+  padding: 9px;
+  font-family: inherit;
+  line-height: 1.4;
+}
+
+.block-inspector input:focus,
+.block-inspector textarea:focus {
+  border-color: #0969da;
+  box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.12);
+}
+
+.block-inspector__checks {
+  display: grid;
+  gap: 7px;
+  padding: 10px;
+  border: 1px solid #d8dee4;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.block-inspector__checks label {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+
+.block-inspector__checks input {
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  accent-color: #0969da;
+}
+
+.block-inspector__checks strong {
+  font-size: 0.75rem;
+  line-height: 1.3;
 }
 
 /* GitHub home reference pass: match the saved dashboard snapshot more literally. */

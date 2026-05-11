@@ -112,6 +112,8 @@ export function TemplateEditorPage() {
     blocksByRegion,
     setActiveScreen,
     toggleBlockVisibility,
+    updateBlock,
+    updateBlockProps,
     moveBlock,
     replaceLayout,
   } = useTemplateLayout(defaultGithubTemplate);
@@ -415,6 +417,8 @@ export function TemplateEditorPage() {
           onReset={handleReset}
           onSelectBlock={setSelectedBlockId}
           onSelectVariation={setSelectedVariationId}
+          onUpdateBlock={updateBlock}
+          onUpdateBlockProps={updateBlockProps}
           onToggleLeftSidebarResize={() => setLeftSidebarResizeEnabled((enabled) => !enabled)}
           onToggleBlock={toggleBlockVisibility}
           selectedBlockId={selectedBlockId}
