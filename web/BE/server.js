@@ -89,7 +89,7 @@ async function writeSessionStore(store) {
 function sendJson(response, status, body) {
   response.writeHead(status, {
     'Access-Control-Allow-Headers': 'Authorization, Content-Type',
-    'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+    'Access-Control-Allow-Methods': 'DELETE,GET,POST,OPTIONS',
     'Access-Control-Allow-Origin': '*',
     'Content-Type': 'application/json; charset=utf-8',
   });
@@ -188,6 +188,10 @@ function belongsToUser(template, userId) {
   const ownerUserId = getTemplateOwnerId(template);
 
   return ownerUserId === userId || ownerUserId === '';
+}
+
+function isDefaultTemplate(template) {
+  return template.id === DEFAULT_TEMPLATE_PAYLOAD.id || template.source === 'default';
 }
 
 function withTemplateOwner(template, userId) {
@@ -299,7 +303,7 @@ async function handleGetTemplates(request, response) {
   const store = await readTemplateStore();
   const templatesById = new Map();
 
-  for (const template of store.templates.filter((item) => belongsToUser(item, session.user.id))) {
+  for (const template of store.templates.filter((item) => belongsToUser(item, session.user.id) && !isDefaultTemplate(item))) {
     templatesById.set(template.id, toTemplateRecord(template));
   }
 
@@ -325,6 +329,39 @@ async function handleGetTemplate(request, response, templateId) {
   }
 
   sendJson(response, 200, template);
+}
+
+async function handleDeleteTemplate(request, response, templateId) {
+  const session = await requireSession(request, response);
+
+  if (!session) {
+    return;
+  }
+
+  const store = await readTemplateStore();
+  const template = store.templates.find((item) => item.id === templateId && belongsToUser(item, session.user.id));
+
+  if (!template) {
+    sendError(response, 404, 'Template not found');
+    return;
+  }
+
+  if (template.source === 'default') {
+    sendError(response, 400, 'Default template cannot be deleted');
+    return;
+  }
+
+  const templates = store.templates.filter((item) => item.id !== templateId);
+  const versions = store.versions.filter((item) => item.id !== templateId);
+  const latest = store.latest?.id === templateId ? templates[0] ?? DEFAULT_TEMPLATE_PAYLOAD : store.latest;
+
+  await writeTemplateStore({
+    latest,
+    templates,
+    versions,
+  });
+
+  sendJson(response, 200, { ok: true });
 }
 
 async function handlePostTemplate(request, response) {
@@ -539,6 +576,12 @@ async function handleRequest(request, response) {
   if (request.method === 'GET' && url.pathname.startsWith('/api/templates/')) {
     const templateId = decodeURIComponent(url.pathname.replace('/api/templates/', ''));
     await handleGetTemplate(request, response, templateId);
+    return;
+  }
+
+  if (request.method === 'DELETE' && url.pathname.startsWith('/api/templates/')) {
+    const templateId = decodeURIComponent(url.pathname.replace('/api/templates/', ''));
+    await handleDeleteTemplate(request, response, templateId);
     return;
   }
 

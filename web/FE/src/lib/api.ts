@@ -44,3 +44,18 @@ export async function apiPost<TResponse>(path: string, body: unknown, init?: Req
 
   return response.json() as Promise<TResponse>;
 }
+
+export async function apiDelete<TResponse>(path: string, init?: RequestInit): Promise<TResponse> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...init,
+    method: 'DELETE',
+    headers: getDefaultHeaders(init),
+  });
+
+  if (!response.ok) {
+    const result = await response.json().catch(() => null);
+    throw new Error(result?.error ?? `Request failed with ${response.status}`);
+  }
+
+  return response.json() as Promise<TResponse>;
+}

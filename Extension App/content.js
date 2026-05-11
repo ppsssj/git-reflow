@@ -10,6 +10,7 @@ const ORIGINAL_PLACEHOLDER_ATTR = 'data-git-reflow-original-placeholder';
 const LEFT_WIDTH_STORAGE_KEY = 'gitReflowLeftSidebarWidthPx';
 const AUTH_TOKEN_STORAGE_KEY = 'gitReflowAuthToken';
 const SELECTED_TEMPLATE_STORAGE_KEY = 'gitReflowSelectedTemplateId';
+const DEFAULT_TEMPLATE_ID = 'github-dashboard-reference';
 const MIN_LEFT_SIDEBAR_WIDTH = 220;
 const MAX_LEFT_SIDEBAR_WIDTH = 420;
 const MIN_MAIN_COLUMN_WIDTH = 640;
@@ -970,7 +971,9 @@ async function refreshTemplateList() {
   try {
     setStatus('Loading your templates...');
     const result = await fetchJson('/api/templates', token);
-    availableTemplates = Array.isArray(result.templates) ? result.templates : [];
+    availableTemplates = Array.isArray(result.templates)
+      ? result.templates.filter((template) => template?.id !== DEFAULT_TEMPLATE_ID && template?.source !== 'default')
+      : [];
     const nextTemplateId =
       availableTemplates.find((template) => template.id === selectedTemplateId)?.id ?? availableTemplates[0]?.id ?? '';
 

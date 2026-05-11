@@ -29,6 +29,8 @@ const iconPaths: Record<string, string> = {
   devices: 'M3 5h14v10H3V5Zm2 2v6h10V7H5Zm13 3h3v8h-8v-2h6v-4h-1v-2Z',
   dock_to_left: 'M4 5h16v14H4V5Zm2 2v10h4V7H6Zm6 0v10h6V7h-6Z',
   dock_to_right: 'M4 5h16v14H4V5Zm2 2v10h6V7H6Zm8 0v10h4V7h-4Z',
+  delete: 'M7 21a2 2 0 0 1-2-2V7h14v12a2 2 0 0 1-2 2H7ZM9 4h6l1 1h4v2H4V5h4l1-1Zm0 5v9h2V9H9Zm4 0v9h2V9h-2Z',
+  edit: 'M5 17.2V20h2.8L17.9 9.9l-2.8-2.8L5 17.2ZM19.7 8.1a1 1 0 0 0 0-1.4l-2.4-2.4a1 1 0 0 0-1.4 0l-1.4 1.4 3.8 3.8 1.4-1.4Z',
   explore:
     'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm3.5 6.5-2 5-5 2 2-5 5-2Z',
   extension:

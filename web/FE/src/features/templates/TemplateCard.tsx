@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon } from '../../components/ui/Icon';
 import type { TemplateRecord } from '../../types/template';
@@ -5,6 +6,10 @@ import type { TemplateRecord } from '../../types/template';
 interface TemplateCardProps {
   template: TemplateRecord;
   variant?: 'grid' | 'list';
+  canManage?: boolean;
+  onDelete?: (template: TemplateRecord) => void;
+  onOpen?: (template: TemplateRecord) => void;
+  onRename?: (template: TemplateRecord) => void;
 }
 
 function TemplatePreview({ template }: { template: TemplateRecord }) {
@@ -42,46 +47,134 @@ function TemplatePreview({ template }: { template: TemplateRecord }) {
   );
 }
 
-export function TemplateCard({ template, variant = 'grid' }: TemplateCardProps) {
+export function TemplateCard({
+  template,
+  variant = 'grid',
+  canManage = true,
+  onDelete,
+  onOpen,
+  onRename,
+}: TemplateCardProps) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) {
+      return undefined;
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (menuRef.current?.contains(event.target as Node)) {
+        return;
+      }
+
+      setMenuOpen(false);
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [menuOpen]);
+
+  const handleMenuAction = (action?: (template: TemplateRecord) => void) => {
+    setMenuOpen(false);
+    action?.(template);
+  };
+
   return (
-    <Link className={`template-tile template-tile--${variant}`} to={`/templates/${template.id}`}>
-      <div className="template-tile__thumb">
-        {template.thumbnail ? (
-          <img alt={template.name} src={template.thumbnail} />
-        ) : (
-          <TemplatePreview template={template} />
-        )}
-        <span className={`template-tile__status ${template.status === 'ACTIVE' ? 'is-active' : 'is-inactive'}`}>
-          {template.status}
-        </span>
-      </div>
+    <article className={`template-tile template-tile--${variant}`}>
+      <Link className="template-tile__link" to={`/templates/${template.id}`}>
+        <div className="template-tile__thumb">
+          {template.thumbnail ? (
+            <img alt={template.name} src={template.thumbnail} />
+          ) : (
+            <TemplatePreview template={template} />
+          )}
+          <span className={`template-tile__status ${template.status === 'ACTIVE' ? 'is-active' : 'is-inactive'}`}>
+            {template.status}
+          </span>
+        </div>
+      </Link>
+
       <div className="template-tile__body">
         <div className="template-tile__title">
-          <h3>{template.name}</h3>
-          <Icon name="more_vert" />
-        </div>
-        <p className="template-tile__description">{template.description}</p>
-        <div className="template-tile__meta">
-          <div className="template-tile__avatars">
-            {template.collaborators.slice(0, 2).map((collaborator, index) => (
-              <img
-                key={`${template.id}-${index}`}
-                alt=""
-                aria-hidden="true"
-                src={collaborator}
-              />
-            ))}
+          <Link to={`/templates/${template.id}`}>
+            <h3>{template.name}</h3>
+          </Link>
+          <div className="template-tile__menu" ref={menuRef}>
+            <button
+              aria-expanded={menuOpen}
+              aria-haspopup="menu"
+              aria-label={`${template.name} actions`}
+              className="template-tile__menu-trigger"
+              type="button"
+              onClick={() => setMenuOpen((isOpen) => !isOpen)}
+            >
+              <Icon name="more_vert" />
+            </button>
+            {menuOpen ? (
+              <div className="template-tile__menu-popover" role="menu">
+                <button type="button" role="menuitem" onClick={() => handleMenuAction(onOpen)}>
+                  <Icon name="open_in_new" />
+                  <span>Open</span>
+                </button>
+                <button
+                  disabled={!canManage}
+                  type="button"
+                  role="menuitem"
+                  onClick={() => handleMenuAction(onRename)}
+                >
+                  <Icon name="edit" />
+                  <span>Rename</span>
+                </button>
+                <button
+                  className="is-danger"
+                  disabled={!canManage}
+                  type="button"
+                  role="menuitem"
+                  onClick={() => handleMenuAction(onDelete)}
+                >
+                  <Icon name="delete" />
+                  <span>Delete</span>
+                </button>
+              </div>
+            ) : null}
           </div>
-          <span>{template.updatedAt}</span>
         </div>
-        {variant === 'list' ? (
-          <div className="template-tile__highlights">
-            {template.highlights.slice(0, 3).map((highlight) => (
-              <span key={highlight}>{highlight}</span>
-            ))}
+        <Link className="template-tile__content-link" to={`/templates/${template.id}`}>
+          <p className="template-tile__description">{template.description}</p>
+          <div className="template-tile__meta">
+            <div className="template-tile__avatars">
+              {template.collaborators.slice(0, 2).map((collaborator, index) => (
+                <img
+                  key={`${template.id}-${index}`}
+                  alt=""
+                  aria-hidden="true"
+                  src={collaborator}
+                />
+              ))}
+            </div>
+            <span>{template.updatedAt}</span>
           </div>
-        ) : null}
+          {variant === 'list' ? (
+            <div className="template-tile__highlights">
+              {template.highlights.slice(0, 3).map((highlight) => (
+                <span key={highlight}>{highlight}</span>
+              ))}
+            </div>
+          ) : null}
+        </Link>
       </div>
-    </Link>
+    </article>
   );
 }

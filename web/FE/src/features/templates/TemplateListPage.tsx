@@ -3,8 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AppTopNav } from '../../components/layout/AppTopNav';
 import { Icon } from '../../components/ui/Icon';
-import { apiGet, apiPost } from '../../lib/api';
-import { templates } from '../../mocks/templates';
+import { apiDelete, apiGet, apiPost } from '../../lib/api';
 import type { ExtensionTemplatePayload, TemplateRecord } from '../../types/template';
 import { defaultGithubTemplate } from '../editor/templates/defaultGithubTemplate';
 import { TemplateCard } from './TemplateCard';
@@ -28,34 +27,11 @@ interface CreateTemplateResponse {
   template: ExtensionTemplatePayload;
 }
 
+interface DeleteTemplateResponse {
+  ok: true;
+}
+
 const DEFAULT_TEMPLATE_ID = defaultGithubTemplate.id;
-const defaultTemplateRecord: TemplateRecord = {
-  id: defaultGithubTemplate.id,
-  name: defaultGithubTemplate.name,
-  description: defaultGithubTemplate.description,
-  thumbnail: '',
-  collaborators: [],
-  status: 'ACTIVE',
-  syncState: 'Ready to sync',
-  updatedAt: 'Default template',
-  owner: 'git-reflow',
-  highlights: [
-    'Base GitHub home layout',
-    'Use this as the starting point for saved templates',
-    `${defaultGithubTemplate.blocks.filter((block) => block.visible).length} visible blocks`,
-  ],
-  sections: defaultGithubTemplate.blocks
-    .filter((block) => block.visible)
-    .slice(0, 6)
-    .map((block, index) => ({
-      id: block.id,
-      label: block.title,
-      kind: block.region === 'topbar' ? 'header' : block.region === 'main-feed' ? 'content' : 'sidebar',
-      depth: index === 0 ? 0 : 1,
-      description: block.extensionSlot ?? block.region,
-      visible: block.visible,
-    })),
-};
 
 function slugify(value: string) {
   const slug = value
@@ -101,10 +77,9 @@ export function TemplateListPage() {
   const [templateError, setTemplateError] = useState('');
   const [newTemplateName, setNewTemplateName] = useState('');
   const [createStatus, setCreateStatus] = useState('');
+  const remoteTemplateIds = useMemo(() => new Set(remoteTemplates.map((template) => template.id)), [remoteTemplates]);
   const visibleTemplates = useMemo(() => {
-    const userTemplates = remoteTemplates.filter((template) => template.id !== DEFAULT_TEMPLATE_ID);
-
-    return userTemplates.length > 0 ? [defaultTemplateRecord, ...userTemplates] : [defaultTemplateRecord, ...templates];
+    return remoteTemplates.filter((template) => template.id !== DEFAULT_TEMPLATE_ID);
   }, [remoteTemplates]);
   const primaryTemplateId = visibleTemplates[0]?.id ?? 'github-dashboard-reference';
 
@@ -167,6 +142,80 @@ export function TemplateListPage() {
       navigate(`/templates/${result.template.id}`);
     } catch (error) {
       setCreateStatus(error instanceof Error ? error.message : 'Failed to create template');
+    }
+  };
+
+  const handleOpenTemplate = (template: TemplateRecord) => {
+    navigate(`/templates/${template.id}`);
+  };
+
+  const handleRenameTemplate = async (template: TemplateRecord) => {
+    const nextName = window.prompt('Rename template', template.name)?.trim();
+
+    if (!nextName || nextName === template.name) {
+      return;
+    }
+
+    if (nextName.length < 2) {
+      setCreateStatus('Template name must be at least 2 characters');
+      return;
+    }
+
+    const nameExists = visibleTemplates.some(
+      (item) => item.id !== template.id && item.name.trim().toLowerCase() === nextName.toLowerCase(),
+    );
+
+    if (nameExists) {
+      setCreateStatus('Template name already exists');
+      return;
+    }
+
+    setCreateStatus('Renaming...');
+
+    try {
+      const payload = await apiGet<ExtensionTemplatePayload>(`/api/templates/${encodeURIComponent(template.id)}`);
+      const now = new Date().toISOString();
+      const result = await apiPost<CreateTemplateResponse>('/api/templates/github-home', {
+        ...payload,
+        name: nextName,
+        metadata: {
+          ...payload.metadata,
+          updatedAt: now,
+        },
+        updatedAt: now,
+      });
+
+      setRemoteTemplates((current) =>
+        current.map((item) =>
+          item.id === template.id
+            ? {
+                ...item,
+                name: result.template.name,
+                description: result.template.description,
+                updatedAt: `Updated ${new Date(result.template.updatedAt).toLocaleString()}`,
+              }
+            : item,
+        ),
+      );
+      setCreateStatus('Renamed');
+    } catch (error) {
+      setCreateStatus(error instanceof Error ? error.message : 'Failed to rename template');
+    }
+  };
+
+  const handleDeleteTemplate = async (template: TemplateRecord) => {
+    if (!window.confirm(`Delete "${template.name}"?`)) {
+      return;
+    }
+
+    setCreateStatus('Deleting...');
+
+    try {
+      await apiDelete<DeleteTemplateResponse>(`/api/templates/${encodeURIComponent(template.id)}`);
+      setRemoteTemplates((current) => current.filter((item) => item.id !== template.id));
+      setCreateStatus('Deleted');
+    } catch (error) {
+      setCreateStatus(error instanceof Error ? error.message : 'Failed to delete template');
     }
   };
 
@@ -247,7 +296,15 @@ export function TemplateListPage() {
 
           <section className={viewMode === 'grid' ? 'template-grid' : 'template-list'}>
             {visibleTemplates.map((template) => (
-              <TemplateCard key={template.id} template={template} variant={viewMode} />
+              <TemplateCard
+                key={template.id}
+                canManage={template.id !== DEFAULT_TEMPLATE_ID && remoteTemplateIds.has(template.id)}
+                template={template}
+                variant={viewMode}
+                onDelete={handleDeleteTemplate}
+                onOpen={handleOpenTemplate}
+                onRename={handleRenameTemplate}
+              />
             ))}
 
             <form className="template-add-card template-create-card" onSubmit={handleCreateTemplate}>
