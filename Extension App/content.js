@@ -264,6 +264,32 @@ function getItemLimit(value, fallback = 8) {
   return Number.isFinite(parsed) ? Math.min(12, Math.max(1, Math.round(parsed))) : fallback;
 }
 
+function applyAppearance(element, appearance) {
+  if (!(element instanceof HTMLElement) || !isObject(appearance)) {
+    return;
+  }
+
+  const marginY = Number(appearance.marginY);
+  const fontSize = Number(appearance.fontSize);
+
+  if (typeof appearance.backgroundColor === 'string') {
+    element.style.backgroundColor = appearance.backgroundColor;
+  }
+
+  if (Number.isFinite(marginY)) {
+    element.style.marginTop = `${Math.max(0, Math.min(48, marginY))}px`;
+    element.style.marginBottom = `${Math.max(0, Math.min(48, marginY))}px`;
+  }
+
+  if (typeof appearance.fontFamily === 'string') {
+    element.style.fontFamily = appearance.fontFamily;
+  }
+
+  if (Number.isFinite(fontSize)) {
+    element.style.fontSize = `${Math.max(10, Math.min(24, fontSize))}px`;
+  }
+}
+
 function findClosestSection(element) {
   if (!(element instanceof HTMLElement)) {
     return null;
@@ -398,6 +424,7 @@ function createGeneratedBlock(block) {
   wrapper.className = `${BLOCK_CLASS} ${GENERATED_BLOCK_CLASS}`;
   wrapper.dataset.gitReflowBlockId = block.id;
   wrapper.dataset.gitReflowBlockType = block.type;
+  applyAppearance(wrapper, props.appearance);
 
   const title = document.createElement('h2');
   title.textContent = getText(block.title, block.type);
@@ -514,6 +541,8 @@ function applyTopbarProps(block) {
 function applyBlockProps(block, element) {
   const props = isObject(block.props) ? block.props : {};
 
+  applyAppearance(element, props.appearance);
+
   if (block.type === 'top-nav') {
     applyTopbarProps(block);
     return;
@@ -548,6 +577,11 @@ function applyTemplateBlocks(template) {
   document.querySelectorAll(`.${BLOCK_CLASS}`).forEach((element) => {
     element.classList.remove(BLOCK_CLASS, HIDDEN_CLASS);
     element.style.removeProperty('order');
+    element.style.removeProperty('background-color');
+    element.style.removeProperty('margin-top');
+    element.style.removeProperty('margin-bottom');
+    element.style.removeProperty('font-family');
+    element.style.removeProperty('font-size');
     delete element.dataset.gitReflowBlockId;
     delete element.dataset.gitReflowBlockType;
   });
@@ -1125,6 +1159,11 @@ function resetAppliedStyles() {
   document.querySelectorAll(`.${BLOCK_CLASS}`).forEach((element) => {
     element.classList.remove(BLOCK_CLASS, HIDDEN_CLASS);
     element.style.removeProperty('order');
+    element.style.removeProperty('background-color');
+    element.style.removeProperty('margin-top');
+    element.style.removeProperty('margin-bottom');
+    element.style.removeProperty('font-family');
+    element.style.removeProperty('font-size');
     delete element.dataset.gitReflowBlockId;
     delete element.dataset.gitReflowBlockType;
   });

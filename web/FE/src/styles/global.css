@@ -4506,6 +4506,118 @@ img {
   background: #d8dee4;
 }
 
+.block-style-menu {
+  position: fixed;
+  z-index: 80;
+  display: grid;
+  width: 260px;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #d0d7de;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 18px 44px rgba(31, 35, 40, 0.22);
+}
+
+.block-style-menu__header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 28px;
+  gap: 2px 8px;
+  align-items: center;
+}
+
+.block-style-menu__header span {
+  color: #6e7781;
+  font-size: 0.625rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.block-style-menu__header strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #24292f;
+  font-size: 0.8125rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.block-style-menu__header button {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #57606a;
+  cursor: pointer;
+}
+
+.block-style-menu__header button:hover {
+  background: #f6f8fa;
+  color: #0969da;
+}
+
+.block-style-menu__header .material-symbols-outlined {
+  width: 16px;
+  height: 16px;
+}
+
+.block-style-menu p {
+  margin: 0;
+  color: #57606a;
+  font-size: 0.6875rem;
+  line-height: 1.35;
+}
+
+.block-style-menu__controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+}
+
+.block-style-menu__controls label {
+  display: grid;
+  gap: 5px;
+}
+
+.block-style-menu__controls label:nth-child(3) {
+  grid-column: span 2;
+}
+
+.block-style-menu__controls span {
+  color: #57606a;
+  font-size: 0.625rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.block-style-menu__controls input,
+.block-style-menu__controls select {
+  width: 100%;
+  min-width: 0;
+  height: 32px;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #24292f;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.block-style-menu__controls input[type='number'],
+.block-style-menu__controls select {
+  padding: 0 8px;
+}
+
+.block-style-menu__controls input[type='color'] {
+  padding: 3px;
+}
+
 .template-builder-canvas-header {
   display: flex;
   max-width: 1160px;

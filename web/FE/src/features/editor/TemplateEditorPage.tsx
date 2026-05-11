@@ -6,6 +6,7 @@ import { Icon } from '../../components/ui/Icon';
 import { apiGet, apiPost } from '../../lib/api';
 import { templates } from '../../mocks/templates';
 import type {
+  TemplateBlock,
   ExtensionTemplatePayload,
   TemplateColumnLayout,
   TemplateLayout,
@@ -114,6 +115,7 @@ export function TemplateEditorPage() {
     toggleBlockVisibility,
     updateBlock,
     updateBlockProps,
+    updateBlockTypeProps,
     moveBlock,
     replaceLayout,
   } = useTemplateLayout(defaultGithubTemplate);
@@ -126,7 +128,11 @@ export function TemplateEditorPage() {
   const [resetSnapshot, setResetSnapshot] = useState<TemplateResetSnapshot>(() =>
     getTemplateResetSnapshot(defaultGithubTemplate),
   );
+  const [blockStyleMenu, setBlockStyleMenu] = useState<{ blockId: string; x: number; y: number } | null>(null);
   const canvasShellRef = useRef<HTMLElement | null>(null);
+  const styleMenuBlock = blockStyleMenu
+    ? layout.blocks.find((block) => block.id === blockStyleMenu.blockId)
+    : null;
 
   const applyTemplateState = (template: TemplateLayout & Partial<ExtensionTemplatePayload>) => {
     const snapshot = getTemplateResetSnapshot(template);
@@ -275,6 +281,22 @@ export function TemplateEditorPage() {
     event.currentTarget.scrollTop += event.deltaY;
   };
 
+  const handleOpenBlockStyleMenu = (blockId: string, x: number, y: number) => {
+    setSelectedBlockId(blockId);
+    setBlockStyleMenu({ blockId, x, y });
+  };
+
+  const handleUpdateBlockAppearance = (block: TemplateBlock, appearance: Record<string, unknown>) => {
+    updateBlockTypeProps(block.type, {
+      appearance: {
+        ...(typeof block.props.appearance === 'object' && block.props.appearance !== null && !Array.isArray(block.props.appearance)
+          ? block.props.appearance
+          : {}),
+        ...appearance,
+      },
+    });
+  };
+
   return (
     <div className="editor-page template-builder-page">
       <AppTopNav
@@ -378,12 +400,33 @@ export function TemplateEditorPage() {
             <TemplateLayoutCanvas
               blocksByRegion={blocksByRegion}
               columnLayout={columnLayout}
+              onOpenBlockMenu={handleOpenBlockStyleMenu}
               onSelectBlock={setSelectedBlockId}
               screen={activeScreen}
               selectedBlockId={selectedBlockId}
               variationId={selectedVariationId}
             />
           </div>
+
+          {blockStyleMenu && styleMenuBlock ? (
+            <div
+              className="block-style-menu"
+              style={{ left: blockStyleMenu.x, top: blockStyleMenu.y } as CSSProperties}
+            >
+              <div className="block-style-menu__header">
+                <span>Style</span>
+                <strong>{styleMenuBlock.title}</strong>
+                <button aria-label="Close style menu" type="button" onClick={() => setBlockStyleMenu(null)}>
+                  <Icon name="close" />
+                </button>
+              </div>
+              <p>Applied to matching {styleMenuBlock.type} blocks.</p>
+              <BlockStyleMenuControls
+                block={styleMenuBlock}
+                onChange={(appearance) => handleUpdateBlockAppearance(styleMenuBlock, appearance)}
+              />
+            </div>
+          ) : null}
 
           <div className="template-canvas-controls" aria-label="Canvas controls">
             <button
@@ -427,6 +470,73 @@ export function TemplateEditorPage() {
           variations={githubSafeVariations}
         />
       </main>
+    </div>
+  );
+}
+
+function getAppearanceValue(block: TemplateBlock, key: string, fallback: string | number) {
+  const appearance = block.props.appearance;
+
+  if (!appearance || typeof appearance !== 'object' || Array.isArray(appearance)) {
+    return fallback;
+  }
+
+  const value = (appearance as Record<string, unknown>)[key];
+
+  return typeof fallback === 'number' ? Number(value) || fallback : typeof value === 'string' ? value : fallback;
+}
+
+function BlockStyleMenuControls({
+  block,
+  onChange,
+}: {
+  block: TemplateBlock;
+  onChange: (appearance: Record<string, unknown>) => void;
+}) {
+  const backgroundColor = getAppearanceValue(block, 'backgroundColor', '#ffffff') as string;
+  const marginY = getAppearanceValue(block, 'marginY', 0) as number;
+  const fontFamily = getAppearanceValue(block, 'fontFamily', '-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif') as string;
+  const fontSize = getAppearanceValue(block, 'fontSize', 14) as number;
+
+  return (
+    <div className="block-style-menu__controls">
+      <label>
+        <span>Background</span>
+        <input
+          type="color"
+          value={backgroundColor}
+          onChange={(event) => onChange({ backgroundColor: event.target.value })}
+        />
+      </label>
+      <label>
+        <span>Margin</span>
+        <input
+          max={48}
+          min={0}
+          type="number"
+          value={marginY}
+          onChange={(event) => onChange({ marginY: Math.max(0, Math.min(48, Number(event.target.value) || 0)) })}
+        />
+      </label>
+      <label>
+        <span>Font</span>
+        <select value={fontFamily} onChange={(event) => onChange({ fontFamily: event.target.value })}>
+          <option value="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif">System</option>
+          <option value="Arial, sans-serif">Arial</option>
+          <option value="Georgia, serif">Georgia</option>
+          <option value="ui-monospace, SFMono-Regular, Menlo, monospace">Mono</option>
+        </select>
+      </label>
+      <label>
+        <span>Font size</span>
+        <input
+          max={24}
+          min={10}
+          type="number"
+          value={fontSize}
+          onChange={(event) => onChange({ fontSize: Math.max(10, Math.min(24, Number(event.target.value) || 14)) })}
+        />
+      </label>
     </div>
   );
 }

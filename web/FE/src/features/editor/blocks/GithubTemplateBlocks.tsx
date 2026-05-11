@@ -1,11 +1,12 @@
 import { Icon } from '../../../components/ui/Icon';
-import type { ReactNode } from 'react';
+import type { CSSProperties, MouseEvent, ReactNode } from 'react';
 import type { TemplateBlock, TemplateBlockType } from '../../../types/template';
 
 interface TemplateBlockComponentProps {
   block: TemplateBlock;
   selected: boolean;
   onSelect: (blockId: string) => void;
+  onOpenContextMenu?: (blockId: string, x: number, y: number) => void;
 }
 
 interface BlockFrameProps extends TemplateBlockComponentProps {
@@ -40,13 +41,61 @@ interface RepoUpdate {
   status: string;
 }
 
-function BlockFrame({ block, selected, children, onSelect }: BlockFrameProps) {
+function getAppearanceStyle(block: TemplateBlock) {
+  const appearance = block.props.appearance;
+
+  if (!appearance || typeof appearance !== 'object' || Array.isArray(appearance)) {
+    return undefined;
+  }
+
+  const styles = appearance as Record<string, unknown>;
+  const marginY = Number(styles.marginY);
+  const fontSize = Number(styles.fontSize);
+  const style: CSSProperties = {};
+
+  if (typeof styles.backgroundColor === 'string' && styles.backgroundColor) {
+    style.backgroundColor = styles.backgroundColor;
+  }
+
+  if (Number.isFinite(marginY)) {
+    style.marginTop = `${marginY}px`;
+    style.marginBottom = `${marginY}px`;
+  }
+
+  if (typeof styles.fontFamily === 'string' && styles.fontFamily) {
+    style.fontFamily = styles.fontFamily;
+  }
+
+  if (Number.isFinite(fontSize)) {
+    style.fontSize = `${fontSize}px`;
+  }
+
+  return style;
+}
+
+function handleContextMenu(
+  block: TemplateBlock,
+  onOpenContextMenu: TemplateBlockComponentProps['onOpenContextMenu'],
+  event: MouseEvent<HTMLElement>,
+) {
+  if (!onOpenContextMenu) {
+    return;
+  }
+
+  event.preventDefault();
+  event.stopPropagation();
+  onOpenContextMenu(block.id, event.clientX, event.clientY);
+}
+
+function BlockFrame({ block, selected, children, onSelect, onOpenContextMenu }: BlockFrameProps) {
   return (
     <section
       className={['github-block', `github-block--${block.type}`, selected ? 'is-selected' : ''].join(' ').trim()}
       data-block-id={block.id}
       data-block-type={block.type}
+      style={getAppearanceStyle(block)}
       onClick={() => onSelect(block.id)}
+      onContextMenu={(event) => handleContextMenu(block, onOpenContextMenu, event)}
     >
       {children}
     </section>
@@ -96,7 +145,7 @@ function getItemLimit(value: unknown, fallback: number) {
   return Number.isFinite(parsed) ? Math.min(12, Math.max(1, Math.round(parsed))) : fallback;
 }
 
-function TopNavBlock({ block, selected, onSelect }: TemplateBlockComponentProps) {
+function TopNavBlock({ block, selected, onSelect, onOpenContextMenu }: TemplateBlockComponentProps) {
   const props = block.props as { context?: string; searchPlaceholder?: string; links?: string[]; actions?: string[] };
   const links = props.links ?? [];
   const actions = props.actions ?? [];
@@ -106,7 +155,9 @@ function TopNavBlock({ block, selected, onSelect }: TemplateBlockComponentProps)
       className={['github-home-topnav github-block', selected ? 'is-selected' : ''].join(' ').trim()}
       data-block-id={block.id}
       data-block-type={block.type}
+      style={getAppearanceStyle(block)}
       onClick={() => onSelect(block.id)}
+      onContextMenu={(event) => handleContextMenu(block, onOpenContextMenu, event)}
     >
       <div className="github-home-topnav__brand">
         <button aria-label="Open navigation" type="button">
@@ -157,7 +208,7 @@ function TopNavBlock({ block, selected, onSelect }: TemplateBlockComponentProps)
   );
 }
 
-function ProfileSummaryBlock({ block, selected, onSelect }: TemplateBlockComponentProps) {
+function ProfileSummaryBlock({ block, selected, onSelect, onOpenContextMenu }: TemplateBlockComponentProps) {
   const props = block.props as {
     name?: string;
     handle?: string;
@@ -166,7 +217,7 @@ function ProfileSummaryBlock({ block, selected, onSelect }: TemplateBlockCompone
   };
 
   return (
-    <BlockFrame block={block} selected={selected} onSelect={onSelect}>
+    <BlockFrame block={block} selected={selected} onSelect={onSelect} onOpenContextMenu={onOpenContextMenu}>
       <div className="profile-summary">
         <div className="profile-summary__avatar">{props.name?.slice(0, 1) ?? 'R'}</div>
         <div>
@@ -192,11 +243,11 @@ function ProfileSummaryBlock({ block, selected, onSelect }: TemplateBlockCompone
   );
 }
 
-function CopilotPromptBlock({ block, selected, onSelect }: TemplateBlockComponentProps) {
+function CopilotPromptBlock({ block, selected, onSelect, onOpenContextMenu }: TemplateBlockComponentProps) {
   const props = block.props as { placeholder?: string; model?: string; chips?: string[] };
 
   return (
-    <BlockFrame block={block} selected={selected} onSelect={onSelect}>
+    <BlockFrame block={block} selected={selected} onSelect={onSelect} onOpenContextMenu={onOpenContextMenu}>
       <div className="home-feed-heading">
         <h2>Home</h2>
       </div>
@@ -231,13 +282,13 @@ function CopilotPromptBlock({ block, selected, onSelect }: TemplateBlockComponen
   );
 }
 
-function PinnedReposBlock({ block, selected, onSelect }: TemplateBlockComponentProps) {
+function PinnedReposBlock({ block, selected, onSelect, onOpenContextMenu }: TemplateBlockComponentProps) {
   const props = block.props as { repositories?: RepoSummary[] };
   const repositories = props.repositories ?? [];
   const itemLimit = getItemLimit(block.props.itemLimit, repositories.length);
 
   return (
-    <BlockFrame block={block} selected={selected} onSelect={onSelect}>
+    <BlockFrame block={block} selected={selected} onSelect={onSelect} onOpenContextMenu={onOpenContextMenu}>
       <BlockHeader icon="push_pin" title="Pinned" />
       <div className="pinned-repo-grid">
         {repositories.slice(0, itemLimit).map((repo) => (
@@ -260,13 +311,13 @@ function PinnedReposBlock({ block, selected, onSelect }: TemplateBlockComponentP
   );
 }
 
-function RecentReposBlock({ block, selected, onSelect }: TemplateBlockComponentProps) {
+function RecentReposBlock({ block, selected, onSelect, onOpenContextMenu }: TemplateBlockComponentProps) {
   const props = block.props as { searchPlaceholder?: string; repositories?: RepoSummary[] };
   const repositories = props.repositories ?? [];
   const itemLimit = getItemLimit(block.props.itemLimit, repositories.length);
 
   return (
-    <BlockFrame block={block} selected={selected} onSelect={onSelect}>
+    <BlockFrame block={block} selected={selected} onSelect={onSelect} onOpenContextMenu={onOpenContextMenu}>
       <div className="top-repositories-heading">
         <BlockHeader icon="folder" title={block.title} />
         <button type="button">
@@ -294,13 +345,13 @@ function RecentReposBlock({ block, selected, onSelect }: TemplateBlockComponentP
   );
 }
 
-function ActivityFeedBlock({ block, selected, onSelect }: TemplateBlockComponentProps) {
+function ActivityFeedBlock({ block, selected, onSelect, onOpenContextMenu }: TemplateBlockComponentProps) {
   const props = block.props as { filters?: string[]; events?: ActivityEvent[] };
   const events = props.events ?? [];
   const itemLimit = getItemLimit(block.props.itemLimit, events.length);
 
   return (
-    <BlockFrame block={block} selected={selected} onSelect={onSelect}>
+    <BlockFrame block={block} selected={selected} onSelect={onSelect} onOpenContextMenu={onOpenContextMenu}>
       <div className="home-feed-heading">
         <h2>Feed</h2>
         <div>
@@ -345,13 +396,13 @@ function ActivityFeedBlock({ block, selected, onSelect }: TemplateBlockComponent
   );
 }
 
-function RepoUpdatesBlock({ block, selected, onSelect }: TemplateBlockComponentProps) {
+function RepoUpdatesBlock({ block, selected, onSelect, onOpenContextMenu }: TemplateBlockComponentProps) {
   const props = block.props as { updates?: RepoUpdate[] };
   const updates = props.updates ?? [];
   const itemLimit = getItemLimit(block.props.itemLimit, updates.length);
 
   return (
-    <BlockFrame block={block} selected={selected} onSelect={onSelect}>
+    <BlockFrame block={block} selected={selected} onSelect={onSelect} onOpenContextMenu={onOpenContextMenu}>
       <BlockHeader icon="campaign" title="Repository updates" />
       <div className="repo-update-list">
         {updates.slice(0, itemLimit).map((update) => (
@@ -369,13 +420,13 @@ function RepoUpdatesBlock({ block, selected, onSelect }: TemplateBlockComponentP
   );
 }
 
-function IssuePrUpdatesBlock({ block, selected, onSelect }: TemplateBlockComponentProps) {
+function IssuePrUpdatesBlock({ block, selected, onSelect, onOpenContextMenu }: TemplateBlockComponentProps) {
   const props = block.props as { items?: WorkQueueItem[] };
   const items = props.items ?? [];
   const itemLimit = getItemLimit(block.props.itemLimit, items.length);
 
   return (
-    <BlockFrame block={block} selected={selected} onSelect={onSelect}>
+    <BlockFrame block={block} selected={selected} onSelect={onSelect} onOpenContextMenu={onOpenContextMenu}>
       <BlockHeader icon="merge_type" title="Issues and PRs" />
       <div className="work-queue">
         {items.slice(0, itemLimit).map((item) => (
@@ -390,13 +441,13 @@ function IssuePrUpdatesBlock({ block, selected, onSelect }: TemplateBlockCompone
   );
 }
 
-function TrendingReposBlock({ block, selected, onSelect }: TemplateBlockComponentProps) {
+function TrendingReposBlock({ block, selected, onSelect, onOpenContextMenu }: TemplateBlockComponentProps) {
   const props = block.props as { repositories?: RepoSummary[] };
   const repositories = props.repositories ?? [];
   const itemLimit = getItemLimit(block.props.itemLimit, repositories.length);
 
   return (
-    <BlockFrame block={block} selected={selected} onSelect={onSelect}>
+    <BlockFrame block={block} selected={selected} onSelect={onSelect} onOpenContextMenu={onOpenContextMenu}>
       <BlockHeader icon="history" title={block.title} />
       <div className="changelog-list">
         {repositories.slice(0, itemLimit).map((repo) => (
@@ -414,13 +465,13 @@ function TrendingReposBlock({ block, selected, onSelect }: TemplateBlockComponen
   );
 }
 
-function RecommendedReposBlock({ block, selected, onSelect }: TemplateBlockComponentProps) {
+function RecommendedReposBlock({ block, selected, onSelect, onOpenContextMenu }: TemplateBlockComponentProps) {
   const props = block.props as { repositories?: RepoSummary[] };
   const repositories = props.repositories ?? [];
   const itemLimit = getItemLimit(block.props.itemLimit, repositories.length);
 
   return (
-    <BlockFrame block={block} selected={selected} onSelect={onSelect}>
+    <BlockFrame block={block} selected={selected} onSelect={onSelect} onOpenContextMenu={onOpenContextMenu}>
       <BlockHeader icon="explore" title="Recommended" />
       <div className="recommendation-list">
         {repositories.slice(0, itemLimit).map((repo) => (

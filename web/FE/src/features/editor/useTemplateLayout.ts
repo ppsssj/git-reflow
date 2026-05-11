@@ -5,6 +5,7 @@ type TemplateLayoutAction =
   | { type: 'toggle-block'; blockId: string }
   | { type: 'update-block'; blockId: string; updates: Partial<TemplateBlock> }
   | { type: 'update-block-props'; blockId: string; props: Record<string, unknown> }
+  | { type: 'update-block-type-props'; blockType: TemplateBlock['type']; props: Record<string, unknown> }
   | { type: 'move-block'; blockId: string; direction: 'up' | 'down' }
   | { type: 'set-active-screen'; screenId: string }
   | { type: 'replace'; layout: TemplateLayout }
@@ -94,6 +95,22 @@ function templateLayoutReducer(layout: TemplateLayout, action: TemplateLayoutAct
             : block,
         ),
       };
+    case 'update-block-type-props':
+      return {
+        ...layout,
+        source: 'user',
+        blocks: layout.blocks.map((block) =>
+          block.type === action.blockType
+            ? {
+                ...block,
+                props: {
+                  ...block.props,
+                  ...action.props,
+                },
+              }
+            : block,
+        ),
+      };
     case 'move-block':
       return moveBlock(layout, action.blockId, action.direction);
     case 'set-active-screen':
@@ -146,6 +163,11 @@ export function useTemplateLayout(defaultLayout: TemplateLayout) {
     (blockId: string, props: Record<string, unknown>) => dispatch({ type: 'update-block-props', blockId, props }),
     [],
   );
+  const updateBlockTypeProps = useCallback(
+    (blockType: TemplateBlock['type'], props: Record<string, unknown>) =>
+      dispatch({ type: 'update-block-type-props', blockType, props }),
+    [],
+  );
   const moveBlockByDirection = useCallback(
     (blockId: string, direction: 'up' | 'down') => dispatch({ type: 'move-block', blockId, direction }),
     [],
@@ -162,6 +184,7 @@ export function useTemplateLayout(defaultLayout: TemplateLayout) {
     toggleBlockVisibility,
     updateBlock,
     updateBlockProps,
+    updateBlockTypeProps,
     moveBlock: moveBlockByDirection,
     resetLayout,
   };

@@ -23,6 +23,7 @@ const iconPaths: Record<string, string> = {
   check_box_outline_blank: 'M5 5h14v14H5V5Zm2 2v10h10V7H7Z',
   cloud_done:
     'M7 18a5 5 0 0 1 .6-10A6 6 0 0 1 19 10.2 4 4 0 0 1 18 18H7Zm4-3 5-5-1.4-1.4L11 12.2 9.4 10.6 8 12l3 3Z',
+  close: 'M6.4 5 12 10.6 17.6 5 19 6.4 13.4 12 19 17.6 17.6 19 12 13.4 6.4 19 5 17.6 10.6 12 5 6.4 6.4 5Z',
   code: 'M9.4 16.6 4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4Zm5.2 0L19.2 12l-4.6-4.6L16 6l6 6-6 6-1.4-1.4Z',
   dashboard_customize:
     'M4 4h7v7H4V4Zm9 0h7v5h-7V4ZM4 13h7v7H4v-7Zm9-2h7v9h-7v-9Z',

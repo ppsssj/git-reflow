@@ -11,6 +11,7 @@ interface TemplateLayoutCanvasProps {
   columnLayout: TemplateColumnLayout;
   variationId: TemplateVariationId;
   onSelectBlock: (blockId: string) => void;
+  onOpenBlockMenu: (blockId: string, x: number, y: number) => void;
 }
 
 const regionLabels: Record<TemplateRegion, string> = {
@@ -24,10 +25,12 @@ function RenderBlock({
   block,
   selectedBlockId,
   onSelectBlock,
+  onOpenBlockMenu,
 }: {
   block: TemplateBlock;
   selectedBlockId: string;
   onSelectBlock: (blockId: string) => void;
+  onOpenBlockMenu: (blockId: string, x: number, y: number) => void;
 }) {
   const BlockComponent = githubBlockRegistry[block.type];
 
@@ -35,7 +38,14 @@ function RenderBlock({
     return null;
   }
 
-  return <BlockComponent block={block} selected={block.id === selectedBlockId} onSelect={onSelectBlock} />;
+  return (
+    <BlockComponent
+      block={block}
+      selected={block.id === selectedBlockId}
+      onOpenContextMenu={onOpenBlockMenu}
+      onSelect={onSelectBlock}
+    />
+  );
 }
 
 function RegionColumn({
@@ -43,11 +53,13 @@ function RegionColumn({
   blocks,
   selectedBlockId,
   onSelectBlock,
+  onOpenBlockMenu,
 }: {
   region: TemplateRegion;
   blocks: TemplateBlock[];
   selectedBlockId: string;
   onSelectBlock: (blockId: string) => void;
+  onOpenBlockMenu: (blockId: string, x: number, y: number) => void;
 }) {
   const visibleBlocks = blocks.filter((block) => block.visible);
 
@@ -58,6 +70,7 @@ function RegionColumn({
           <RenderBlock
             block={block}
             key={block.id}
+            onOpenBlockMenu={onOpenBlockMenu}
             onSelectBlock={onSelectBlock}
             selectedBlockId={selectedBlockId}
           />
@@ -75,6 +88,7 @@ export function TemplateLayoutCanvas({
   screen,
   selectedBlockId,
   variationId,
+  onOpenBlockMenu,
   onSelectBlock,
 }: TemplateLayoutCanvasProps) {
   return (
@@ -101,6 +115,7 @@ export function TemplateLayoutCanvas({
       >
         <RegionColumn
           blocks={blocksByRegion.topbar}
+          onOpenBlockMenu={onOpenBlockMenu}
           onSelectBlock={onSelectBlock}
           region="topbar"
           selectedBlockId={selectedBlockId}
@@ -108,18 +123,21 @@ export function TemplateLayoutCanvas({
         <div className="github-home-preview__body">
           <RegionColumn
             blocks={blocksByRegion['left-sidebar']}
+            onOpenBlockMenu={onOpenBlockMenu}
             onSelectBlock={onSelectBlock}
             region="left-sidebar"
             selectedBlockId={selectedBlockId}
           />
           <RegionColumn
             blocks={blocksByRegion['main-feed']}
+            onOpenBlockMenu={onOpenBlockMenu}
             onSelectBlock={onSelectBlock}
             region="main-feed"
             selectedBlockId={selectedBlockId}
           />
           <RegionColumn
             blocks={blocksByRegion['right-sidebar']}
+            onOpenBlockMenu={onOpenBlockMenu}
             onSelectBlock={onSelectBlock}
             region="right-sidebar"
             selectedBlockId={selectedBlockId}
