@@ -6,7 +6,11 @@ import { Icon } from '../../components/ui/Icon';
 import { apiDelete, apiGet, apiPost } from '../../lib/api';
 import type { ExtensionTemplatePayload, TemplateRecord } from '../../types/template';
 import { defaultGithubTemplate } from '../editor/templates/defaultGithubTemplate';
-import { starterGithubTemplate, starterGithubTemplateRecord } from '../editor/templates/starterGithubTemplate';
+import {
+  getStarterGithubTemplate,
+  isStarterGithubTemplateId,
+  starterGithubTemplateRecords,
+} from '../editor/templates/starterGithubTemplate';
 import { TemplateCard } from './TemplateCard';
 
 const sidebarItems = [
@@ -131,9 +135,10 @@ export function TemplateListPage() {
   const remoteTemplateIds = useMemo(() => new Set(remoteTemplates.map((template) => template.id)), [remoteTemplates]);
   const visibleTemplates = useMemo(() => {
     const userTemplates = remoteTemplates.filter((template) => template.id !== DEFAULT_TEMPLATE_ID);
-    const hasStarterSaved = userTemplates.some((template) => template.id === starterGithubTemplateRecord.id);
+    const savedTemplateIds = new Set(userTemplates.map((template) => template.id));
+    const unsavedStarterTemplates = starterGithubTemplateRecords.filter((template) => !savedTemplateIds.has(template.id));
 
-    return hasStarterSaved ? userTemplates : [starterGithubTemplateRecord, ...userTemplates];
+    return [...unsavedStarterTemplates, ...userTemplates];
   }, [remoteTemplates]);
   const primaryTemplateId = visibleTemplates[0]?.id ?? 'github-dashboard-reference';
 
@@ -203,8 +208,8 @@ export function TemplateListPage() {
     navigate(`/templates/${template.id}`);
   };
 
-  const handleRenameTemplate = async (template: TemplateRecord) => {
-    const nextName = window.prompt('Rename template', template.name)?.trim();
+  const handleRenameTemplate = async (template: TemplateRecord, requestedName: string) => {
+    const nextName = requestedName.trim();
 
     if (!nextName || nextName === template.name) {
       return;
@@ -286,9 +291,15 @@ export function TemplateListPage() {
 
     try {
       const sourcePayload =
-        template.id === starterGithubTemplate.id
-          ? starterGithubTemplate
+        isStarterGithubTemplateId(template.id)
+          ? getStarterGithubTemplate(template.id)
           : await apiGet<ExtensionTemplatePayload>(`/api/templates/${encodeURIComponent(template.id)}`);
+
+      if (!sourcePayload) {
+        setCreateStatus('Template unavailable');
+        return;
+      }
+
       const payload = createCopiedTemplatePayload(sourcePayload, nextName);
       const result = await apiPost<CreateTemplateResponse>('/api/templates/github-home', payload);
 
@@ -391,10 +402,10 @@ export function TemplateListPage() {
                 key={template.id}
                 canManage={
                   template.id !== DEFAULT_TEMPLATE_ID &&
-                  template.id !== starterGithubTemplateRecord.id &&
+                  !isStarterGithubTemplateId(template.id) &&
                   remoteTemplateIds.has(template.id)
                 }
-                canCopy={template.id === starterGithubTemplateRecord.id || remoteTemplateIds.has(template.id)}
+                canCopy={isStarterGithubTemplateId(template.id) || remoteTemplateIds.has(template.id)}
                 template={template}
                 variant={viewMode}
                 onCopy={handleCopyTemplate}

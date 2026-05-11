@@ -11,8 +11,10 @@ interface TemplateCardProps {
   onCopy?: (template: TemplateRecord, name: string) => void;
   onDelete?: (template: TemplateRecord) => void;
   onOpen?: (template: TemplateRecord) => void;
-  onRename?: (template: TemplateRecord) => void;
+  onRename?: (template: TemplateRecord, name: string) => void;
 }
+
+type TemplateActionPanel = 'copy' | 'rename' | 'delete';
 
 function TemplatePreview({ template }: { template: TemplateRecord }) {
   const visibleSections = template.sections.filter((section) => section.visible).slice(0, 5);
@@ -60,9 +62,16 @@ export function TemplateCard({
   onRename,
 }: TemplateCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [copyOpen, setCopyOpen] = useState(false);
+  const [actionPanel, setActionPanel] = useState<TemplateActionPanel | null>(null);
   const [copyName, setCopyName] = useState('');
+  const [renameName, setRenameName] = useState(template.name);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  const closeActionPanel = () => {
+    setActionPanel(null);
+    setCopyName('');
+    setRenameName(template.name);
+  };
 
   useEffect(() => {
     if (!menuOpen) {
@@ -75,13 +84,13 @@ export function TemplateCard({
       }
 
       setMenuOpen(false);
-      setCopyOpen(false);
+      closeActionPanel();
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-      setMenuOpen(false);
-      setCopyOpen(false);
+        setMenuOpen(false);
+        closeActionPanel();
       }
     };
 
@@ -92,19 +101,42 @@ export function TemplateCard({
       document.removeEventListener('pointerdown', handlePointerDown);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [menuOpen]);
+  }, [menuOpen, template.name]);
 
   const handleMenuAction = (action?: (template: TemplateRecord) => void) => {
     setMenuOpen(false);
-    setCopyOpen(false);
+    closeActionPanel();
     action?.(template);
+  };
+
+  const handleToggleMenu = () => {
+    setMenuOpen((isOpen) => {
+      if (isOpen) {
+        closeActionPanel();
+      }
+
+      return !isOpen;
+    });
   };
 
   const handleCopySubmit = () => {
     setMenuOpen(false);
-    setCopyOpen(false);
     onCopy?.(template, copyName.trim());
-    setCopyName('');
+    closeActionPanel();
+  };
+
+  const handleRenameSubmit = () => {
+    const nextName = renameName.trim();
+
+    setMenuOpen(false);
+    closeActionPanel();
+    onRename?.(template, nextName);
+  };
+
+  const handleDeleteSubmit = () => {
+    setMenuOpen(false);
+    closeActionPanel();
+    onDelete?.(template);
   };
 
   return (
@@ -112,7 +144,7 @@ export function TemplateCard({
       className={[
         'template-tile',
         `template-tile--${variant}`,
-        menuOpen || copyOpen ? 'is-menu-open' : '',
+        menuOpen || actionPanel ? 'is-menu-open' : '',
       ].join(' ').trim()}
     >
       <Link className="template-tile__link" to={`/templates/${template.id}`}>
@@ -140,7 +172,7 @@ export function TemplateCard({
               aria-label={`${template.name} actions`}
               className="template-tile__menu-trigger"
               type="button"
-              onClick={() => setMenuOpen((isOpen) => !isOpen)}
+              onClick={handleToggleMenu}
             >
               <Icon name="more_vert" />
             </button>
@@ -154,7 +186,10 @@ export function TemplateCard({
                   disabled={!canManage}
                   type="button"
                   role="menuitem"
-                  onClick={() => handleMenuAction(onRename)}
+                  onClick={() => {
+                    setActionPanel('rename');
+                    setRenameName(template.name);
+                  }}
                 >
                   <Icon name="edit" />
                   <span>Rename</span>
@@ -164,7 +199,7 @@ export function TemplateCard({
                   type="button"
                   role="menuitem"
                   onClick={() => {
-                    setCopyOpen(true);
+                    setActionPanel('copy');
                     setCopyName('');
                   }}
                 >
@@ -176,15 +211,15 @@ export function TemplateCard({
                   disabled={!canManage}
                   type="button"
                   role="menuitem"
-                  onClick={() => handleMenuAction(onDelete)}
+                  onClick={() => setActionPanel('delete')}
                 >
                   <Icon name="delete" />
                   <span>Delete</span>
                 </button>
               </div>
             ) : null}
-            {copyOpen ? (
-              <div className="template-tile__copy-popover">
+            {actionPanel === 'copy' ? (
+              <div className="template-tile__action-popover template-tile__copy-popover">
                 <label>
                   <span>Copy as</span>
                   <input
@@ -200,17 +235,62 @@ export function TemplateCard({
                       }
 
                       if (event.key === 'Escape') {
-                        setCopyOpen(false);
+                        closeActionPanel();
                       }
                     }}
                   />
                 </label>
                 <div>
-                  <button type="button" onClick={() => setCopyOpen(false)}>
+                  <button type="button" onClick={closeActionPanel}>
                     Cancel
                   </button>
                   <button type="button" onClick={handleCopySubmit}>
                     Copy
+                  </button>
+                </div>
+              </div>
+            ) : null}
+            {actionPanel === 'rename' ? (
+              <div className="template-tile__action-popover">
+                <label>
+                  <span>Rename to</span>
+                  <input
+                    autoFocus
+                    type="text"
+                    value={renameName}
+                    onChange={(event) => setRenameName(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault();
+                        handleRenameSubmit();
+                      }
+
+                      if (event.key === 'Escape') {
+                        closeActionPanel();
+                      }
+                    }}
+                  />
+                </label>
+                <div>
+                  <button type="button" onClick={closeActionPanel}>
+                    Cancel
+                  </button>
+                  <button type="button" onClick={handleRenameSubmit}>
+                    Rename
+                  </button>
+                </div>
+              </div>
+            ) : null}
+            {actionPanel === 'delete' ? (
+              <div className="template-tile__action-popover template-tile__action-popover--danger">
+                <strong>Delete template?</strong>
+                <p>{template.name}</p>
+                <div>
+                  <button type="button" onClick={closeActionPanel}>
+                    Cancel
+                  </button>
+                  <button type="button" onClick={handleDeleteSubmit}>
+                    Delete
                   </button>
                 </div>
               </div>

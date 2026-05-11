@@ -17,7 +17,12 @@ import type {
 import { TemplateEditPanel } from './TemplateEditPanel';
 import { TemplateLayoutCanvas } from './TemplateLayoutCanvas';
 import { defaultGithubTemplate } from './templates/defaultGithubTemplate';
-import { starterGithubTemplate, starterGithubTemplateRecord } from './templates/starterGithubTemplate';
+import {
+  getStarterGithubTemplate,
+  getStarterGithubTemplateRecord,
+  isStarterGithubTemplateId,
+  starterGithubTemplateRecord,
+} from './templates/starterGithubTemplate';
 import { useTemplateLayout } from './useTemplateLayout';
 
 const regionIcons: Record<TemplateRegion, string> = {
@@ -37,6 +42,8 @@ const regionLabels: Record<TemplateRegion, string> = {
 const MIN_CANVAS_ZOOM = 0.5;
 const MAX_CANVAS_ZOOM = 2;
 const CANVAS_ZOOM_STEP = 0.1;
+const STYLE_MENU_WIDTH = 260;
+const STYLE_MENU_VISIBLE_GUTTER = 12;
 const DEFAULT_COLUMN_LAYOUT: TemplateColumnLayout = {
   left: 320,
   main: 900,
@@ -73,6 +80,10 @@ interface TemplateResetSnapshot {
 
 function clampCanvasZoom(value: number) {
   return Math.min(MAX_CANVAS_ZOOM, Math.max(MIN_CANVAS_ZOOM, value));
+}
+
+function clampMenuCoordinate(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), Math.max(min, max));
 }
 
 function createEditableFallbackTemplate(templateId: string, templateName: string): ExtensionTemplatePayload {
@@ -113,8 +124,8 @@ function getTemplateResetSnapshot(template: TemplateLayout & Partial<ExtensionTe
 export function TemplateEditorPage() {
   const { templateId } = useParams();
   const templateRecord =
-    templateId === starterGithubTemplate.id
-      ? starterGithubTemplateRecord
+    templateId && isStarterGithubTemplateId(templateId)
+      ? getStarterGithubTemplateRecord(templateId) ?? starterGithubTemplateRecord
       : templates.find((item) => item.id === templateId) ?? starterGithubTemplateRecord;
   const {
     layout,
@@ -173,8 +184,10 @@ export function TemplateEditorPage() {
       return;
     }
 
-    if (templateId === starterGithubTemplate.id) {
-      applyTemplateState(starterGithubTemplate);
+    const starterTemplate = getStarterGithubTemplate(templateId);
+
+    if (starterTemplate) {
+      applyTemplateState(starterTemplate);
       setSyncStatus('Loaded starter preset');
       return;
     }
@@ -302,14 +315,39 @@ export function TemplateEditorPage() {
   };
 
   const handleOpenBlockStyleMenu = (blockId: string, x: number, y: number) => {
+    const menuPosition = getCanvasMenuPosition(x, y);
+
     setSelectedBlockId(blockId);
     setPageStyleMenu(null);
-    setBlockStyleMenu({ blockId, x, y });
+    setBlockStyleMenu({ blockId, ...menuPosition });
   };
 
   const handleOpenPageStyleMenu = (x: number, y: number) => {
+    const menuPosition = getCanvasMenuPosition(x, y);
+
     setBlockStyleMenu(null);
-    setPageStyleMenu({ x, y });
+    setPageStyleMenu(menuPosition);
+  };
+
+  const getCanvasMenuPosition = (clientX: number, clientY: number) => {
+    const shell = canvasShellRef.current;
+
+    if (!shell) {
+      return { x: clientX, y: clientY };
+    }
+
+    const rect = shell.getBoundingClientRect();
+    const rawX = clientX - rect.left + shell.scrollLeft;
+    const rawY = clientY - rect.top + shell.scrollTop;
+    const minX = shell.scrollLeft + STYLE_MENU_VISIBLE_GUTTER;
+    const maxX = shell.scrollLeft + shell.clientWidth - STYLE_MENU_WIDTH - STYLE_MENU_VISIBLE_GUTTER;
+    const minY = shell.scrollTop + STYLE_MENU_VISIBLE_GUTTER;
+    const maxY = shell.scrollTop + shell.clientHeight - STYLE_MENU_VISIBLE_GUTTER;
+
+    return {
+      x: clampMenuCoordinate(rawX, minX, maxX),
+      y: clampMenuCoordinate(rawY, minY, maxY),
+    };
   };
 
   const handleUpdateBlockAppearance = (block: TemplateBlock, appearance: Record<string, unknown>) => {
@@ -535,7 +573,13 @@ function getAppearanceValue(block: TemplateBlock, key: string, fallback: string 
 
   const value = (appearance as Record<string, unknown>)[key];
 
-  return typeof fallback === 'number' ? Number(value) || fallback : typeof value === 'string' ? value : fallback;
+  if (typeof fallback === 'number') {
+    const numericValue = Number(value);
+
+    return Number.isFinite(numericValue) ? numericValue : fallback;
+  }
+
+  return typeof value === 'string' ? value : fallback;
 }
 
 function BlockStyleMenuControls({
@@ -644,6 +688,10 @@ function PageStyleMenuControls({
 }) {
   const pageBackgroundColor =
     typeof pageAppearance.backgroundColor === 'string' ? pageAppearance.backgroundColor : '#f6f8fa';
+  const leftSidebarBackgroundColor =
+    typeof pageAppearance.leftSidebarBackgroundColor === 'string'
+      ? pageAppearance.leftSidebarBackgroundColor
+      : '#ffffff';
 
   return (
     <div className="block-style-menu__controls block-style-menu__controls--page">
@@ -653,6 +701,14 @@ function PageStyleMenuControls({
           type="color"
           value={pageBackgroundColor}
           onChange={(event) => onChange({ backgroundColor: event.target.value })}
+        />
+      </label>
+      <label>
+        <span>Left panel bg</span>
+        <input
+          type="color"
+          value={leftSidebarBackgroundColor}
+          onChange={(event) => onChange({ leftSidebarBackgroundColor: event.target.value })}
         />
       </label>
     </div>

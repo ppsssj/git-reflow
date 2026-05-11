@@ -97,6 +97,10 @@ export function TemplateLayoutCanvas({
 }: TemplateLayoutCanvasProps) {
   const pageBackground =
     typeof pageAppearance?.backgroundColor === 'string' ? pageAppearance.backgroundColor : undefined;
+  const leftSidebarBackground =
+    typeof pageAppearance?.leftSidebarBackgroundColor === 'string'
+      ? pageAppearance.leftSidebarBackgroundColor
+      : undefined;
 
   return (
     <div className="template-screen-frame">
@@ -127,6 +131,7 @@ export function TemplateLayoutCanvas({
             '--github-preview-main-min-width': `${columnLayout.main}px`,
             '--github-preview-right-width': `${columnLayout.right}px`,
             ...(pageBackground ? { '--github-preview-page-background': pageBackground } : {}),
+            ...(leftSidebarBackground ? { '--github-preview-left-background': leftSidebarBackground } : {}),
           } as CSSProperties
         }
       >

@@ -73,6 +73,7 @@ function getAppearanceStyle(block: TemplateBlock) {
 
   if (Number.isFinite(padding)) {
     style.padding = `${padding}px`;
+    style['--github-block-padding' as keyof CSSProperties] = `${padding}px`;
   }
 
   if (Number.isFinite(elementGap)) {
@@ -85,13 +86,21 @@ function getAppearanceStyle(block: TemplateBlock) {
 
   if (Number.isFinite(fontSize)) {
     style.fontSize = `${fontSize}px`;
+    style['--github-block-font-size' as keyof CSSProperties] = `${fontSize}px`;
   }
 
   if (Number.isFinite(borderRadius)) {
     style.borderRadius = `${borderRadius}px`;
+    style['--github-block-radius' as keyof CSSProperties] = `${borderRadius}px`;
   }
 
   return style;
+}
+
+function hasAppearance(block: TemplateBlock) {
+  const appearance = block.props.appearance;
+
+  return !!appearance && typeof appearance === 'object' && !Array.isArray(appearance);
 }
 
 function getTextAppearanceStyle(block: TemplateBlock) {
@@ -133,7 +142,12 @@ function handleContextMenu(
 function BlockFrame({ block, selected, children, onSelect, onOpenContextMenu }: BlockFrameProps) {
   return (
     <section
-      className={['github-block', `github-block--${block.type}`, selected ? 'is-selected' : ''].join(' ').trim()}
+      className={[
+        'github-block',
+        `github-block--${block.type}`,
+        hasAppearance(block) ? 'has-appearance' : '',
+        selected ? 'is-selected' : '',
+      ].join(' ').trim()}
       data-block-id={block.id}
       data-block-type={block.type}
       style={getAppearanceStyle(block)}
@@ -197,7 +211,12 @@ function TopNavBlock({ block, selected, onSelect, onOpenContextMenu }: TemplateB
 
   return (
     <header
-      className={['github-home-topnav github-block', selected ? 'is-selected' : ''].join(' ').trim()}
+      className={[
+        'github-home-topnav',
+        'github-block',
+        hasAppearance(block) ? 'has-appearance' : '',
+        selected ? 'is-selected' : '',
+      ].join(' ').trim()}
       data-block-id={block.id}
       data-block-type={block.type}
       style={getAppearanceStyle(block)}

@@ -378,26 +378,41 @@ function applyElementSpacing(element, appearance) {
 }
 
 function applyPageAppearance(appearance) {
-  if (!isObject(appearance) || typeof appearance.backgroundColor !== 'string') {
+  if (!isObject(appearance)) {
     return;
   }
 
-  const targets = [
-    document.body,
-    document.documentElement,
-    queryFirst(githubHomeSelectors.dashboardRoot),
-    queryFirst(['.application-main', '#js-pjax-container', '[data-turbo-body]']),
-    queryFirst(githubHomeSelectors.feedMain),
-    queryFirst(githubHomeSelectors.mainContent),
-  ];
+  if (typeof appearance.backgroundColor === 'string') {
+    const targets = [
+      document.body,
+      document.documentElement,
+      queryFirst(githubHomeSelectors.dashboardRoot),
+      queryFirst(['.application-main', '#js-pjax-container', '[data-turbo-body]']),
+      queryFirst(githubHomeSelectors.feedMain),
+      queryFirst(githubHomeSelectors.mainContent),
+    ];
 
-  targets.forEach((target) => {
-    if (target instanceof HTMLElement) {
-      target.classList.add(APPEARANCE_CLASS);
-      target.style.setProperty('background', appearance.backgroundColor, 'important');
-      target.style.setProperty('background-color', appearance.backgroundColor, 'important');
-    }
-  });
+    targets.forEach((target) => {
+      if (target instanceof HTMLElement) {
+        target.classList.add(APPEARANCE_CLASS);
+        target.style.setProperty('background', appearance.backgroundColor, 'important');
+        target.style.setProperty('background-color', appearance.backgroundColor, 'important');
+      }
+    });
+  }
+
+  if (typeof appearance.leftSidebarBackgroundColor === 'string') {
+    [
+      queryFirst(githubHomeSelectors.leftSidebar),
+      queryFirst(githubHomeSelectors.leftSidebarContent),
+    ].forEach((target) => {
+      if (target instanceof HTMLElement) {
+        target.classList.add(APPEARANCE_CLASS);
+        target.style.setProperty('background', appearance.leftSidebarBackgroundColor, 'important');
+        target.style.setProperty('background-color', appearance.leftSidebarBackgroundColor, 'important');
+      }
+    });
+  }
 }
 
 function getAppearanceTargets(block, element) {
@@ -874,10 +889,15 @@ function getTemplateRecordPreviewHtml(template) {
   const columns = columnHighlight?.replace('Columns ', '').split('/').map((value) => Number(value)) ?? [320, 900, 315];
   const total = columns.reduce((sum, value) => sum + (Number.isFinite(value) ? value : 0), 0) || 1;
   const variation = highlights.find((item) => typeof item === 'string' && item.includes('variation')) ?? 'github-default variation';
+  const sectionOverflowCount = Math.max(0, sections.length - 2);
   const sectionLabels = sections
-    .slice(0, 4)
+    .slice(0, 2)
     .map((section) => `<span>${escapeHtml(section.label)}</span>`)
-    .join('');
+    .join('')
+    + (sectionOverflowCount > 0 ? `<span>+${sectionOverflowCount}</span>` : '');
+  const sectionDescription = sections.length > 0
+    ? sections.slice(0, 3).map((section) => section.label).join(', ')
+    : 'GitHub dashboard layout';
   const readableColumns = [
     `Left ${columns[0] ?? 320}px`,
     `Feed ${columns[1] ?? 900}px`,
@@ -888,7 +908,6 @@ function getTemplateRecordPreviewHtml(template) {
 
   return `
     <div class="git-reflow-template-preview" aria-hidden="true">
-      <p>${escapeHtml(headline)}</p>
       <div class="git-reflow-template-preview__layout">
         ${columns.slice(0, 3).map((width, index) => `
           <span style="width: ${(width / total) * 100}%">
@@ -896,12 +915,16 @@ function getTemplateRecordPreviewHtml(template) {
           </span>
         `).join('')}
       </div>
-      <div class="git-reflow-template-preview__meta">
-        <span>${escapeHtml(variation)}</span>
-        <span>${sections.length} visible sections</span>
-      </div>
-      <div class="git-reflow-template-preview__sections">
-        ${sectionLabels || '<span>GitHub dashboard layout</span>'}
+      <div class="git-reflow-template-preview__summary">
+        <p>${escapeHtml(headline)}</p>
+        <small class="git-reflow-template-preview__description">${escapeHtml(sectionDescription)}</small>
+        <div class="git-reflow-template-preview__meta">
+          <span>${escapeHtml(variation.replace(' variation', ''))}</span>
+          <span>${sections.length} sections</span>
+        </div>
+        <div class="git-reflow-template-preview__sections">
+          ${sectionLabels || '<span>GitHub layout</span>'}
+        </div>
       </div>
     </div>
   `;
@@ -1094,15 +1117,7 @@ function applyTemplate(template) {
     setControllerHint('Preview applied. Drag the left sidebar edge to resize.');
   }
 
-  const sidebarLabel =
-    latestTemplate.leftSidebarResizeEnabled !== false && customLeftSidebarWidthPx
-      ? `${customLeftSidebarWidthPx}px`
-      : (latestTemplate.columnLayout?.left ? `${latestTemplate.columnLayout.left}px` : (latestTemplate.leftSidebarWidth ?? 'default'));
-  const mainLabel = latestTemplate.columnLayout?.main ? `${latestTemplate.columnLayout.main}px` : (latestTemplate.mainColumnWidth ?? 'default');
-  const rightLabel = latestTemplate.columnLayout?.right ? `${latestTemplate.columnLayout.right}px` : (latestTemplate.rightSidebarWidth ?? 'default');
-  setStatus(
-    `Applied ${latestTemplate.selectedVariationId ?? 'github-default'} / L:${sidebarLabel} M:${mainLabel} R:${rightLabel}`,
-  );
+  setStatus(`Applied ${latestTemplate.name ?? 'template'} / ${latestTemplate.selectedVariationId ?? 'github-default'}`);
 }
 
 async function refreshTemplate() {
