@@ -1169,6 +1169,37 @@ async function fetchJson(path, token) {
   return response.json();
 }
 
+async function postJson(path, body, token) {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    body: JSON.stringify(body),
+    cache: 'no-store',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeaders(token),
+    },
+    method: 'POST',
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
+  }
+
+  return response.json();
+}
+
+function recordTemplateUsage(token, template) {
+  if (!token || !isObject(template) || !template.id || !template.name) {
+    return;
+  }
+
+  postJson('/api/template-usage', {
+    templateId: template.id,
+    templateName: template.name,
+  }, token).catch(() => {
+    // Usage stats should never block applying a preview.
+  });
+}
+
 function getControllerElement(selector) {
   return document.querySelector(`#${CONTROLLER_ID} ${selector}`);
 }
@@ -1473,7 +1504,7 @@ async function refreshTemplate() {
   }
 }
 
-async function loadAndApplySelectedTemplate(token, templateId) {
+async function loadAndApplySelectedTemplate(token, templateId, options = {}) {
   if (!templateId) {
     setStatus('Choose a template');
     return;
@@ -1485,6 +1516,9 @@ async function loadAndApplySelectedTemplate(token, templateId) {
   if (starterTemplate) {
     setStoredSelectedTemplateId(templateId);
     applyTemplate(starterTemplate);
+    if (options.recordUsage) {
+      recordTemplateUsage(token, starterTemplate);
+    }
     setTemplateSelectOptions(templateId);
     return;
   }
@@ -1499,6 +1533,9 @@ async function loadAndApplySelectedTemplate(token, templateId) {
     const template = await fetchJson(`/api/templates/${encodeURIComponent(templateId)}`, token);
     setStoredSelectedTemplateId(templateId);
     applyTemplate(template);
+    if (options.recordUsage) {
+      recordTemplateUsage(token, template);
+    }
     setTemplateSelectOptions(templateId);
   } catch {
     setStatus('Template unavailable');
@@ -1619,7 +1656,9 @@ function createController() {
       return;
     }
 
-    getStoredExtensionState().then(({ token }) => loadAndApplySelectedTemplate(token, item.dataset.gitReflowTemplateId ?? ''));
+    getStoredExtensionState().then(({ token }) =>
+      loadAndApplySelectedTemplate(token, item.dataset.gitReflowTemplateId ?? '', { recordUsage: true }),
+    );
   });
   controller.querySelectorAll('[data-git-reflow-view-mode]').forEach((button) => {
     button.addEventListener('click', () => {

@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon } from '../../components/ui/Icon';
@@ -16,35 +17,132 @@ interface TemplateCardProps {
 
 type TemplateActionPanel = 'copy' | 'rename' | 'delete';
 
+function getPreviewTheme(template: TemplateRecord) {
+  const value = `${template.id} ${template.name}`.toLowerCase();
+
+  if (value.includes('red')) {
+    return {
+      background: '#f3d9e0',
+      topbar: '#2a171a',
+      panel: '#3a2024',
+      soft: '#553239',
+      main: '#2c181c',
+      accent: '#c45a6b',
+      text: '#ffe4ea',
+    };
+  }
+
+  if (value.includes('green')) {
+    return {
+      background: '#d8efe4',
+      topbar: '#10231c',
+      panel: '#183329',
+      soft: '#25483b',
+      main: '#142820',
+      accent: '#3e8b64',
+      text: '#def7e9',
+    };
+  }
+
+  return {
+    background: '#dceafe',
+    topbar: '#101827',
+    panel: '#172033',
+    soft: '#22304a',
+    main: '#111827',
+    accent: '#5b8def',
+    text: '#e0f2fe',
+  };
+}
+
+function getPreviewStyle(template: TemplateRecord): CSSProperties {
+  const theme = getPreviewTheme(template);
+
+  return {
+    '--preview-background': theme.background,
+    '--preview-topbar': theme.topbar,
+    '--preview-panel': theme.panel,
+    '--preview-soft': theme.soft,
+    '--preview-main': theme.main,
+    '--preview-accent': theme.accent,
+    '--preview-text': theme.text,
+  } as CSSProperties;
+}
+
+function formatPreviewLabel(value: string) {
+  return value
+    .replace(/[-_]/g, ' ')
+    .replace(/\b\w/g, (letter) => letter.toUpperCase())
+    .slice(0, 18);
+}
+
 function TemplatePreview({ template }: { template: TemplateRecord }) {
-  const visibleSections = template.sections.filter((section) => section.visible).slice(0, 5);
+  const visibleSections = template.sections.filter((section) => section.visible);
+  const headerSections = visibleSections.filter((section) => section.kind === 'header');
+  const sidebarSections = visibleSections.filter((section) => section.kind === 'sidebar');
+  const contentSections = visibleSections.filter((section) => section.kind === 'content');
+  const fallbackSections = visibleSections.length ? visibleSections : template.highlights.map((highlight, index) => ({
+    id: `${template.id}-highlight-${index}`,
+    label: highlight,
+    kind: 'content',
+    depth: 0,
+    description: highlight,
+    visible: true,
+  }));
+  const topbarLabel = headerSections[0]?.label ?? 'Dashboard';
+  const leftLabels = (sidebarSections.length ? sidebarSections : fallbackSections).slice(0, 4);
+  const mainLabels = (contentSections.length ? contentSections : fallbackSections).slice(0, 3);
+  const rightLabels = (sidebarSections.length > 2 ? sidebarSections.slice(2) : fallbackSections).slice(0, 3);
 
   return (
-    <div className="template-preview" aria-hidden="true">
-      <div className="template-preview__topbar">
+    <div className="template-preview" style={getPreviewStyle(template)} aria-hidden="true">
+      <div className="template-preview__browser">
         <span />
         <span />
         <span />
       </div>
+      <div className="template-preview__topbar">
+        <strong>{formatPreviewLabel(topbarLabel)}</strong>
+        <span />
+        <em />
+        <i />
+      </div>
       <div className="template-preview__body">
         <aside className="template-preview__left">
-          {visibleSections.slice(0, 3).map((section) => (
-            <span key={section.id} />
+          {leftLabels.map((section, index) => (
+            <div key={section.id} className={index === 0 ? 'is-featured' : ''}>
+              <span />
+              <strong>{formatPreviewLabel(section.label)}</strong>
+            </div>
           ))}
         </aside>
         <main className="template-preview__main">
-          <strong>{template.name.slice(0, 1).toUpperCase()}</strong>
-          <span />
-          <span />
-          <div>
-            <i />
-            <i />
-          </div>
+          <header>
+            <strong>{template.name.slice(0, 1).toUpperCase()}</strong>
+            <span>{formatPreviewLabel(template.name)}</span>
+          </header>
+          {mainLabels.map((section, index) => (
+            <article key={section.id} className={index === 0 ? 'is-featured' : ''}>
+              <div>
+                <strong>{formatPreviewLabel(section.label)}</strong>
+                <span />
+              </div>
+              <i />
+            </article>
+          ))}
         </main>
         <aside className="template-preview__right">
-          {template.highlights.slice(0, 3).map((highlight) => (
-            <span key={highlight} />
+          {rightLabels.map((section) => (
+            <div key={section.id}>
+              <strong>{formatPreviewLabel(section.label)}</strong>
+              <span />
+            </div>
           ))}
+          <div className="template-preview__palette">
+            <span />
+            <span />
+            <span />
+          </div>
         </aside>
       </div>
     </div>

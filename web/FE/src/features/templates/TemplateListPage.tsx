@@ -36,6 +36,28 @@ interface DeleteTemplateResponse {
   ok: true;
 }
 
+interface TemplateUsageSummary {
+  id: string;
+  name: string;
+  useCount: number;
+  weeklyUseCount: number;
+  lastUsedAt: string;
+}
+
+interface TemplateUsageEvent {
+  id: string;
+  name: string;
+  usedAt: string;
+}
+
+interface TemplateUsageResponse {
+  ok: true;
+  totalUses: number;
+  weeklyUses: number;
+  templates: TemplateUsageSummary[];
+  recent: TemplateUsageEvent[];
+}
+
 const DEFAULT_TEMPLATE_ID = defaultGithubTemplate.id;
 
 function slugify(value: string) {
@@ -124,12 +146,102 @@ function createCopiedTemplatePayload(source: ExtensionTemplatePayload, name: str
   };
 }
 
+function formatRelativeUsageTime(value?: string) {
+  if (!value) {
+    return 'No extension previews yet';
+  }
+
+  const usedAt = new Date(value).getTime();
+
+  if (!Number.isFinite(usedAt)) {
+    return 'Recently previewed';
+  }
+
+  const diffMinutes = Math.max(0, Math.round((Date.now() - usedAt) / 60000));
+
+  if (diffMinutes < 1) {
+    return 'Just now';
+  }
+
+  if (diffMinutes < 60) {
+    return `${diffMinutes} min ago`;
+  }
+
+  const diffHours = Math.round(diffMinutes / 60);
+
+  if (diffHours < 24) {
+    return `${diffHours} hr ago`;
+  }
+
+  const diffDays = Math.round(diffHours / 24);
+
+  return `${diffDays} day${diffDays === 1 ? '' : 's'} ago`;
+}
+
+function formatCompactTemplateName(name?: string) {
+  return name?.replace(/^GitHub Polished /, '').replace(/^GitHub /, '') ?? 'No style yet';
+}
+
+function getTopUsageTemplates(templates: TemplateUsageSummary[]) {
+  return [...templates].sort((a, b) => b.useCount - a.useCount || a.name.localeCompare(b.name)).slice(0, 5);
+}
+
+function getUsageAccent(templateId?: string, templateName?: string) {
+  const value = `${templateId ?? ''} ${templateName ?? ''}`.toLowerCase();
+
+  if (value.includes('red')) {
+    return {
+      background: '#f3d9e0',
+      panel: '#7f1d1d',
+      soft: '#c45a6b',
+      main: '#3a2024',
+    };
+  }
+
+  if (value.includes('green')) {
+    return {
+      background: '#d8efe4',
+      panel: '#14532d',
+      soft: '#3e8b64',
+      main: '#183329',
+    };
+  }
+
+  return {
+    background: '#dceafe',
+    panel: '#1d4ed8',
+    soft: '#5b8def',
+    main: '#172033',
+  };
+}
+
+function createUsageTemplateRecord(usage?: TemplateUsageSummary | TemplateUsageEvent): TemplateRecord | null {
+  if (!usage) {
+    return null;
+  }
+
+  return {
+    id: usage.id,
+    name: usage.name,
+    description: 'Recent extension style preview.',
+    thumbnail: '',
+    collaborators: [],
+    status: 'ACTIVE',
+    syncState: 'Extension previewed',
+    updatedAt: 'Extension usage',
+    owner: 'git-reflow',
+    highlights: ['Recently used in extension'],
+    sections: [],
+  };
+}
+
 export function TemplateListPage() {
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [remoteTemplates, setRemoteTemplates] = useState<TemplateRecord[]>([]);
   const [isLoadingTemplates, setIsLoadingTemplates] = useState(true);
   const [templateError, setTemplateError] = useState('');
+  const [templateUsage, setTemplateUsage] = useState<TemplateUsageResponse | null>(null);
   const [newTemplateName, setNewTemplateName] = useState('');
   const [createStatus, setCreateStatus] = useState('');
   const remoteTemplateIds = useMemo(() => new Set(remoteTemplates.map((template) => template.id)), [remoteTemplates]);
@@ -141,6 +253,17 @@ export function TemplateListPage() {
     return [...unsavedStarterTemplates, ...userTemplates];
   }, [remoteTemplates]);
   const primaryTemplateId = visibleTemplates[0]?.id ?? 'github-dashboard-reference';
+  const recentUsage = templateUsage?.recent[0];
+  const mostUsedTemplate = templateUsage ? getTopUsageTemplates(templateUsage.templates)[0] : undefined;
+  const topUsageTemplates = templateUsage ? getTopUsageTemplates(templateUsage.templates) : [];
+  const usageCardTemplateName = formatCompactTemplateName(recentUsage?.name);
+  const mostUsedName = formatCompactTemplateName(mostUsedTemplate?.name);
+  const recentTemplateRecord =
+    visibleTemplates.find((template) => template.id === recentUsage?.id) ?? createUsageTemplateRecord(recentUsage);
+  const mostUsedTemplateRecord =
+    visibleTemplates.find((template) => template.id === mostUsedTemplate?.id) ?? createUsageTemplateRecord(mostUsedTemplate);
+  const recentAccent = getUsageAccent(recentUsage?.id, recentUsage?.name);
+  const mostUsedAccent = getUsageAccent(mostUsedTemplate?.id, mostUsedTemplate?.name);
 
   useEffect(() => {
     let cancelled = false;
@@ -169,6 +292,42 @@ export function TemplateListPage() {
 
     return () => {
       cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const refreshTemplateUsage = () => {
+      apiGet<TemplateUsageResponse>('/api/template-usage')
+        .then((result) => {
+          if (!cancelled) {
+            setTemplateUsage(result);
+          }
+        })
+        .catch(() => {
+          if (!cancelled) {
+            setTemplateUsage(null);
+          }
+        });
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        refreshTemplateUsage();
+      }
+    };
+
+    refreshTemplateUsage();
+    const refreshInterval = window.setInterval(refreshTemplateUsage, 10000);
+    window.addEventListener('focus', refreshTemplateUsage);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(refreshInterval);
+      window.removeEventListener('focus', refreshTemplateUsage);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
 
@@ -206,6 +365,12 @@ export function TemplateListPage() {
 
   const handleOpenTemplate = (template: TemplateRecord) => {
     navigate(`/templates/${template.id}`);
+  };
+
+  const handleOpenActivityTemplate = (template?: TemplateRecord | null) => {
+    if (template) {
+      navigate(`/templates/${template.id}`);
+    }
   };
 
   const handleRenameTemplate = async (template: TemplateRecord, requestedName: string) => {
@@ -438,37 +603,90 @@ export function TemplateListPage() {
             <h2>Recent Activity</h2>
 
             <div className="activity-grid">
-              <article className="activity-card activity-card--large">
-                <p>Total Deployments</p>
-                <strong>1,284</strong>
+              <article className="activity-card activity-card--large activity-card--style">
+                <p>Recent Style</p>
+                <strong>{usageCardTemplateName}</strong>
                 <span>
-                  <Icon name="trending_up" />
-                  <em>+12% from last month</em>
+                  <Icon name="history" />
+                  <em>{formatRelativeUsageTime(recentUsage?.usedAt)}</em>
                 </span>
-                <div className="activity-card__ghost">
-                  <Icon name="rocket_launch" />
+
+                <div className="activity-style-preview" style={{ background: recentAccent.background }}>
+                  <div style={{ background: recentAccent.panel }} />
+                  <div>
+                    <span style={{ background: recentAccent.soft }} />
+                    <span style={{ background: recentAccent.main }} />
+                    <span style={{ background: recentAccent.soft }} />
+                  </div>
+                </div>
+
+                <div className="activity-card__actions">
+                  <button
+                    type="button"
+                    onClick={() => handleOpenActivityTemplate(recentTemplateRecord)}
+                    disabled={!recentTemplateRecord}
+                  >
+                    <Icon name="visibility" />
+                    <span>Preview</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => recentTemplateRecord && handleCopyTemplate(recentTemplateRecord, '')}
+                    disabled={!recentTemplateRecord}
+                  >
+                    <Icon name="content_copy" />
+                    <span>Copy</span>
+                  </button>
                 </div>
               </article>
 
-              <article className="activity-card">
-                <p>Active Assets</p>
-                <strong>42</strong>
-                <div className="mini-chart">
-                  <span />
-                  <span />
-                  <span />
-                  <span />
-                  <span />
+              <article className="activity-card activity-card--usage">
+                <p>Most Used</p>
+                <strong>{mostUsedTemplate?.useCount ?? 0}</strong>
+                <button
+                  className="activity-card__style-link"
+                  type="button"
+                  onClick={() => handleOpenActivityTemplate(mostUsedTemplateRecord)}
+                  disabled={!mostUsedTemplateRecord}
+                >
+                  {mostUsedName}
+                </button>
+                <div className="activity-ranked-list">
+                  {(topUsageTemplates.length ? topUsageTemplates.slice(0, 3) : []).map((template, index) => {
+                    const maxUseCount = Math.max(...topUsageTemplates.map((item) => item.useCount), 1);
+                    const width = Math.max(12, Math.round((template.useCount / maxUseCount) * 100));
+                    const accent = getUsageAccent(template.id, template.name);
+
+                    return (
+                      <button key={template.id} type="button" onClick={() => navigate(`/templates/${template.id}`)}>
+                        <span>{index + 1}</span>
+                        <strong>{formatCompactTemplateName(template.name)}</strong>
+                        <em>{template.useCount}</em>
+                        <i style={{ width: `${width}%`, background: accent.panel }} />
+                      </button>
+                    );
+                  })}
+                  {!topUsageTemplates.length ? <small>No extension usage yet</small> : null}
                 </div>
               </article>
 
-              <article className="activity-card">
-                <p>Templates Usage</p>
-                <strong>89%</strong>
+              <article className="activity-card activity-card--usage">
+                <p>Usage This Week</p>
+                <strong>{templateUsage?.weeklyUses ?? 0}</strong>
+                <span>{templateUsage?.totalUses ?? 0} total previews</span>
+                <div className="activity-style-preview activity-style-preview--small" style={{ background: mostUsedAccent.background }}>
+                  <div style={{ background: mostUsedAccent.panel }} />
+                  <div>
+                    <span style={{ background: mostUsedAccent.soft }} />
+                    <span style={{ background: mostUsedAccent.main }} />
+                  </div>
+                </div>
                 <div className="tag-row">
-                  <span>NEXT.JS</span>
-                  <span>ASTRO</span>
-                  <span>API</span>
+                  {(topUsageTemplates.length ? topUsageTemplates.slice(0, 3) : visibleTemplates.slice(0, 3)).map((template) => (
+                    <button key={template.id} type="button" onClick={() => navigate(`/templates/${template.id}`)}>
+                      {formatCompactTemplateName(template.name)}
+                    </button>
+                  ))}
                 </div>
               </article>
             </div>
