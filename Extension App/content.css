@@ -44,19 +44,20 @@
   right: 0;
   bottom: 54px;
   display: grid;
-  gap: 12px;
-  width: 320px;
+  gap: 10px;
+  width: 348px;
   max-height: min(560px, calc(100vh - 88px));
   overflow: auto;
-  padding: 14px;
+  padding: 12px;
   border: 1px solid var(--borderColor-default, #d0d7de);
-  border-radius: 12px;
+  border-radius: 14px;
   background: var(--bgColor-default, #ffffff);
   box-shadow: 0 18px 48px rgba(31, 35, 40, 0.22);
 }
 
 .git-reflow-panel__header,
-.git-reflow-template-view__bar,
+.git-reflow-template-view__header,
+.git-reflow-template-toolbar,
 .git-reflow-panel__actions {
   display: flex;
   align-items: center;
@@ -64,13 +65,69 @@
   gap: 8px;
 }
 
-.git-reflow-panel__header div {
-  display: grid;
-  gap: 2px;
+.git-reflow-panel__header {
+  padding: 2px 2px 8px;
+  border-bottom: 1px solid var(--borderColor-muted, #d8dee4);
 }
 
-.git-reflow-panel__header strong {
+.git-reflow-panel__brand {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 9px;
+}
+
+.git-reflow-panel__brand > span {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: #24292f;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.git-reflow-panel__brand div,
+.git-reflow-template-view__header div {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+
+.git-reflow-panel__brand strong,
+.git-reflow-token-view strong,
+.git-reflow-template-view__header strong {
   font-size: 13px;
+  font-weight: 800;
+}
+
+.git-reflow-panel__brand small,
+.git-reflow-template-view__header span {
+  overflow: hidden;
+  color: var(--fgColor-muted, #656d76);
+  font-size: 11px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.git-reflow-panel__status {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
+  gap: 6px;
+}
+
+.git-reflow-panel__status > span {
+  max-width: 120px;
+  overflow: hidden;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .git-reflow-panel__header span,
@@ -81,7 +138,8 @@
 }
 
 .git-reflow-controller button:not(.git-reflow-launcher),
-.git-reflow-controller input {
+.git-reflow-controller input,
+.git-reflow-controller select {
   min-height: 30px;
   border: 1px solid var(--borderColor-default, #d0d7de);
   border-radius: 6px;
@@ -101,6 +159,10 @@
   background: var(--bgColor-default, #ffffff);
 }
 
+.git-reflow-controller select {
+  background: var(--bgColor-default, #ffffff);
+}
+
 .git-reflow-controller button:not(.git-reflow-launcher):hover {
   background: var(--button-default-bgColor-hover, #f3f4f6);
 }
@@ -113,8 +175,14 @@
   min-height: 28px;
   padding: 0;
   border-radius: 999px;
-  font-size: 18px;
+  font-size: 0;
   line-height: 1;
+}
+
+.git-reflow-panel__header button::before {
+  content: "x";
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .git-reflow-token-view,
@@ -123,8 +191,34 @@
   gap: 10px;
 }
 
+.git-reflow-token-view {
+  padding: 12px;
+  border: 1px solid var(--borderColor-muted, #d8dee4);
+  border-radius: 10px;
+  background: var(--bgColor-muted, #f6f8fa);
+}
+
 .git-reflow-token-view p {
   margin: 0;
+}
+
+.git-reflow-token-view label,
+.git-reflow-template-filter label {
+  display: grid;
+  gap: 5px;
+}
+
+.git-reflow-token-view label span,
+.git-reflow-template-filter label span {
+  color: var(--fgColor-muted, #656d76);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.git-reflow-token-view button {
+  width: 100%;
 }
 
 .git-reflow-controller[data-git-reflow-connected="true"] .git-reflow-token-view,
@@ -132,14 +226,17 @@
   display: none;
 }
 
-.git-reflow-template-view__bar span {
-  color: var(--fgColor-default, #1f2328);
-  font-weight: 700;
+.git-reflow-template-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
 }
 
 .git-reflow-view-toggle {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  width: 100%;
   padding: 2px;
   border: 1px solid var(--borderColor-default, #d0d7de);
   border-radius: 8px;
@@ -161,9 +258,47 @@
   color: var(--fgColor-default, #1f2328);
 }
 
-.git-reflow-template-view__bar button,
+.git-reflow-template-actions button,
 .git-reflow-panel__actions button {
   padding: 0 10px;
+}
+
+.git-reflow-template-actions [data-git-reflow-filter-toggle] {
+  padding: 0 8px;
+}
+
+.git-reflow-template-actions [data-git-reflow-filter-toggle].is-active {
+  border-color: var(--fgColor-accent, #0969da);
+  background: var(--bgColor-accent-muted, #ddf4ff);
+  color: var(--fgColor-accent, #0969da);
+}
+
+.git-reflow-template-filter {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 104px;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--borderColor-default, #d0d7de);
+  border-radius: 8px;
+  background: var(--bgColor-muted, #f6f8fa);
+}
+
+.git-reflow-template-filter[hidden] {
+  display: none;
+}
+
+.git-reflow-template-filter input,
+.git-reflow-template-filter select {
+  width: 100%;
+  min-width: 0;
+  height: 30px;
+  min-height: 30px;
+  background: var(--bgColor-default, #ffffff);
+  font-size: 11px;
+}
+
+.git-reflow-template-filter select {
+  padding: 0 6px;
 }
 
 .git-reflow-template-list {
@@ -180,7 +315,9 @@
   width: 100%;
   min-height: 54px;
   padding: 10px;
+  border-radius: 10px !important;
   background: var(--bgColor-default, #ffffff);
+  box-shadow: 0 1px 0 rgba(31, 35, 40, 0.04);
   text-align: left;
 }
 
@@ -188,6 +325,17 @@
 .git-reflow-template-item.is-active {
   border-color: var(--fgColor-accent, #0969da);
   background: var(--bgColor-accent-muted, #ddf4ff);
+}
+
+.git-reflow-template-item.is-active::before {
+  content: "";
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  left: 0;
+  width: 3px;
+  border-radius: 999px;
+  background: var(--fgColor-accent, #0969da);
 }
 
 .git-reflow-template-item__content {
@@ -215,6 +363,9 @@
 .git-reflow-template-item__action {
   align-self: start;
   justify-self: end;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: var(--bgColor-default, #ffffff);
   color: var(--fgColor-accent, #0969da);
   font-size: 11px;
   font-weight: 700;
@@ -335,7 +486,7 @@
   grid-template-columns: minmax(0, 1fr);
   align-items: start;
   gap: 6px;
-  min-height: 96px;
+  min-height: 108px;
 }
 
 .git-reflow-controller[data-git-reflow-view="preview"] .git-reflow-template-item__content {
@@ -365,7 +516,8 @@
 }
 
 .git-reflow-controller[data-git-reflow-view="list"] .git-reflow-template-item {
-  min-height: 46px;
+  min-height: 48px;
+  padding: 9px 10px;
 }
 
 .git-reflow-empty-state {

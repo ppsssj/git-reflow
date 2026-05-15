@@ -58,6 +58,8 @@ interface TemplateUsageResponse {
   recent: TemplateUsageEvent[];
 }
 
+type TemplateSortMode = 'updated' | 'name' | 'most-used' | 'recently-used';
+
 const DEFAULT_TEMPLATE_ID = defaultGithubTemplate.id;
 
 function slugify(value: string) {
@@ -235,9 +237,32 @@ function createUsageTemplateRecord(usage?: TemplateUsageSummary | TemplateUsageE
   };
 }
 
+function getTemplateSearchText(template: TemplateRecord) {
+  return [
+    template.name,
+    template.description,
+    template.owner,
+    template.updatedAt,
+    ...template.highlights,
+    ...template.sections.map((section) => `${section.label} ${section.description}`),
+  ].join(' ').toLowerCase();
+}
+
+function getUpdatedSortValue(template: TemplateRecord) {
+  if (template.updatedAt === 'Starter preset') {
+    return 1;
+  }
+
+  const timestamp = new Date(template.updatedAt.replace(/^Updated /, '')).getTime();
+
+  return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
 export function TemplateListPage() {
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [templateSearchQuery, setTemplateSearchQuery] = useState('');
+  const [templateSortMode, setTemplateSortMode] = useState<TemplateSortMode>('updated');
   const [remoteTemplates, setRemoteTemplates] = useState<TemplateRecord[]>([]);
   const [isLoadingTemplates, setIsLoadingTemplates] = useState(true);
   const [templateError, setTemplateError] = useState('');
@@ -252,6 +277,35 @@ export function TemplateListPage() {
 
     return [...unsavedStarterTemplates, ...userTemplates];
   }, [remoteTemplates]);
+  const templateUsageById = useMemo(
+    () => new Map((templateUsage?.templates ?? []).map((template) => [template.id, template])),
+    [templateUsage],
+  );
+  const filteredTemplates = useMemo(() => {
+    const query = templateSearchQuery.trim().toLowerCase();
+    const searchedTemplates = query
+      ? visibleTemplates.filter((template) => getTemplateSearchText(template).includes(query))
+      : visibleTemplates;
+
+    return [...searchedTemplates].sort((a, b) => {
+      if (templateSortMode === 'name') {
+        return a.name.localeCompare(b.name);
+      }
+
+      if (templateSortMode === 'most-used') {
+        return (templateUsageById.get(b.id)?.useCount ?? 0) - (templateUsageById.get(a.id)?.useCount ?? 0)
+          || a.name.localeCompare(b.name);
+      }
+
+      if (templateSortMode === 'recently-used') {
+        return new Date(templateUsageById.get(b.id)?.lastUsedAt ?? 0).getTime()
+          - new Date(templateUsageById.get(a.id)?.lastUsedAt ?? 0).getTime()
+          || a.name.localeCompare(b.name);
+      }
+
+      return getUpdatedSortValue(b) - getUpdatedSortValue(a) || a.name.localeCompare(b.name);
+    });
+  }, [templateSearchQuery, templateSortMode, templateUsageById, visibleTemplates]);
   const primaryTemplateId = visibleTemplates[0]?.id ?? 'github-dashboard-reference';
   const recentUsage = templateUsage?.recent[0];
   const mostUsedTemplate = templateUsage ? getTopUsageTemplates(templateUsage.templates)[0] : undefined;
@@ -561,8 +615,35 @@ export function TemplateListPage() {
             </div>
           </header>
 
+          <section className="template-toolbar" aria-label="Template filters">
+            <label className="template-toolbar__search">
+              <Icon name="search" />
+              <input
+                placeholder="Search templates, sections, or colors..."
+                type="search"
+                value={templateSearchQuery}
+                onChange={(event) => setTemplateSearchQuery(event.target.value)}
+              />
+            </label>
+            <label className="template-toolbar__sort">
+              <span>Sort</span>
+              <select
+                value={templateSortMode}
+                onChange={(event) => setTemplateSortMode(event.target.value as TemplateSortMode)}
+              >
+                <option value="updated">Recently updated</option>
+                <option value="name">Name</option>
+                <option value="most-used">Most used</option>
+                <option value="recently-used">Recently used</option>
+              </select>
+            </label>
+            <span className="template-toolbar__count">
+              {filteredTemplates.length} of {visibleTemplates.length}
+            </span>
+          </section>
+
           <section className={viewMode === 'grid' ? 'template-grid' : 'template-list'}>
-            {visibleTemplates.map((template) => (
+            {filteredTemplates.map((template) => (
               <TemplateCard
                 key={template.id}
                 canManage={
@@ -579,6 +660,14 @@ export function TemplateListPage() {
                 onRename={handleRenameTemplate}
               />
             ))}
+
+            {filteredTemplates.length === 0 ? (
+              <div className="template-empty-results">
+                <Icon name="search" />
+                <strong>No templates found</strong>
+                <span>Try another name, color, section, or usage sort.</span>
+              </div>
+            ) : null}
 
             <form className="template-add-card template-create-card" onSubmit={handleCreateTemplate}>
               <div className="template-add-card__icon">
