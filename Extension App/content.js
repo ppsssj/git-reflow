@@ -28,6 +28,189 @@ const DEFAULT_TEMPLATE = {
   leftSidebarResizeEnabled: true,
   selectedVariationId: 'github-default',
 };
+const STARTER_TEMPLATE_UPDATED_AT = '2026-05-11T00:00:00.000Z';
+const STARTER_TEMPLATE_VISIBLE_BLOCKS = new Set([
+  'top-nav',
+  'profile-summary',
+  'recent-repos',
+  'copilot-prompt',
+  'activity-feed',
+  'repo-updates',
+  'trending-repos',
+]);
+const STARTER_TEMPLATE_THEMES = [
+  {
+    id: 'github-home-polished-starter',
+    name: 'GitHub Polished Starter-blue',
+    description: 'A soft blue GitHub Home preset with dark panels, compact spacing, and readable content groups.',
+    pageBackgroundColor: '#0b1120',
+    leftSidebarBackgroundColor: '#0f172a',
+    colors: {
+      topbar: '#101827',
+      panel: '#172033',
+      panelSoft: '#22304a',
+      mainPanel: '#111827',
+      mainInner: '#1f2937',
+    },
+  },
+  {
+    id: 'github-home-polished-starter-green',
+    name: 'GitHub Polished Starter-green',
+    description: 'A soft green GitHub Home preset with calm panels, compact spacing, and readable content groups.',
+    pageBackgroundColor: '#0d1b16',
+    leftSidebarBackgroundColor: '#10261f',
+    colors: {
+      topbar: '#10231c',
+      panel: '#183329',
+      panelSoft: '#25483b',
+      mainPanel: '#142820',
+      mainInner: '#203c31',
+    },
+  },
+  {
+    id: 'github-home-polished-starter-red',
+    name: 'GitHub Polished Starter-red',
+    description: 'A soft red GitHub Home preset with warm panels, compact spacing, and readable content groups.',
+    pageBackgroundColor: '#1f1113',
+    leftSidebarBackgroundColor: '#2a171a',
+    colors: {
+      topbar: '#2a171a',
+      panel: '#3a2024',
+      panelSoft: '#553239',
+      mainPanel: '#2c181c',
+      mainInner: '#44272d',
+    },
+  },
+];
+const STARTER_TEMPLATE_BLOCK_DEFINITIONS = [
+  {
+    id: 'top-nav',
+    type: 'top-nav',
+    title: 'Global Header',
+    region: 'topbar',
+    extensionSlot: 'github.global.header',
+    props: {
+      context: 'Dashboard',
+      searchPlaceholder: 'Type / to search',
+      links: [],
+      actions: ['Copilot', 'Create', 'Issues', 'Pull requests', 'Repositories', 'Inbox'],
+    },
+  },
+  {
+    id: 'profile-summary',
+    type: 'profile-summary',
+    title: 'Account Context',
+    region: 'left-sidebar',
+    extensionSlot: 'github.dashboard.account',
+    props: {
+      name: 'alex-placeholder',
+      handle: 'Personal dashboard',
+    },
+  },
+  {
+    id: 'recent-repos',
+    type: 'recent-repos',
+    title: 'Top Repositories',
+    region: 'left-sidebar',
+    extensionSlot: 'github.dashboard.repositories',
+    props: {
+      searchPlaceholder: 'Find a repository...',
+      itemLimit: 5,
+      repositories: [
+        { name: 'git-reflow/web', visibility: 'Private' },
+        { name: 'git-reflow/extension', visibility: 'Private' },
+        { name: 'git-reflow/templates', visibility: 'Public' },
+      ],
+    },
+  },
+  {
+    id: 'copilot-prompt',
+    type: 'copilot-prompt',
+    title: 'Ask Copilot',
+    region: 'main-feed',
+    extensionSlot: 'github.dashboard.copilot',
+    props: {
+      placeholder: 'Ask Copilot about your repositories...',
+      chips: ['Summarize updates', 'Review pull requests', 'Find issues'],
+    },
+  },
+  {
+    id: 'activity-feed',
+    type: 'activity-feed',
+    title: 'For you',
+    region: 'main-feed',
+    extensionSlot: 'github.dashboard.feed',
+    props: {
+      itemLimit: 3,
+      events: [
+        { actor: 'octocat', action: 'starred', subject: 'git-reflow/templates' },
+        { actor: 'github-actions', action: 'updated', subject: 'workflow checks' },
+        { actor: 'dependabot', action: 'opened', subject: 'security update' },
+      ],
+    },
+  },
+  {
+    id: 'repo-updates',
+    type: 'repo-updates',
+    title: 'Repository updates',
+    region: 'right-sidebar',
+    extensionSlot: 'github.dashboard.updates',
+    props: {
+      itemLimit: 4,
+      updates: [
+        { status: 'Merged', repo: 'git-reflow/web', message: 'template editor polish' },
+        { status: 'Opened', repo: 'git-reflow/extension', message: 'preview controls' },
+      ],
+    },
+  },
+  {
+    id: 'pinned-repos',
+    type: 'pinned-repos',
+    title: 'Pinned repositories',
+    region: 'right-sidebar',
+    extensionSlot: 'github.dashboard.pinned',
+    props: {
+      itemLimit: 4,
+      repositories: [],
+    },
+  },
+  {
+    id: 'issue-pr-updates',
+    type: 'issue-pr-updates',
+    title: 'Issues and pull requests',
+    region: 'right-sidebar',
+    extensionSlot: 'github.dashboard.issues',
+    props: {
+      itemLimit: 4,
+      items: [],
+    },
+  },
+  {
+    id: 'trending-repos',
+    type: 'trending-repos',
+    title: 'Latest changes',
+    region: 'right-sidebar',
+    extensionSlot: 'github.dashboard.trending',
+    props: {
+      itemLimit: 4,
+      repositories: [
+        { name: 'github/cli', language: 'Changelog', stars: '7 hours ago' },
+        { name: 'actions/runner', language: 'Changelog', stars: 'Yesterday' },
+      ],
+    },
+  },
+  {
+    id: 'recommended-repos',
+    type: 'recommended-repos',
+    title: 'Explore repositories',
+    region: 'right-sidebar',
+    extensionSlot: 'github.dashboard.recommended',
+    props: {
+      itemLimit: 4,
+      repositories: [],
+    },
+  },
+];
 
 const githubHomeSelectors = {
   dashboardRoot: ['.feed-background', 'feed-container', '#dashboard'],
@@ -183,6 +366,160 @@ function normalizeTemplate(template) {
     blocks: Array.isArray(template.blocks) ? template.blocks.filter(isObject) : [],
     regions: Array.isArray(template.regions) ? template.regions : [],
   };
+}
+
+function createStarterBlockAppearances(theme) {
+  return {
+    'top-nav': {
+      backgroundColor: theme.colors.topbar,
+      innerBackgroundColor: theme.colors.panel,
+      borderRadius: 0,
+      padding: 12,
+      elementGap: 10,
+      fontSize: 13,
+    },
+    'profile-summary': {
+      backgroundColor: theme.colors.panel,
+      innerBackgroundColor: theme.colors.panelSoft,
+      borderRadius: 14,
+      padding: 14,
+      marginY: 8,
+      fontSize: 14,
+    },
+    'recent-repos': {
+      backgroundColor: theme.colors.panel,
+      innerBackgroundColor: theme.colors.panelSoft,
+      borderRadius: 14,
+      padding: 16,
+      elementGap: 10,
+      fontSize: 14,
+    },
+    'copilot-prompt': {
+      backgroundColor: theme.colors.panelSoft,
+      innerBackgroundColor: theme.colors.topbar,
+      borderRadius: 18,
+      padding: 18,
+      marginY: 10,
+      elementGap: 12,
+      fontSize: 15,
+    },
+    'activity-feed': {
+      backgroundColor: theme.colors.mainPanel,
+      innerBackgroundColor: theme.colors.mainInner,
+      borderRadius: 16,
+      padding: 16,
+      marginY: 10,
+      elementGap: 14,
+      fontSize: 14,
+    },
+    'repo-updates': {
+      backgroundColor: theme.colors.panel,
+      innerBackgroundColor: theme.colors.panelSoft,
+      borderRadius: 16,
+      padding: 16,
+      marginY: 10,
+      elementGap: 12,
+    },
+    'trending-repos': {
+      backgroundColor: theme.colors.panel,
+      innerBackgroundColor: theme.colors.panelSoft,
+      borderRadius: 16,
+      padding: 16,
+      marginY: 8,
+      elementGap: 12,
+      fontSize: 13,
+    },
+  };
+}
+
+function createStarterTemplate(theme) {
+  const blockAppearances = createStarterBlockAppearances(theme);
+
+  return {
+    id: theme.id,
+    name: theme.name,
+    description: theme.description,
+    source: 'starter',
+    version: 1,
+    activeScreenId: 'github-home',
+    screens: [
+      {
+        id: 'github-home',
+        name: 'GitHub Home',
+        providerRoute: 'github.com/',
+        description: 'Logged-in GitHub dashboard home screen.',
+      },
+    ],
+    regions: ['topbar', 'left-sidebar', 'main-feed', 'right-sidebar'],
+    metadata: {
+      provider: 'github',
+      browserMappingKey: 'github.dashboard.reference',
+      updatedAt: STARTER_TEMPLATE_UPDATED_AT,
+    },
+    blocks: STARTER_TEMPLATE_BLOCK_DEFINITIONS.map((block) => ({
+      ...block,
+      screenId: 'github-home',
+      visible: STARTER_TEMPLATE_VISIBLE_BLOCKS.has(block.id),
+      props: {
+        ...block.props,
+        ...(blockAppearances[block.type] ? { appearance: blockAppearances[block.type] } : {}),
+      },
+    })),
+    provider: 'github',
+    columnLayout: {
+      left: 300,
+      main: 880,
+      right: 330,
+    },
+    leftSidebarResizeEnabled: true,
+    selectedVariationId: 'github-default',
+    pageAppearance: {
+      backgroundColor: theme.pageBackgroundColor,
+      leftSidebarBackgroundColor: theme.leftSidebarBackgroundColor,
+    },
+    updatedAt: STARTER_TEMPLATE_UPDATED_AT,
+  };
+}
+
+function createStarterTemplateRecord(template) {
+  const visibleBlocks = template.blocks.filter((block) => block.visible);
+
+  return {
+    id: template.id,
+    name: template.name,
+    description: template.description,
+    thumbnail: '',
+    collaborators: [],
+    status: 'ACTIVE',
+    source: 'starter',
+    syncState: 'Ready to preview',
+    updatedAt: 'Starter preset',
+    owner: 'git-reflow',
+    highlights: [
+      'Styled GitHub Home preset',
+      'github-default variation',
+      `Columns ${template.columnLayout.left}/${template.columnLayout.main}/${template.columnLayout.right}`,
+    ],
+    sections: visibleBlocks.slice(0, 6).map((block, index) => ({
+      id: block.id,
+      label: block.title,
+      kind: block.region === 'topbar' ? 'header' : block.region === 'main-feed' ? 'content' : 'sidebar',
+      depth: index === 0 ? 0 : 1,
+      description: block.extensionSlot ?? block.region,
+      visible: block.visible,
+    })),
+  };
+}
+
+const starterTemplates = STARTER_TEMPLATE_THEMES.map(createStarterTemplate);
+const starterTemplateRecords = starterTemplates.map(createStarterTemplateRecord);
+const starterTemplatesById = new Map(starterTemplates.map((template) => [template.id, template]));
+
+function mergeStarterTemplateRecords(remoteTemplates) {
+  const remoteIds = new Set(remoteTemplates.map((template) => template.id));
+  const unsavedStarterTemplates = starterTemplateRecords.filter((template) => !remoteIds.has(template.id));
+
+  return [...unsavedStarterTemplates, ...remoteTemplates];
 }
 
 function hasExtensionContext() {
@@ -1137,13 +1474,23 @@ async function refreshTemplate() {
 }
 
 async function loadAndApplySelectedTemplate(token, templateId) {
-  if (!token) {
-    setStatus('Paste extension token');
+  if (!templateId) {
+    setStatus('Choose a template');
     return;
   }
 
-  if (!templateId) {
-    setStatus('Choose a template');
+  const selectedTemplateRecord = availableTemplates.find((template) => template.id === templateId);
+  const starterTemplate = selectedTemplateRecord?.source === 'starter' ? starterTemplatesById.get(templateId) : null;
+
+  if (starterTemplate) {
+    setStoredSelectedTemplateId(templateId);
+    applyTemplate(starterTemplate);
+    setTemplateSelectOptions(templateId);
+    return;
+  }
+
+  if (!token) {
+    setStatus('Paste extension token');
     return;
   }
 
@@ -1174,9 +1521,10 @@ async function refreshTemplateList() {
   try {
     setStatus('Loading your templates...');
     const result = await fetchJson('/api/templates', token);
-    availableTemplates = Array.isArray(result.templates)
+    const remoteTemplates = Array.isArray(result.templates)
       ? result.templates.filter((template) => template?.id !== DEFAULT_TEMPLATE_ID && template?.source !== 'default')
       : [];
+    availableTemplates = mergeStarterTemplateRecords(remoteTemplates);
     const nextTemplateId =
       availableTemplates.find((template) => template.id === selectedTemplateId)?.id ?? availableTemplates[0]?.id ?? '';
 
