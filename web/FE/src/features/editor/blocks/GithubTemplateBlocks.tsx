@@ -66,6 +66,15 @@ function getAppearanceStyle(block: TemplateBlock) {
     style['--github-block-inner-background' as keyof CSSProperties] = styles.innerBackgroundColor;
   }
 
+  if (typeof styles.textColor === 'string' && styles.textColor) {
+    style.color = styles.textColor;
+    style['--github-block-text-color' as keyof CSSProperties] = styles.textColor;
+  }
+
+  if (typeof styles.linkColor === 'string' && styles.linkColor) {
+    style['--github-block-link-color' as keyof CSSProperties] = styles.linkColor;
+  }
+
   if (Number.isFinite(marginY)) {
     style.marginTop = `${marginY}px`;
     style.marginBottom = `${marginY}px`;
@@ -82,6 +91,7 @@ function getAppearanceStyle(block: TemplateBlock) {
 
   if (typeof styles.fontFamily === 'string' && styles.fontFamily) {
     style.fontFamily = styles.fontFamily;
+    style['--github-block-font-family' as keyof CSSProperties] = styles.fontFamily;
   }
 
   if (Number.isFinite(fontSize)) {
@@ -116,6 +126,10 @@ function getTextAppearanceStyle(block: TemplateBlock) {
 
   if (typeof styles.fontFamily === 'string' && styles.fontFamily) {
     style.fontFamily = styles.fontFamily;
+  }
+
+  if (typeof styles.textColor === 'string' && styles.textColor) {
+    style.color = styles.textColor;
   }
 
   if (Number.isFinite(fontSize)) {

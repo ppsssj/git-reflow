@@ -230,6 +230,15 @@ function withTemplateOwner(template, userId) {
 
 function toTemplateRecord(template) {
   const visibleBlocks = Array.isArray(template.blocks) ? template.blocks.filter((block) => block.visible) : [];
+  const previewBlocks = visibleBlocks.slice(0, 10).map((block) => ({
+    id: block.id,
+    type: block.type,
+    title: block.title,
+    region: block.region,
+    ...(block.props?.appearance && typeof block.props.appearance === 'object' && !Array.isArray(block.props.appearance)
+      ? { appearance: block.props.appearance }
+      : {}),
+  }));
   const sections = visibleBlocks.slice(0, 6).map((block, index) => ({
     id: block.id,
     label: block.title,
@@ -255,6 +264,14 @@ function toTemplateRecord(template) {
       `Columns ${template.columnLayout?.left ?? 320}/${template.columnLayout?.main ?? 900}/${template.columnLayout?.right ?? 315}`,
     ],
     sections,
+    preview: {
+      columnLayout: template.columnLayout,
+      pageAppearance:
+        template.pageAppearance && typeof template.pageAppearance === 'object' && !Array.isArray(template.pageAppearance)
+          ? template.pageAppearance
+          : {},
+      blocks: previewBlocks,
+    },
   };
 }
 

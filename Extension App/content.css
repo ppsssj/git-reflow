@@ -573,9 +573,56 @@ body.git-reflow-resizing-left-sidebar {
   user-select: none !important;
 }
 
+body.git-reflow-template-active .feed-background,
+body.git-reflow-template-active feed-container,
+body.git-reflow-template-active #dashboard {
+  background: var(--git-reflow-page-background, inherit) !important;
+}
+
+body.git-reflow-template-active .feed-left-sidebar {
+  box-sizing: border-box !important;
+  flex: 0 0 var(--git-reflow-left-sidebar-width, 320px) !important;
+  width: var(--git-reflow-left-sidebar-width, 320px) !important;
+  min-width: var(--git-reflow-left-sidebar-width, 320px) !important;
+  max-width: var(--git-reflow-left-sidebar-width, 320px) !important;
+  background: var(--git-reflow-left-sidebar-background, inherit) !important;
+}
+
+body.git-reflow-template-active .feed-left-sidebar .dashboard-sidebar {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  background: var(--git-reflow-left-sidebar-background, inherit) !important;
+}
+
+body.git-reflow-template-active .feed-main {
+  box-sizing: border-box !important;
+  flex: 1 1 var(--git-reflow-main-column-width, 900px) !important;
+  max-width: var(--git-reflow-main-column-width, 900px) !important;
+  background: var(--git-reflow-page-background, inherit) !important;
+}
+
+body.git-reflow-template-active .feed-main main,
+body.git-reflow-template-active main#main-content {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  max-width: var(--git-reflow-main-column-width, 900px) !important;
+}
+
+body.git-reflow-template-active .feed-right-sidebar,
+body.git-reflow-template-active .feed-right-column {
+  box-sizing: border-box !important;
+  flex: 0 0 var(--git-reflow-right-sidebar-width, 315px) !important;
+  width: var(--git-reflow-right-sidebar-width, 315px) !important;
+  min-width: var(--git-reflow-right-sidebar-width, 315px) !important;
+  max-width: var(--git-reflow-right-sidebar-width, 315px) !important;
+  background: var(--git-reflow-page-background, inherit) !important;
+}
+
 .git-reflow-region-container {
   display: flex !important;
   flex-direction: column !important;
+  gap: var(--git-reflow-block-gap, revert-layer);
 }
 
 .git-reflow-template-hidden {
@@ -658,6 +705,40 @@ body.git-reflow-resizing-left-sidebar {
   font-size: 12px;
   font-weight: 600;
   text-decoration: none;
+}
+
+.git-reflow-template-block {
+  box-sizing: border-box !important;
+}
+
+.git-reflow-template-block,
+.git-reflow-generated-block {
+  color: var(--git-reflow-block-text-color, inherit);
+  font-family: var(--git-reflow-block-font-family, inherit);
+  font-size: var(--git-reflow-block-font-size, inherit);
+}
+
+.git-reflow-template-block :is(h1, h2, h3, h4, p, span, strong, em, small, time, label, input, textarea, button),
+.git-reflow-generated-block :is(h1, h2, h3, h4, p, span, strong, em, small, time, label, input, textarea, button) {
+  color: var(--git-reflow-block-text-color, inherit) !important;
+  font-family: var(--git-reflow-block-font-family, inherit) !important;
+  font-size: var(--git-reflow-block-font-size, inherit) !important;
+}
+
+.git-reflow-template-block :is(a, [role="link"]),
+.git-reflow-generated-block :is(a, [role="link"]) {
+  color: var(--git-reflow-block-link-color, var(--git-reflow-block-text-color, var(--fgColor-accent, #0969da))) !important;
+  font-family: var(--git-reflow-block-font-family, inherit) !important;
+  font-size: var(--git-reflow-block-font-size, inherit) !important;
+}
+
+.git-reflow-template-block :is(input, textarea, button, article, .Box, .Box-row, .js-feed-item-component, [class*="Card"], [class*="Box"]) {
+  border-radius: max(4px, calc(var(--git-reflow-block-radius, 6px) - 2px)) !important;
+}
+
+.git-reflow-template-block :is(ul, ol, [role="list"], [class*="list"], [class*="List"]),
+.git-reflow-template-block .git-reflow-block-list {
+  gap: var(--git-reflow-block-gap, 8px) !important;
 }
 
 body.git-reflow-feed-two-column .js-for-you-feed-items,

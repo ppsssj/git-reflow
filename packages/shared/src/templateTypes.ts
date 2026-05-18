@@ -21,6 +21,17 @@ export interface TemplateRecord {
   owner: string;
   highlights: string[];
   sections: TemplateSection[];
+  preview?: {
+    columnLayout?: Partial<TemplateColumnLayout>;
+    pageAppearance?: Record<string, unknown>;
+    blocks?: Array<{
+      id: string;
+      type: TemplateBlockType;
+      title: string;
+      region: TemplateRegion;
+      appearance?: Record<string, unknown>;
+    }>;
+  };
 }
 
 export type TemplateRegion = 'topbar' | 'left-sidebar' | 'main-feed' | 'right-sidebar';
@@ -92,5 +103,6 @@ export interface ExtensionTemplatePayload extends TemplateLayout {
   leftSidebarResizeEnabled: boolean;
   selectedVariationId: TemplateVariationId;
   provider: 'github';
+  pageAppearance?: Record<string, unknown>;
   updatedAt: string;
 }

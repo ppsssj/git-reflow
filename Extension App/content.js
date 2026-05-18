@@ -5,6 +5,7 @@ const RESIZER_CLASS = 'git-reflow-left-resizer';
 const BLOCK_CLASS = 'git-reflow-template-block';
 const GENERATED_BLOCK_CLASS = 'git-reflow-generated-block';
 const APPEARANCE_CLASS = 'git-reflow-appearance-target';
+const LAYOUT_CLASS = 'git-reflow-template-active';
 const HIDDEN_CLASS = 'git-reflow-template-hidden';
 const ORIGINAL_TEXT_ATTR = 'data-git-reflow-original-text';
 const ORIGINAL_PLACEHOLDER_ATTR = 'data-git-reflow-original-placeholder';
@@ -239,7 +240,7 @@ const regionContainers = {
   topbar: githubHomeSelectors.topbar,
   'left-sidebar': githubHomeSelectors.leftSidebarContent,
   'main-feed': githubHomeSelectors.mainContent,
-  'right-sidebar': githubHomeSelectors.rightColumn,
+  'right-sidebar': [...githubHomeSelectors.rightSidebar, ...githubHomeSelectors.rightColumn],
 };
 
 const blockSelectorRegistry = {
@@ -258,7 +259,10 @@ const blockSelectorRegistry = {
   'repo-updates': [],
   'pinned-repos': [],
   'issue-pr-updates': [],
-  'trending-repos': [],
+  'trending-repos': [
+    '.feed-right-sidebar a[href*="changelog"]',
+    '.feed-right-column a[href*="changelog"]',
+  ],
   'recommended-repos': [],
 };
 
@@ -266,10 +270,10 @@ const blockTextMatchers = {
   'recent-repos': ['Top Repositories', 'Repositories'],
   'copilot-prompt': ['Copilot'],
   'activity-feed': ['For you', 'Feed'],
-  'repo-updates': ['Repository updates'],
+  'repo-updates': ['Repository updates', 'Repository Updates'],
   'pinned-repos': ['Pinned'],
   'issue-pr-updates': ['Issues', 'Pull requests'],
-  'trending-repos': ['Latest changes', 'Changelog'],
+  'trending-repos': ['Latest changes', 'Latest from our changelog', 'Changelog'],
   'recommended-repos': ['Explore repositories', 'Recommended'],
 };
 
@@ -605,6 +609,39 @@ function getItemLimit(value, fallback = 8) {
   return Number.isFinite(parsed) ? Math.min(12, Math.max(1, Math.round(parsed))) : fallback;
 }
 
+function setImportantStyle(element, property, value) {
+  if (element instanceof HTMLElement && typeof value === 'string') {
+    element.style.setProperty(property, value, 'important');
+  }
+}
+
+function removeStyleProperties(element, properties) {
+  if (!(element instanceof HTMLElement)) {
+    return;
+  }
+
+  properties.forEach((property) => element.style.removeProperty(property));
+}
+
+function applyWidthContract(element, width, mode = 'fixed') {
+  if (!(element instanceof HTMLElement)) {
+    return;
+  }
+
+  setImportantStyle(element, 'box-sizing', 'border-box');
+
+  if (mode === 'max') {
+    setImportantStyle(element, 'width', '100%');
+    setImportantStyle(element, 'max-width', width);
+    return;
+  }
+
+  setImportantStyle(element, 'width', width);
+  setImportantStyle(element, 'min-width', width);
+  setImportantStyle(element, 'max-width', width);
+  setImportantStyle(element, 'flex-basis', width);
+}
+
 function applyAppearance(element, appearance) {
   if (!(element instanceof HTMLElement) || !isObject(appearance)) {
     return;
@@ -619,8 +656,22 @@ function applyAppearance(element, appearance) {
   element.classList.add(APPEARANCE_CLASS);
 
   if (typeof appearance.backgroundColor === 'string') {
+    element.style.setProperty('--git-reflow-block-background', appearance.backgroundColor);
     element.style.setProperty('background', appearance.backgroundColor, 'important');
     element.style.setProperty('background-color', appearance.backgroundColor, 'important');
+  }
+
+  if (typeof appearance.innerBackgroundColor === 'string') {
+    element.style.setProperty('--git-reflow-block-inner-background', appearance.innerBackgroundColor);
+  }
+
+  if (typeof appearance.textColor === 'string') {
+    element.style.setProperty('--git-reflow-block-text-color', appearance.textColor);
+    element.style.setProperty('color', appearance.textColor, 'important');
+  }
+
+  if (typeof appearance.linkColor === 'string') {
+    element.style.setProperty('--git-reflow-block-link-color', appearance.linkColor);
   }
 
   if (Number.isFinite(marginY)) {
@@ -629,23 +680,32 @@ function applyAppearance(element, appearance) {
   }
 
   if (Number.isFinite(padding)) {
-    element.style.setProperty('padding', `${Math.max(0, Math.min(48, padding))}px`, 'important');
+    const paddingValue = `${Math.max(0, Math.min(48, padding))}px`;
+    element.style.setProperty('--git-reflow-block-padding', paddingValue);
+    element.style.setProperty('padding', paddingValue, 'important');
   }
 
   if (Number.isFinite(elementGap)) {
-    element.style.setProperty('gap', `${Math.max(0, Math.min(32, elementGap))}px`, 'important');
+    const gapValue = `${Math.max(0, Math.min(32, elementGap))}px`;
+    element.style.setProperty('--git-reflow-block-gap', gapValue);
+    element.style.setProperty('gap', gapValue, 'important');
   }
 
   if (typeof appearance.fontFamily === 'string') {
+    element.style.setProperty('--git-reflow-block-font-family', appearance.fontFamily);
     element.style.setProperty('font-family', appearance.fontFamily, 'important');
   }
 
   if (Number.isFinite(fontSize)) {
-    element.style.setProperty('font-size', `${Math.max(10, Math.min(24, fontSize))}px`, 'important');
+    const fontSizeValue = `${Math.max(10, Math.min(24, fontSize))}px`;
+    element.style.setProperty('--git-reflow-block-font-size', fontSizeValue);
+    element.style.setProperty('font-size', fontSizeValue, 'important');
   }
 
   if (Number.isFinite(borderRadius)) {
-    element.style.setProperty('border-radius', `${Math.max(0, Math.min(32, borderRadius))}px`, 'important');
+    const radiusValue = `${Math.max(0, Math.min(32, borderRadius))}px`;
+    element.style.setProperty('--git-reflow-block-radius', radiusValue);
+    element.style.setProperty('border-radius', radiusValue, 'important');
   }
 }
 
@@ -664,6 +724,16 @@ function clearAppearance(element) {
   element.style.removeProperty('font-family');
   element.style.removeProperty('font-size');
   element.style.removeProperty('border-radius');
+  element.style.removeProperty('color');
+  element.style.removeProperty('--git-reflow-block-background');
+  element.style.removeProperty('--git-reflow-block-inner-background');
+  element.style.removeProperty('--git-reflow-block-text-color');
+  element.style.removeProperty('--git-reflow-block-link-color');
+  element.style.removeProperty('--git-reflow-block-padding');
+  element.style.removeProperty('--git-reflow-block-gap');
+  element.style.removeProperty('--git-reflow-block-font-family');
+  element.style.removeProperty('--git-reflow-block-font-size');
+  element.style.removeProperty('--git-reflow-block-radius');
 }
 
 function applyTopbarAppearance(topbar, appearance) {
@@ -685,13 +755,66 @@ function applyInnerAppearance(element, appearance) {
     return;
   }
 
+  element.style.setProperty('--git-reflow-block-inner-background', appearance.innerBackgroundColor);
+
   element
-    .querySelectorAll('button, input, textarea, a, article, .Box, .Box-row, [class*="Card"], [class*="Box"]')
+    .querySelectorAll([
+      'button:not(.git-reflow-left-resizer)',
+      'input',
+      'textarea',
+      'article',
+      '.Box',
+      '.Box-row',
+      '.js-feed-item-component',
+      '[class*="Card"]',
+      '[class*="Box"]',
+    ].join(', '))
     .forEach((target) => {
       if (target instanceof HTMLElement) {
         target.classList.add(APPEARANCE_CLASS);
         target.style.setProperty('background', appearance.innerBackgroundColor, 'important');
         target.style.setProperty('background-color', appearance.innerBackgroundColor, 'important');
+      }
+    });
+}
+
+function applyTypographyAppearance(element, appearance) {
+  if (!(element instanceof HTMLElement) || !isObject(appearance)) {
+    return;
+  }
+
+  const fontSize = Number(appearance.fontSize);
+  const fontFamily = typeof appearance.fontFamily === 'string' ? appearance.fontFamily : '';
+  const textColor = typeof appearance.textColor === 'string' ? appearance.textColor : '';
+  const linkColor = typeof appearance.linkColor === 'string' ? appearance.linkColor : '';
+
+  if (!Number.isFinite(fontSize) && !fontFamily && !textColor && !linkColor) {
+    return;
+  }
+
+  element
+    .querySelectorAll('h1, h2, h3, h4, p, a, span, strong, em, small, time, label, input, textarea, button')
+    .forEach((target) => {
+      if (!(target instanceof HTMLElement)) {
+        return;
+      }
+
+      target.classList.add(APPEARANCE_CLASS);
+
+      if (Number.isFinite(fontSize)) {
+        target.style.setProperty('font-size', `${Math.max(10, Math.min(24, fontSize))}px`, 'important');
+      }
+
+      if (fontFamily) {
+        target.style.setProperty('font-family', fontFamily, 'important');
+      }
+
+      if (textColor) {
+        target.style.setProperty('color', textColor, 'important');
+      }
+
+      if (linkColor && target.matches('a, [role="link"]')) {
+        target.style.setProperty('color', linkColor, 'important');
       }
     });
 }
@@ -723,6 +846,8 @@ function applyPageAppearance(appearance) {
   }
 
   if (typeof appearance.backgroundColor === 'string') {
+    document.documentElement.style.setProperty('--git-reflow-page-background', appearance.backgroundColor);
+
     const targets = [
       document.body,
       document.documentElement,
@@ -730,6 +855,8 @@ function applyPageAppearance(appearance) {
       queryFirst(['.application-main', '#js-pjax-container', '[data-turbo-body]']),
       queryFirst(githubHomeSelectors.feedMain),
       queryFirst(githubHomeSelectors.mainContent),
+      queryFirst(githubHomeSelectors.rightSidebar),
+      queryFirst(githubHomeSelectors.rightColumn),
     ];
 
     targets.forEach((target) => {
@@ -742,6 +869,8 @@ function applyPageAppearance(appearance) {
   }
 
   if (typeof appearance.leftSidebarBackgroundColor === 'string') {
+    document.documentElement.style.setProperty('--git-reflow-left-sidebar-background', appearance.leftSidebarBackgroundColor);
+
     [
       queryFirst(githubHomeSelectors.leftSidebar),
       queryFirst(githubHomeSelectors.leftSidebarContent),
@@ -763,6 +892,10 @@ function getAppearanceTargets(block, element) {
   if (block.type === 'top-nav') {
     const topbar = queryFirst(githubHomeSelectors.topbar);
     return topbar instanceof HTMLElement ? [topbar] : [element];
+  }
+
+  if (isRightSidebarBlock(block)) {
+    return [element];
   }
 
   const selectorTarget = queryFirst(blockSelectorRegistry[block.type] ?? [], document);
@@ -800,6 +933,52 @@ function findRegionBlockRoot(element, regionRoot) {
   return current.parentElement === regionRoot ? current : findClosestSection(element);
 }
 
+function isRightSidebarBlock(block) {
+  return block?.region === 'right-sidebar';
+}
+
+function findRightSidebarCardRoot(element, regionRoot) {
+  if (!(element instanceof HTMLElement)) {
+    return null;
+  }
+
+  const rightRoot = regionRoot instanceof HTMLElement
+    ? regionRoot
+    : queryFirst(regionContainers['right-sidebar']);
+
+  if (!(rightRoot instanceof HTMLElement)) {
+    return findClosestSection(element);
+  }
+
+  let current = element;
+
+  while (current.parentElement && current.parentElement !== rightRoot && current.parentElement !== document.body) {
+    const parent = current.parentElement;
+    const style = window.getComputedStyle(current);
+    const rect = current.getBoundingClientRect();
+    const hasCardShape =
+      rect.width >= 180 &&
+      rect.height >= 80 &&
+      (
+        parseFloat(style.borderTopLeftRadius) > 0 ||
+        style.borderStyle !== 'none' ||
+        style.backgroundColor !== 'rgba(0, 0, 0, 0)'
+      );
+
+    if (hasCardShape && parent === rightRoot) {
+      return current;
+    }
+
+    current = parent;
+  }
+
+  if (current.parentElement === rightRoot) {
+    return current;
+  }
+
+  return findClosestSection(element);
+}
+
 function findElementByText(root, texts) {
   if (!(root instanceof Element) || !Array.isArray(texts) || texts.length === 0) {
     return null;
@@ -826,12 +1005,20 @@ function findBlockElement(block) {
     const element = queryFirst([selector], regionRoot ?? document);
 
     if (element instanceof HTMLElement) {
-      return findRegionBlockRoot(element, regionRoot);
+      return isRightSidebarBlock(block)
+        ? findRightSidebarCardRoot(element, regionRoot)
+        : findRegionBlockRoot(element, regionRoot);
     }
   }
 
   const textMatched = findElementByText(regionRoot ?? document, blockTextMatchers[block.type]);
-  return textMatched instanceof HTMLElement ? findRegionBlockRoot(textMatched, regionRoot) : null;
+  if (!(textMatched instanceof HTMLElement)) {
+    return null;
+  }
+
+  return isRightSidebarBlock(block)
+    ? findRightSidebarCardRoot(textMatched, regionRoot)
+    : findRegionBlockRoot(textMatched, regionRoot);
 }
 
 function getRegionContainer(region) {
@@ -1029,13 +1216,16 @@ function applyBlockProps(block, element) {
 
   if (block.type === 'top-nav') {
     applyTopbarProps(block);
-    applyInnerAppearance(queryFirst(githubHomeSelectors.topbar), props.appearance);
+    const topbar = queryFirst(githubHomeSelectors.topbar);
+    applyInnerAppearance(topbar, props.appearance);
+    applyTypographyAppearance(topbar, props.appearance);
     return;
   }
 
   getAppearanceTargets(block, element).forEach((target) => {
     applyAppearance(target, props.appearance);
     applyInnerAppearance(target, props.appearance);
+    applyTypographyAppearance(target, props.appearance);
     applyElementSpacing(target, props.appearance);
   });
 
@@ -1442,35 +1632,30 @@ function clearStoredAuthState() {
 
 function applySidebarWidth(width) {
   document.documentElement.style.setProperty('--feed-sidebar', width);
+  document.documentElement.style.setProperty('--git-reflow-left-sidebar-width', width);
 
-  const leftSidebar = queryFirst(githubHomeSelectors.leftSidebar);
-  if (leftSidebar instanceof HTMLElement) {
-    leftSidebar.style.width = width;
-  }
+  [
+    queryFirst(githubHomeSelectors.leftSidebar),
+    queryFirst(githubHomeSelectors.leftSidebarContent),
+  ].forEach((target) => applyWidthContract(target, width));
 }
 
 function applyMainColumnWidth(width) {
-  const feedMain = queryFirst(githubHomeSelectors.feedMain);
-  if (feedMain instanceof HTMLElement) {
-    feedMain.style.maxWidth = width;
-  }
+  document.documentElement.style.setProperty('--git-reflow-main-column-width', width);
 
-  const mainContent = queryFirst(githubHomeSelectors.mainContent);
-  if (mainContent instanceof HTMLElement) {
-    mainContent.style.maxWidth = width;
-  }
+  [
+    queryFirst(githubHomeSelectors.feedMain),
+    queryFirst(githubHomeSelectors.mainContent),
+  ].forEach((target) => applyWidthContract(target, width, 'max'));
 }
 
 function applyRightSidebarWidth(width) {
-  const rightSidebar = queryFirst(githubHomeSelectors.rightSidebar);
-  if (rightSidebar instanceof HTMLElement) {
-    rightSidebar.style.width = width;
-  }
+  document.documentElement.style.setProperty('--git-reflow-right-sidebar-width', width);
 
-  const rightColumn = queryFirst(githubHomeSelectors.rightColumn);
-  if (rightColumn instanceof HTMLElement) {
-    rightColumn.style.maxWidth = width;
-  }
+  [
+    queryFirst(githubHomeSelectors.rightSidebar),
+    queryFirst(githubHomeSelectors.rightColumn),
+  ].forEach((target) => applyWidthContract(target, width));
 }
 
 function getTemplateSidebarWidth(template) {
@@ -1559,6 +1744,7 @@ function applyTemplate(template) {
   latestTemplate = normalizeTemplate(template);
 
   document.querySelectorAll(`.${APPEARANCE_CLASS}`).forEach(clearAppearance);
+  document.body.classList.add(LAYOUT_CLASS);
   document.body.classList.toggle('git-reflow-feed-two-column', latestTemplate.selectedVariationId === 'feed-two-column');
   applySidebarWidth(getTemplateSidebarWidth(latestTemplate));
   applyMainColumnWidth(getTemplateMainColumnWidth(latestTemplate));
@@ -1831,8 +2017,14 @@ function createController() {
 function resetAppliedStyles() {
   customLeftSidebarWidthPx = null;
   clearStoredLeftSidebarWidth();
+  document.body.classList.remove(LAYOUT_CLASS);
   document.body.classList.remove('git-reflow-feed-two-column');
   document.documentElement.style.removeProperty('--feed-sidebar');
+  document.documentElement.style.removeProperty('--git-reflow-left-sidebar-width');
+  document.documentElement.style.removeProperty('--git-reflow-main-column-width');
+  document.documentElement.style.removeProperty('--git-reflow-right-sidebar-width');
+  document.documentElement.style.removeProperty('--git-reflow-page-background');
+  document.documentElement.style.removeProperty('--git-reflow-left-sidebar-background');
   removeLeftSidebarResizer();
   document.querySelectorAll(`.${GENERATED_BLOCK_CLASS}`).forEach((element) => element.remove());
   document.querySelectorAll(`.${HIDDEN_CLASS}`).forEach((element) => {
@@ -1865,18 +2057,19 @@ function resetAppliedStyles() {
   });
 
   const styleTargets = [
-    [githubHomeSelectors.leftSidebar, 'width'],
-    [githubHomeSelectors.feedMain, 'max-width'],
-    [githubHomeSelectors.mainContent, 'max-width'],
-    [githubHomeSelectors.rightSidebar, 'width'],
-    [githubHomeSelectors.rightColumn, 'max-width'],
+    githubHomeSelectors.leftSidebar,
+    githubHomeSelectors.leftSidebarContent,
+    githubHomeSelectors.feedMain,
+    githubHomeSelectors.mainContent,
+    githubHomeSelectors.rightSidebar,
+    githubHomeSelectors.rightColumn,
   ];
 
-  styleTargets.forEach(([selectors, property]) => {
+  styleTargets.forEach((selectors) => {
     const element = queryFirst(selectors);
 
     if (element instanceof HTMLElement) {
-      element.style.removeProperty(property);
+      removeStyleProperties(element, ['box-sizing', 'width', 'min-width', 'max-width', 'flex-basis']);
     }
   });
 

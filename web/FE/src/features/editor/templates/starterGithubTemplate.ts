@@ -205,6 +205,23 @@ function createStarterGithubTemplateRecord(template: ExtensionTemplatePayload): 
         description: block.extensionSlot ?? block.region,
         visible: block.visible,
       })),
+    preview: {
+      columnLayout: template.columnLayout,
+      pageAppearance: template.pageAppearance,
+      blocks: template.blocks
+        .filter((block) => block.visible)
+        .slice(0, 10)
+        .map((block) => ({
+          id: block.id,
+          type: block.type,
+          title: block.title,
+          region: block.region,
+          appearance:
+            typeof block.props.appearance === 'object' && block.props.appearance !== null && !Array.isArray(block.props.appearance)
+              ? block.props.appearance as Record<string, unknown>
+              : undefined,
+        })),
+    },
   };
 }
 

@@ -627,6 +627,8 @@ function BlockStyleMenuControls({
 }) {
   const backgroundColor = getAppearanceValue(block, 'backgroundColor', '#ffffff') as string;
   const innerBackgroundColor = getAppearanceValue(block, 'innerBackgroundColor', '#ffffff') as string;
+  const textColor = getAppearanceValue(block, 'textColor', '#1f2328') as string;
+  const linkColor = getAppearanceValue(block, 'linkColor', '#0969da') as string;
   const marginY = getAppearanceValue(block, 'marginY', 0) as number;
   const padding = getAppearanceValue(block, 'padding', 0) as number;
   const elementGap = getAppearanceValue(block, 'elementGap', 8) as number;
@@ -650,6 +652,22 @@ function BlockStyleMenuControls({
           type="color"
           value={innerBackgroundColor}
           onChange={(event) => onChange({ innerBackgroundColor: event.target.value })}
+        />
+      </label>
+      <label>
+        <span>Text</span>
+        <input
+          type="color"
+          value={textColor}
+          onChange={(event) => onChange({ textColor: event.target.value })}
+        />
+      </label>
+      <label>
+        <span>Link</span>
+        <input
+          type="color"
+          value={linkColor}
+          onChange={(event) => onChange({ linkColor: event.target.value })}
         />
       </label>
       <label>

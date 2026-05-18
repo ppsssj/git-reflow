@@ -21,15 +21,48 @@ type TemplateActionPanel = 'copy' | 'rename' | 'delete';
 
 function getPreviewTheme(template: TemplateRecord) {
   const value = `${template.id} ${template.name}`.toLowerCase();
+  const pageAppearance = template.preview?.pageAppearance;
+  const topbarAppearance = getPreviewBlockAppearance(template, 'top-nav');
+  const leftAppearance =
+    getPreviewBlockAppearance(template, 'recent-repos') ?? getPreviewBlockAppearance(template, 'profile-summary');
+  const mainAppearance =
+    getPreviewBlockAppearance(template, 'activity-feed') ?? getPreviewBlockAppearance(template, 'copilot-prompt');
+  const rightAppearance =
+    getPreviewBlockAppearance(template, 'trending-repos') ?? getPreviewBlockAppearance(template, 'repo-updates');
+  const backgroundColor = getStringValue(pageAppearance?.backgroundColor);
+  const leftSidebarBackgroundColor = getStringValue(pageAppearance?.leftSidebarBackgroundColor);
+  const topbarColor = getStringValue(topbarAppearance?.backgroundColor);
+  const panelColor = getStringValue(leftAppearance?.backgroundColor) ?? leftSidebarBackgroundColor;
+  const softColor =
+    getStringValue(leftAppearance?.innerBackgroundColor) ??
+    getStringValue(rightAppearance?.innerBackgroundColor);
+  const mainColor = getStringValue(mainAppearance?.backgroundColor);
+  const mainInnerColor = getStringValue(mainAppearance?.innerBackgroundColor);
+
+  if (backgroundColor || topbarColor || panelColor || mainColor) {
+    return {
+      background: backgroundColor ?? '#dceafe',
+      topbar: topbarColor ?? panelColor ?? '#101827',
+      left: leftSidebarBackgroundColor ?? panelColor ?? topbarColor ?? '#172033',
+      panel: panelColor ?? topbarColor ?? '#172033',
+      soft: softColor ?? mainInnerColor ?? '#22304a',
+      main: mainColor ?? panelColor ?? '#111827',
+      accent: mainInnerColor ?? softColor ?? '#5b8def',
+      right: getStringValue(rightAppearance?.backgroundColor) ?? panelColor ?? '#172033',
+      text: '#e0f2fe',
+    };
+  }
 
   if (value.includes('red')) {
     return {
       background: '#f3d9e0',
       topbar: '#2a171a',
+      left: '#3a2024',
       panel: '#3a2024',
       soft: '#553239',
       main: '#2c181c',
       accent: '#c45a6b',
+      right: '#3a2024',
       text: '#ffe4ea',
     };
   }
@@ -38,10 +71,12 @@ function getPreviewTheme(template: TemplateRecord) {
     return {
       background: '#d8efe4',
       topbar: '#10231c',
+      left: '#183329',
       panel: '#183329',
       soft: '#25483b',
       main: '#142820',
       accent: '#3e8b64',
+      right: '#183329',
       text: '#def7e9',
     };
   }
@@ -49,12 +84,68 @@ function getPreviewTheme(template: TemplateRecord) {
   return {
     background: '#dceafe',
     topbar: '#101827',
+    left: '#172033',
     panel: '#172033',
     soft: '#22304a',
     main: '#111827',
     accent: '#5b8def',
+    right: '#172033',
     text: '#e0f2fe',
   };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function getStringValue(value: unknown) {
+  return typeof value === 'string' && value.trim() ? value : undefined;
+}
+
+function getNumberValue(value: unknown) {
+  const numberValue = Number(value);
+
+  return Number.isFinite(numberValue) ? numberValue : undefined;
+}
+
+function getPreviewBlock(template: TemplateRecord, blockType: string) {
+  return template.preview?.blocks?.find((block) => block.type === blockType);
+}
+
+function getPreviewBlockAppearance(template: TemplateRecord, blockType: string) {
+  const appearance = getPreviewBlock(template, blockType)?.appearance;
+
+  return isRecord(appearance) ? appearance : undefined;
+}
+
+function getBlockMiniStyle(appearance?: Record<string, unknown>): CSSProperties | undefined {
+  if (!appearance) {
+    return undefined;
+  }
+
+  const style: CSSProperties = {};
+  const backgroundColor = getStringValue(appearance.backgroundColor);
+  const innerBackgroundColor = getStringValue(appearance.innerBackgroundColor);
+  const borderRadius = getNumberValue(appearance.borderRadius);
+  const elementGap = getNumberValue(appearance.elementGap);
+
+  if (backgroundColor) {
+    style.background = backgroundColor;
+  }
+
+  if (innerBackgroundColor) {
+    style['--preview-card-inner' as keyof CSSProperties] = innerBackgroundColor;
+  }
+
+  if (borderRadius !== undefined) {
+    style.borderRadius = `${Math.max(3, Math.min(12, borderRadius * 0.45))}px`;
+  }
+
+  if (elementGap !== undefined) {
+    style.gap = `${Math.max(3, Math.min(8, elementGap * 0.45))}px`;
+  }
+
+  return style;
 }
 
 function getPreviewStyle(template: TemplateRecord): CSSProperties {
@@ -63,10 +154,12 @@ function getPreviewStyle(template: TemplateRecord): CSSProperties {
   return {
     '--preview-background': theme.background,
     '--preview-topbar': theme.topbar,
+    '--preview-left': theme.left,
     '--preview-panel': theme.panel,
     '--preview-soft': theme.soft,
     '--preview-main': theme.main,
     '--preview-accent': theme.accent,
+    '--preview-right': theme.right,
     '--preview-text': theme.text,
   } as CSSProperties;
 }
@@ -95,56 +188,94 @@ function TemplatePreview({ template }: { template: TemplateRecord }) {
   const leftLabels = (sidebarSections.length ? sidebarSections : fallbackSections).slice(0, 4);
   const mainLabels = (contentSections.length ? contentSections : fallbackSections).slice(0, 3);
   const rightLabels = (sidebarSections.length > 2 ? sidebarSections.slice(2) : fallbackSections).slice(0, 3);
+  const topbarBlock = getPreviewBlock(template, 'top-nav');
+  const leftBlock =
+    getPreviewBlock(template, 'recent-repos') ?? getPreviewBlock(template, 'profile-summary');
+  const copilotBlock = getPreviewBlock(template, 'copilot-prompt');
+  const feedBlock = getPreviewBlock(template, 'activity-feed');
+  const rightBlock =
+    getPreviewBlock(template, 'trending-repos') ?? getPreviewBlock(template, 'repo-updates');
+  const updateBlock = getPreviewBlock(template, 'repo-updates');
+  const columnLayout = template.preview?.columnLayout;
+  const gridTemplateColumns =
+    columnLayout?.left && columnLayout?.main && columnLayout?.right
+      ? `${columnLayout.left}fr ${columnLayout.main}fr ${columnLayout.right}fr`
+      : undefined;
 
   return (
     <div className="template-preview" style={getPreviewStyle(template)} aria-hidden="true">
-      <div className="template-preview__browser">
-        <span />
-        <span />
-        <span />
-      </div>
-      <div className="template-preview__topbar">
-        <strong>{formatPreviewLabel(topbarLabel)}</strong>
+      <div className="template-preview__topbar" style={getBlockMiniStyle(topbarBlock?.appearance)}>
+        <i />
+        <strong>{formatPreviewLabel(template.name || topbarLabel)}</strong>
         <span />
         <em />
-        <i />
+        <em />
+        <em />
       </div>
-      <div className="template-preview__body">
+      <div className="template-preview__body" style={{ gridTemplateColumns }}>
         <aside className="template-preview__left">
-          {leftLabels.map((section, index) => (
-            <div key={section.id} className={index === 0 ? 'is-featured' : ''}>
-              <span />
-              <strong>{formatPreviewLabel(section.label)}</strong>
-            </div>
-          ))}
+          <div className="template-preview__profile">
+            <span />
+            <strong>{formatPreviewLabel(template.owner)}</strong>
+          </div>
+          <section className="template-preview__repo-card" style={getBlockMiniStyle(leftBlock?.appearance)}>
+            <header>
+              <strong>{formatPreviewLabel(leftBlock?.title ?? leftLabels[0]?.label ?? 'Top repositories')}</strong>
+              <i />
+            </header>
+            <em />
+            {leftLabels.slice(0, 5).map((section) => (
+              <div key={section.id}>
+                <span />
+                <strong>{formatPreviewLabel(section.label)}</strong>
+              </div>
+            ))}
+          </section>
         </aside>
         <main className="template-preview__main">
-          <header>
-            <strong>{template.name.slice(0, 1).toUpperCase()}</strong>
-            <span>{formatPreviewLabel(template.name)}</span>
-          </header>
-          {mainLabels.map((section, index) => (
-            <article key={section.id} className={index === 0 ? 'is-featured' : ''}>
-              <div>
-                <strong>{formatPreviewLabel(section.label)}</strong>
-                <span />
-              </div>
+          <section className="template-preview__prompt" style={getBlockMiniStyle(copilotBlock?.appearance)}>
+            <h4>Home</h4>
+            <div />
+            <footer>
+              <span />
               <i />
-            </article>
-          ))}
+              <b />
+            </footer>
+          </section>
+          <section className="template-preview__feed" style={getBlockMiniStyle(feedBlock?.appearance)}>
+            <header>
+              <strong>{formatPreviewLabel(feedBlock?.title ?? mainLabels[0]?.label ?? 'Feed')}</strong>
+              <i />
+            </header>
+            {mainLabels.slice(0, 3).map((section) => (
+              <article key={section.id}>
+                <span />
+                <div>
+                  <strong>{formatPreviewLabel(section.label)}</strong>
+                  <em />
+                  <em />
+                </div>
+              </article>
+            ))}
+          </section>
+          {updateBlock ? (
+            <section className="template-preview__updates" style={getBlockMiniStyle(updateBlock.appearance)}>
+              <strong>{formatPreviewLabel(updateBlock.title)}</strong>
+              <span />
+              <span />
+            </section>
+          ) : null}
         </main>
         <aside className="template-preview__right">
-          {rightLabels.map((section) => (
-            <div key={section.id}>
-              <strong>{formatPreviewLabel(section.label)}</strong>
-              <span />
-            </div>
-          ))}
-          <div className="template-preview__palette">
-            <span />
-            <span />
-            <span />
-          </div>
+          <section className="template-preview__changelog" style={getBlockMiniStyle(rightBlock?.appearance)}>
+            <strong>{formatPreviewLabel(rightBlock?.title ?? rightLabels[0]?.label ?? 'Changelog')}</strong>
+            {rightLabels.slice(0, 4).map((section) => (
+              <div key={section.id}>
+                <span />
+                <p>{formatPreviewLabel(section.label)}</p>
+              </div>
+            ))}
+          </section>
         </aside>
       </div>
     </div>
