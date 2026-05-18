@@ -134,7 +134,7 @@ function getBlockMiniStyle(appearance?: Record<string, unknown>): CSSProperties 
   }
 
   if (innerBackgroundColor) {
-    style['--preview-card-inner' as keyof CSSProperties] = innerBackgroundColor;
+    (style as Record<string, string>)['--preview-card-inner'] = innerBackgroundColor;
   }
 
   if (borderRadius !== undefined) {

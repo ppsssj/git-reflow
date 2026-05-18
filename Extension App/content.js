@@ -255,7 +255,13 @@ const blockSelectorRegistry = {
     '[class*="CopilotChatInputPartial-module__inputContainer"]',
     '[class*="CopilotImmersiveEmbedded-module__CopilotChatContainer"]',
   ],
-  'activity-feed': ['#conduit-feed-frame', '.js-for-you-feed-items', 'turbo-frame.js-for-you-feed-items'],
+  'activity-feed': [
+    '#conduit-feed-frame',
+    '#dashboard-feed-frame',
+    '.js-for-you-feed-items',
+    'turbo-frame.js-for-you-feed-items',
+    '[id*="feed-frame"]',
+  ],
   'repo-updates': [],
   'pinned-repos': [],
   'issue-pr-updates': [],
@@ -715,6 +721,7 @@ function clearAppearance(element) {
   }
 
   element.classList.remove(APPEARANCE_CLASS);
+  element.classList.remove('git-reflow-activity-feed-card', 'git-reflow-activity-feed-item');
   element.style.removeProperty('background');
   element.style.removeProperty('background-color');
   element.style.removeProperty('margin-top');
@@ -734,6 +741,7 @@ function clearAppearance(element) {
   element.style.removeProperty('--git-reflow-block-font-family');
   element.style.removeProperty('--git-reflow-block-font-size');
   element.style.removeProperty('--git-reflow-block-radius');
+  element.style.removeProperty('--git-reflow-activity-card-background');
 }
 
 function applyTopbarAppearance(topbar, appearance) {
@@ -776,6 +784,217 @@ function applyInnerAppearance(element, appearance) {
         target.style.setProperty('background-color', appearance.innerBackgroundColor, 'important');
       }
     });
+}
+
+function isVisibleCardLikeElement(element) {
+  if (!(element instanceof HTMLElement)) {
+    return false;
+  }
+
+  const rect = element.getBoundingClientRect();
+
+  if (rect.width < 120 || rect.height < 32) {
+    return false;
+  }
+
+  const style = window.getComputedStyle(element);
+  const hasPaint =
+    style.backgroundColor !== 'rgba(0, 0, 0, 0)' ||
+    style.borderTopStyle !== 'none' ||
+    parseFloat(style.borderTopLeftRadius) > 0;
+
+  return hasPaint;
+}
+
+function getActivityFeedCardSurface(feedItem) {
+  if (!(feedItem instanceof HTMLElement)) {
+    return null;
+  }
+
+  const feedRect = feedItem.getBoundingClientRect();
+
+  if (feedRect.width < 120 || feedRect.height < 32) {
+    return null;
+  }
+
+  const shallowChildren = [...feedItem.children].filter((child) => child instanceof HTMLElement);
+  const shallowGrandchildren = shallowChildren.flatMap((child) =>
+    [...child.children].filter((grandchild) => grandchild instanceof HTMLElement),
+  );
+  const surfaceCandidates = [...shallowChildren, ...shallowGrandchildren]
+    .filter((candidate) => candidate instanceof HTMLElement && isVisibleCardLikeElement(candidate))
+    .map((candidate) => {
+      const rect = candidate.getBoundingClientRect();
+      const widthRatio = rect.width / feedRect.width;
+      const heightRatio = rect.height / feedRect.height;
+      const depth =
+        candidate === feedItem
+          ? 0
+          : candidate.parentElement === feedItem
+            ? 1
+            : 2;
+
+      return {
+        element: candidate,
+        score:
+          depth * 1000000 +
+          (widthRatio >= 0.68 ? 250000 : 0) +
+          (heightRatio >= 0.55 ? 250000 : 0) +
+          rect.width * rect.height,
+      };
+    })
+    .filter(({ element }) => {
+      const rect = element.getBoundingClientRect();
+
+      return rect.width >= feedRect.width * 0.68 && rect.height >= feedRect.height * 0.55;
+    })
+    .sort((a, b) => b.score - a.score);
+
+  return surfaceCandidates[0]?.element ?? null;
+}
+
+function applyActivityFeedRootBackground(element, appearance) {
+  if (!isObject(appearance) || typeof appearance.backgroundColor !== 'string') {
+    return [];
+  }
+
+  const roots = [
+    element,
+    ...document.querySelectorAll([
+      '#conduit-feed-frame',
+      '#dashboard-feed-frame',
+      '.js-for-you-feed-items',
+      'turbo-frame.js-for-you-feed-items',
+      '[id*="feed-frame"]',
+    ].join(', ')),
+  ].filter((target, index, list) => target instanceof HTMLElement && list.indexOf(target) === index);
+
+  roots.forEach((root) => {
+    root.classList.add(APPEARANCE_CLASS);
+    root.style.setProperty('--git-reflow-block-background', appearance.backgroundColor);
+    root.style.setProperty('background', appearance.backgroundColor, 'important');
+    root.style.setProperty('background-color', appearance.backgroundColor, 'important');
+  });
+
+  return roots;
+}
+
+function applyActivityFeedCardSurface(cardSurface, appearance) {
+  if (!(cardSurface instanceof HTMLElement) || !isObject(appearance) || typeof appearance.innerBackgroundColor !== 'string') {
+    return;
+  }
+
+  cardSurface.classList.add('git-reflow-activity-feed-card');
+  cardSurface.classList.add(APPEARANCE_CLASS);
+  cardSurface.style.setProperty('background', appearance.innerBackgroundColor, 'important');
+  cardSurface.style.setProperty('background-color', appearance.innerBackgroundColor, 'important');
+
+  const borderRadius = Number(appearance.borderRadius);
+  if (Number.isFinite(borderRadius)) {
+    cardSurface.style.setProperty('border-radius', `${Math.max(0, Math.min(32, borderRadius))}px`, 'important');
+  }
+}
+
+function applyActivityFeedCardAppearance(element, appearance) {
+  if (!(element instanceof HTMLElement) || !isObject(appearance) || typeof appearance.innerBackgroundColor !== 'string') {
+    return;
+  }
+
+  element.style.setProperty('--git-reflow-activity-card-background', appearance.innerBackgroundColor);
+  const roots = applyActivityFeedRootBackground(element, appearance);
+
+  element.querySelectorAll('.git-reflow-activity-feed-card').forEach((target) => {
+    if (target instanceof HTMLElement) {
+      target.classList.remove('git-reflow-activity-feed-card');
+      target.style.removeProperty('background');
+      target.style.removeProperty('background-color');
+    }
+  });
+
+  roots.forEach((root) => {
+    root.querySelectorAll('.git-reflow-activity-feed-card').forEach((target) => {
+      if (target instanceof HTMLElement) {
+        target.classList.remove('git-reflow-activity-feed-card');
+        target.style.removeProperty('background');
+        target.style.removeProperty('background-color');
+      }
+    });
+    root.querySelectorAll('.git-reflow-activity-feed-item').forEach((target) => {
+      if (target instanceof HTMLElement) {
+        target.classList.remove('git-reflow-activity-feed-item');
+        target.style.removeProperty('background');
+        target.style.removeProperty('background-color');
+      }
+    });
+  });
+
+  element.querySelectorAll('.git-reflow-activity-feed-item').forEach((target) => {
+    if (target instanceof HTMLElement) {
+      target.classList.remove('git-reflow-activity-feed-item');
+      target.style.removeProperty('background');
+      target.style.removeProperty('background-color');
+    }
+  });
+
+  roots.forEach((root) => {
+    root.querySelectorAll('.feed-item-content').forEach((cardSurface) => {
+      applyActivityFeedCardSurface(cardSurface, appearance);
+    });
+  });
+
+  const feedItemSelector = [
+    '.js-feed-item-component',
+    'article',
+    '[class*="FeedItem"]',
+    '[class*="feed-item"]',
+    '[class*="TimelineItem"]',
+    '[data-testid*="feed-item"]',
+  ].join(', ');
+
+  const candidates = [...element.querySelectorAll(feedItemSelector)].filter((target) => {
+    if (!(target instanceof HTMLElement)) {
+      return false;
+    }
+
+    if (target.matches('article') && target.closest('.js-feed-item-component, [class*="FeedItem"], [class*="feed-item"], [class*="TimelineItem"], [data-testid*="feed-item"]') !== target) {
+      return false;
+    }
+
+    const parentFeedItem = target.parentElement?.closest(feedItemSelector);
+
+    return !parentFeedItem || !element.contains(parentFeedItem);
+  });
+
+  candidates.forEach((target) => {
+    const cardSurface = getActivityFeedCardSurface(target);
+
+    if (!(cardSurface instanceof HTMLElement)) {
+      return;
+    }
+
+    if (target !== cardSurface) {
+      target.classList.add('git-reflow-activity-feed-item');
+      target.style.setProperty('background', 'transparent', 'important');
+      target.style.setProperty('background-color', 'transparent', 'important');
+    }
+
+    const existingCard = cardSurface.closest('.git-reflow-activity-feed-card');
+    if (existingCard !== null && existingCard !== cardSurface) {
+      return;
+    }
+
+    applyActivityFeedCardSurface(cardSurface, appearance);
+  });
+}
+
+function reapplyActivityFeedAppearance(target, appearance) {
+  [150, 500, 1200, 2500].forEach((delay) => {
+    window.setTimeout(() => {
+      applyActivityFeedCardAppearance(target, appearance);
+      applyTypographyAppearance(target, appearance);
+      applyElementSpacing(target, appearance);
+    }, delay);
+  });
 }
 
 function applyTypographyAppearance(element, appearance) {
@@ -1224,7 +1443,12 @@ function applyBlockProps(block, element) {
 
   getAppearanceTargets(block, element).forEach((target) => {
     applyAppearance(target, props.appearance);
-    applyInnerAppearance(target, props.appearance);
+    if (block.type === 'activity-feed') {
+      applyActivityFeedCardAppearance(target, props.appearance);
+      reapplyActivityFeedAppearance(target, props.appearance);
+    } else {
+      applyInnerAppearance(target, props.appearance);
+    }
     applyTypographyAppearance(target, props.appearance);
     applyElementSpacing(target, props.appearance);
   });

@@ -732,8 +732,23 @@ body.git-reflow-template-active .feed-right-column {
   font-size: var(--git-reflow-block-font-size, inherit) !important;
 }
 
-.git-reflow-template-block :is(input, textarea, button, article, .Box, .Box-row, .js-feed-item-component, [class*="Card"], [class*="Box"]) {
+.git-reflow-template-block :is(input, textarea, button, article, article > *, .Box, .Box-row, .js-feed-item-component, .js-feed-item-component > *, [class*="Card"], [class*="Box"], [class*="FeedItem"], [class*="feed-item"], [class*="TimelineItem"]) {
   border-radius: max(4px, calc(var(--git-reflow-block-radius, 6px) - 2px)) !important;
+}
+
+.git-reflow-template-block[data-git-reflow-block-type="activity-feed"] .git-reflow-activity-feed-card {
+  background: var(--git-reflow-activity-card-background, var(--git-reflow-block-inner-background, inherit)) !important;
+  background-color: var(--git-reflow-activity-card-background, var(--git-reflow-block-inner-background, inherit)) !important;
+}
+
+body.git-reflow-template-active .feed-item-content.git-reflow-activity-feed-card {
+  background: var(--git-reflow-activity-card-background, var(--git-reflow-block-inner-background, inherit)) !important;
+  background-color: var(--git-reflow-activity-card-background, var(--git-reflow-block-inner-background, inherit)) !important;
+}
+
+.git-reflow-template-block[data-git-reflow-block-type="activity-feed"] .git-reflow-activity-feed-item {
+  background: transparent !important;
+  background-color: transparent !important;
 }
 
 .git-reflow-template-block :is(ul, ol, [role="list"], [class*="list"], [class*="List"]),

@@ -230,7 +230,7 @@ function createUsageTemplateRecord(usage?: TemplateUsageSummary | TemplateUsageE
     thumbnail: '',
     collaborators: [],
     status: 'ACTIVE',
-    syncState: 'Extension previewed',
+    syncState: 'Extension connected',
     updatedAt: 'Extension usage',
     owner: 'git-reflow',
     highlights: ['Recently used in extension'],
@@ -286,7 +286,7 @@ export function TemplateListPage() {
   const [favoriteTemplateIds, setFavoriteTemplateIds] = useState<string[]>(readFavoriteTemplateIds);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const remoteTemplateIds = useMemo(() => new Set(remoteTemplates.map((template) => template.id)), [remoteTemplates]);
-  const visibleTemplates = useMemo(() => {
+  const visibleTemplates = useMemo<TemplateRecord[]>(() => {
     const userTemplates = remoteTemplates.filter((template) => template.id !== DEFAULT_TEMPLATE_ID);
     const savedTemplateIds = new Set(userTemplates.map((template) => template.id));
     const unsavedStarterTemplates = starterGithubTemplateRecords.filter((template) => !savedTemplateIds.has(template.id));

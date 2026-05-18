@@ -55,24 +55,25 @@ function getAppearanceStyle(block: TemplateBlock) {
   const fontSize = Number(styles.fontSize);
   const borderRadius = Number(styles.borderRadius);
   const style: CSSProperties = {};
+  const customStyle = style as Record<string, string>;
 
   if (typeof styles.backgroundColor === 'string' && styles.backgroundColor) {
     style.background = styles.backgroundColor;
     style.backgroundColor = styles.backgroundColor;
-    style['--github-block-background' as keyof CSSProperties] = styles.backgroundColor;
+    customStyle['--github-block-background'] = styles.backgroundColor;
   }
 
   if (typeof styles.innerBackgroundColor === 'string' && styles.innerBackgroundColor) {
-    style['--github-block-inner-background' as keyof CSSProperties] = styles.innerBackgroundColor;
+    customStyle['--github-block-inner-background'] = styles.innerBackgroundColor;
   }
 
   if (typeof styles.textColor === 'string' && styles.textColor) {
     style.color = styles.textColor;
-    style['--github-block-text-color' as keyof CSSProperties] = styles.textColor;
+    customStyle['--github-block-text-color'] = styles.textColor;
   }
 
   if (typeof styles.linkColor === 'string' && styles.linkColor) {
-    style['--github-block-link-color' as keyof CSSProperties] = styles.linkColor;
+    customStyle['--github-block-link-color'] = styles.linkColor;
   }
 
   if (Number.isFinite(marginY)) {
@@ -82,26 +83,26 @@ function getAppearanceStyle(block: TemplateBlock) {
 
   if (Number.isFinite(padding)) {
     style.padding = `${padding}px`;
-    style['--github-block-padding' as keyof CSSProperties] = `${padding}px`;
+    customStyle['--github-block-padding'] = `${padding}px`;
   }
 
   if (Number.isFinite(elementGap)) {
-    style['--github-block-gap' as keyof CSSProperties] = `${elementGap}px`;
+    customStyle['--github-block-gap'] = `${elementGap}px`;
   }
 
   if (typeof styles.fontFamily === 'string' && styles.fontFamily) {
     style.fontFamily = styles.fontFamily;
-    style['--github-block-font-family' as keyof CSSProperties] = styles.fontFamily;
+    customStyle['--github-block-font-family'] = styles.fontFamily;
   }
 
   if (Number.isFinite(fontSize)) {
     style.fontSize = `${fontSize}px`;
-    style['--github-block-font-size' as keyof CSSProperties] = `${fontSize}px`;
+    customStyle['--github-block-font-size'] = `${fontSize}px`;
   }
 
   if (Number.isFinite(borderRadius)) {
     style.borderRadius = `${borderRadius}px`;
-    style['--github-block-radius' as keyof CSSProperties] = `${borderRadius}px`;
+    customStyle['--github-block-radius'] = `${borderRadius}px`;
   }
 
   return style;
