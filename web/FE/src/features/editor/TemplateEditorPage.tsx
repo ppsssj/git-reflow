@@ -152,6 +152,7 @@ export function TemplateEditorPage() {
   const [blockStyleMenu, setBlockStyleMenu] = useState<{ blockId: string; x: number; y: number } | null>(null);
   const [pageStyleMenu, setPageStyleMenu] = useState<{ x: number; y: number } | null>(null);
   const canvasShellRef = useRef<HTMLElement | null>(null);
+  const styleMenuRef = useRef<HTMLDivElement | null>(null);
   const styleMenuBlock = blockStyleMenu
     ? layout.blocks.find((block) => block.id === blockStyleMenu.blockId)
     : null;
@@ -172,6 +173,39 @@ export function TemplateEditorPage() {
       setSelectedBlockId(layout.blocks[0]?.id ?? '');
     }
   }, [layout.blocks, selectedBlockId]);
+
+  useEffect(() => {
+    if (!blockStyleMenu && !pageStyleMenu) {
+      return undefined;
+    }
+
+    const closeStyleMenus = () => {
+      setBlockStyleMenu(null);
+      setPageStyleMenu(null);
+    };
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (styleMenuRef.current?.contains(event.target as Node)) {
+        return;
+      }
+
+      closeStyleMenus();
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        closeStyleMenus();
+      }
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown, true);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown, true);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [blockStyleMenu, pageStyleMenu]);
 
   useEffect(() => {
     if (!templateId) {
@@ -484,6 +518,7 @@ export function TemplateEditorPage() {
           {blockStyleMenu && styleMenuBlock ? (
             <div
               className="block-style-menu"
+              ref={styleMenuRef}
               style={{ left: blockStyleMenu.x, top: blockStyleMenu.y } as CSSProperties}
             >
               <div className="block-style-menu__header">
@@ -504,6 +539,7 @@ export function TemplateEditorPage() {
           {pageStyleMenu ? (
             <div
               className="block-style-menu block-style-menu--page"
+              ref={styleMenuRef}
               style={{ left: pageStyleMenu.x, top: pageStyleMenu.y } as CSSProperties}
             >
               <div className="block-style-menu__header">

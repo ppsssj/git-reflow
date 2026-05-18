@@ -61,6 +61,7 @@ interface TemplateUsageResponse {
 type TemplateSortMode = 'updated' | 'name' | 'most-used' | 'recently-used';
 
 const DEFAULT_TEMPLATE_ID = defaultGithubTemplate.id;
+const FAVORITE_TEMPLATE_STORAGE_KEY = 'git-reflow.favoriteTemplateIds';
 
 function slugify(value: string) {
   const slug = value
@@ -258,6 +259,19 @@ function getUpdatedSortValue(template: TemplateRecord) {
   return Number.isFinite(timestamp) ? timestamp : 0;
 }
 
+function readFavoriteTemplateIds() {
+  try {
+    const rawValue = window.localStorage.getItem(FAVORITE_TEMPLATE_STORAGE_KEY);
+    const parsedValue = rawValue ? JSON.parse(rawValue) : [];
+
+    return Array.isArray(parsedValue)
+      ? parsedValue.filter((templateId): templateId is string => typeof templateId === 'string')
+      : [];
+  } catch {
+    return [];
+  }
+}
+
 export function TemplateListPage() {
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -269,14 +283,22 @@ export function TemplateListPage() {
   const [templateUsage, setTemplateUsage] = useState<TemplateUsageResponse | null>(null);
   const [newTemplateName, setNewTemplateName] = useState('');
   const [createStatus, setCreateStatus] = useState('');
+  const [favoriteTemplateIds, setFavoriteTemplateIds] = useState<string[]>(readFavoriteTemplateIds);
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const remoteTemplateIds = useMemo(() => new Set(remoteTemplates.map((template) => template.id)), [remoteTemplates]);
   const visibleTemplates = useMemo(() => {
     const userTemplates = remoteTemplates.filter((template) => template.id !== DEFAULT_TEMPLATE_ID);
     const savedTemplateIds = new Set(userTemplates.map((template) => template.id));
     const unsavedStarterTemplates = starterGithubTemplateRecords.filter((template) => !savedTemplateIds.has(template.id));
+    const activeTemplateId = templateUsage?.recent[0]?.id ?? '';
 
-    return [...unsavedStarterTemplates, ...userTemplates];
-  }, [remoteTemplates]);
+    return [...unsavedStarterTemplates, ...userTemplates].map((template) => ({
+      ...template,
+      status: template.id === activeTemplateId ? 'ACTIVE' : 'INACTIVE',
+      syncState: template.id === activeTemplateId ? 'Extension connected' : template.syncState,
+    }));
+  }, [remoteTemplates, templateUsage]);
+  const favoriteTemplateIdSet = useMemo(() => new Set(favoriteTemplateIds), [favoriteTemplateIds]);
   const templateUsageById = useMemo(
     () => new Map((templateUsage?.templates ?? []).map((template) => [template.id, template])),
     [templateUsage],
@@ -286,8 +308,17 @@ export function TemplateListPage() {
     const searchedTemplates = query
       ? visibleTemplates.filter((template) => getTemplateSearchText(template).includes(query))
       : visibleTemplates;
+    const favoriteFilteredTemplates = showFavoritesOnly
+      ? searchedTemplates.filter((template) => favoriteTemplateIdSet.has(template.id))
+      : searchedTemplates;
 
-    return [...searchedTemplates].sort((a, b) => {
+    return [...favoriteFilteredTemplates].sort((a, b) => {
+      const favoriteDelta = Number(favoriteTemplateIdSet.has(b.id)) - Number(favoriteTemplateIdSet.has(a.id));
+
+      if (favoriteDelta !== 0) {
+        return favoriteDelta;
+      }
+
       if (templateSortMode === 'name') {
         return a.name.localeCompare(b.name);
       }
@@ -305,7 +336,14 @@ export function TemplateListPage() {
 
       return getUpdatedSortValue(b) - getUpdatedSortValue(a) || a.name.localeCompare(b.name);
     });
-  }, [templateSearchQuery, templateSortMode, templateUsageById, visibleTemplates]);
+  }, [
+    favoriteTemplateIdSet,
+    showFavoritesOnly,
+    templateSearchQuery,
+    templateSortMode,
+    templateUsageById,
+    visibleTemplates,
+  ]);
   const primaryTemplateId = visibleTemplates[0]?.id ?? 'github-dashboard-reference';
   const recentUsage = templateUsage?.recent[0];
   const mostUsedTemplate = templateUsage ? getTopUsageTemplates(templateUsage.templates)[0] : undefined;
@@ -348,6 +386,10 @@ export function TemplateListPage() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem(FAVORITE_TEMPLATE_STORAGE_KEY, JSON.stringify(favoriteTemplateIds));
+  }, [favoriteTemplateIds]);
 
   useEffect(() => {
     let cancelled = false;
@@ -425,6 +467,14 @@ export function TemplateListPage() {
     if (template) {
       navigate(`/templates/${template.id}`);
     }
+  };
+
+  const handleToggleFavoriteTemplate = (template: TemplateRecord) => {
+    setFavoriteTemplateIds((current) =>
+      current.includes(template.id)
+        ? current.filter((templateId) => templateId !== template.id)
+        : [template.id, ...current],
+    );
   };
 
   const handleRenameTemplate = async (template: TemplateRecord, requestedName: string) => {
@@ -637,6 +687,15 @@ export function TemplateListPage() {
                 <option value="recently-used">Recently used</option>
               </select>
             </label>
+            <button
+              className={['template-toolbar__favorite', showFavoritesOnly ? 'is-active' : ''].join(' ').trim()}
+              type="button"
+              aria-pressed={showFavoritesOnly}
+              onClick={() => setShowFavoritesOnly((current) => !current)}
+            >
+              <Icon name="star" />
+              <span>Favorites</span>
+            </button>
             <span className="template-toolbar__count">
               {filteredTemplates.length} of {visibleTemplates.length}
             </span>
@@ -652,10 +711,12 @@ export function TemplateListPage() {
                   remoteTemplateIds.has(template.id)
                 }
                 canCopy={isStarterGithubTemplateId(template.id) || remoteTemplateIds.has(template.id)}
+                isFavorite={favoriteTemplateIdSet.has(template.id)}
                 template={template}
                 variant={viewMode}
                 onCopy={handleCopyTemplate}
                 onDelete={handleDeleteTemplate}
+                onToggleFavorite={handleToggleFavoriteTemplate}
                 onOpen={handleOpenTemplate}
                 onRename={handleRenameTemplate}
               />
@@ -786,7 +847,7 @@ export function TemplateListPage() {
       <footer className="dashboard-footer">
         <div>
           <span>REFLOW PLATFORM</span>
-          <p>© 2024 Precision Git Reflow Platform. All rights reserved.</p>
+          <p>© 2026 Precision Git Reflow Platform. All rights reserved.</p>
         </div>
         <nav aria-label="Footer">
           <a href="#privacy">Privacy</a>

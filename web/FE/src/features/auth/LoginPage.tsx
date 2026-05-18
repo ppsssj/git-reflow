@@ -204,7 +204,7 @@ export function LoginPage() {
       </main>
 
       <footer className="login-footer">
-        <div>© 2024 Precision Git Reflow Platform. All rights reserved.</div>
+        <div>© 2026 Precision Git Reflow Platform. All rights reserved.</div>
         <div className="login-footer__status">
           <span>INFRASTRUCTURE STATUS: OPTIMAL</span>
           <span className="login-footer__dot" />

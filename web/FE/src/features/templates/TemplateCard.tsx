@@ -9,8 +9,10 @@ interface TemplateCardProps {
   variant?: 'grid' | 'list';
   canManage?: boolean;
   canCopy?: boolean;
+  isFavorite?: boolean;
   onCopy?: (template: TemplateRecord, name: string) => void;
   onDelete?: (template: TemplateRecord) => void;
+  onToggleFavorite?: (template: TemplateRecord) => void;
   onOpen?: (template: TemplateRecord) => void;
   onRename?: (template: TemplateRecord, name: string) => void;
 }
@@ -154,8 +156,10 @@ export function TemplateCard({
   variant = 'grid',
   canManage = true,
   canCopy = true,
+  isFavorite = false,
   onCopy,
   onDelete,
+  onToggleFavorite,
   onOpen,
   onRename,
 }: TemplateCardProps) {
@@ -245,8 +249,8 @@ export function TemplateCard({
         menuOpen || actionPanel ? 'is-menu-open' : '',
       ].join(' ').trim()}
     >
-      <Link className="template-tile__link" to={`/templates/${template.id}`}>
-        <div className="template-tile__thumb">
+      <div className="template-tile__thumb">
+        <Link className="template-tile__link" to={`/templates/${template.id}`}>
           {template.thumbnail ? (
             <img alt={template.name} src={template.thumbnail} />
           ) : (
@@ -255,8 +259,17 @@ export function TemplateCard({
           <span className={`template-tile__status ${template.status === 'ACTIVE' ? 'is-active' : 'is-inactive'}`}>
             {template.status}
           </span>
-        </div>
-      </Link>
+        </Link>
+        <button
+          aria-pressed={isFavorite}
+          aria-label={isFavorite ? `Remove ${template.name} from favorites` : `Add ${template.name} to favorites`}
+          className={['template-tile__favorite', isFavorite ? 'is-favorite' : ''].join(' ').trim()}
+          type="button"
+          onClick={() => onToggleFavorite?.(template)}
+        >
+          <Icon name="star" />
+        </button>
+      </div>
 
       <div className="template-tile__body">
         <div className="template-tile__title">

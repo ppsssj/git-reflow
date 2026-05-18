@@ -1591,7 +1591,7 @@ img {
 
 .template-toolbar {
   display: grid;
-  grid-template-columns: minmax(260px, 1fr) auto auto;
+  grid-template-columns: minmax(260px, 1fr) auto auto auto;
   align-items: center;
   gap: 12px;
   max-width: 1280px;
@@ -1599,7 +1599,8 @@ img {
 }
 
 .template-toolbar__search,
-.template-toolbar__sort {
+.template-toolbar__sort,
+.template-toolbar__favorite {
   display: flex;
   align-items: center;
   min-width: 0;
@@ -1640,7 +1641,8 @@ img {
 }
 
 .template-toolbar__sort span,
-.template-toolbar__count {
+.template-toolbar__count,
+.template-toolbar__favorite span {
   color: #94a3b8;
   font-size: 0.6875rem;
   font-weight: 900;
@@ -1650,6 +1652,30 @@ img {
 .template-toolbar__sort select {
   min-width: 150px;
   cursor: pointer;
+}
+
+.template-toolbar__favorite {
+  gap: 7px;
+  padding: 0 12px;
+  border: 1px solid rgba(191, 199, 212, 0.28);
+  color: #94a3b8;
+  font: inherit;
+  cursor: pointer;
+}
+
+.template-toolbar__favorite .material-symbols-outlined {
+  width: 17px;
+  height: 17px;
+}
+
+.template-toolbar__favorite.is-active {
+  border-color: rgba(245, 158, 11, 0.38);
+  background: #fffbeb;
+  color: #d97706;
+}
+
+.template-toolbar__favorite.is-active span {
+  color: #92400e;
 }
 
 .template-toolbar__count {
@@ -1748,6 +1774,10 @@ img {
   overflow: hidden;
   border-radius: 10px;
   background: #f1f5f9;
+}
+
+.template-tile__thumb .template-tile__link {
+  height: 100%;
 }
 
 .template-tile--list .template-tile__thumb {
@@ -2000,6 +2030,40 @@ img {
 
 .template-tile__status.is-inactive {
   background: #94a3b8;
+}
+
+.template-tile__favorite {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.56);
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.42);
+  color: rgba(255, 255, 255, 0.82);
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.template-tile__favorite:hover {
+  transform: translateY(-1px);
+  background: rgba(15, 23, 42, 0.62);
+  color: white;
+}
+
+.template-tile__favorite.is-favorite {
+  border-color: rgba(251, 191, 36, 0.72);
+  background: #f59e0b;
+  color: white;
+}
+
+.template-tile__favorite .material-symbols-outlined {
+  width: 16px;
+  height: 16px;
 }
 
 .template-tile__body {
