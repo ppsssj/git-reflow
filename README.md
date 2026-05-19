@@ -1,4 +1,13 @@
-# git-reflow
+<p align="center">
+  <img src="./assets/logo512.png" width="140" alt="git-reflow logo" />
+</p>
+
+<h1 align="center">git-reflow</h1>
+
+<p align="center">
+  GitHub Home 레이아웃을 사용자가 원하는 방식으로 재구성하는<br />
+  Web App + Chrome Extension 기반 UI 개인화 프로젝트
+</p>
 
 ![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=111827)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
