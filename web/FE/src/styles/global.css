@@ -121,6 +121,13 @@ img {
   gap: 24px;
 }
 
+.topnav__left {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+
 .topnav__brand {
   font-size: 1.125rem;
   font-weight: 800;
@@ -6537,4 +6544,10 @@ img {
   .sync-bridge {
     display: none;
   }
+}
+
+.topnav__logo {
+  width: 80px;
+  height: 80px;
+  margin-left: 0%;
 }

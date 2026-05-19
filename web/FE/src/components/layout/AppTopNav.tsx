@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { apiPost } from '../../lib/api';
-import { clearAuthSession, getAuthSession } from '../../lib/auth';
-import { Icon } from '../ui/Icon';
+import { useEffect, useRef, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { apiPost } from "../../lib/api";
+import { clearAuthSession, getAuthSession } from "../../lib/auth";
+import { Icon } from "../ui/Icon";
 
 interface AppTopNavProps {
-  active: 'dashboard' | 'templates' | 'network';
+  active: "dashboard" | "templates" | "network";
   searchPlaceholder?: string;
   actionLabel?: string;
   actionTo?: string;
@@ -15,8 +15,8 @@ interface AppTopNavProps {
 
 export function AppTopNav({
   active,
-  searchPlaceholder = 'Search resources...',
-  actionLabel = 'Deploy',
+  searchPlaceholder = "Search resources...",
+  actionLabel = "Deploy",
   actionStatus,
   actionTo,
   onActionClick,
@@ -24,9 +24,9 @@ export function AppTopNav({
   const navigate = useNavigate();
   const settingsRef = useRef<HTMLDivElement | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [copyStatus, setCopyStatus] = useState('');
+  const [copyStatus, setCopyStatus] = useState("");
   const session = getAuthSession();
-  const userName = session?.user.name ?? session?.user.email ?? 'User';
+  const userName = session?.user.name ?? session?.user.email ?? "User";
   const userInitial = userName.slice(0, 1).toUpperCase();
 
   useEffect(() => {
@@ -36,10 +36,10 @@ export function AppTopNav({
       }
     };
 
-    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener("pointerdown", handlePointerDown);
 
     return () => {
-      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener("pointerdown", handlePointerDown);
     };
   }, []);
 
@@ -47,16 +47,20 @@ export function AppTopNav({
     const token = session?.token;
 
     if (token) {
-      await apiPost('/api/auth/logout', {}, {
-        headers: {
-          Authorization: `Bearer ${token}`,
+      await apiPost(
+        "/api/auth/logout",
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         },
-      }).catch(() => undefined);
+      ).catch(() => undefined);
     }
 
     clearAuthSession();
     setIsSettingsOpen(false);
-    navigate('/login', { replace: true });
+    navigate("/login", { replace: true });
   };
 
   const handleCopyExtensionToken = async () => {
@@ -65,25 +69,36 @@ export function AppTopNav({
     }
 
     await navigator.clipboard.writeText(session.token);
-    setCopyStatus('Copied');
-    window.setTimeout(() => setCopyStatus(''), 1600);
+    setCopyStatus("Copied");
+    window.setTimeout(() => setCopyStatus(""), 1600);
   };
 
   return (
     <header className="topnav">
       <div className="topnav__inner">
         <div className="topnav__left">
+          <img
+            className="topnav__logo"
+            src="/assets/logo512.png"
+            alt="Reflow logo"
+          />{" "}
           <Link className="topnav__brand" to="/">
-            Reflow.io
+            GIT-Reflow
           </Link>
           <nav className="topnav__nav" aria-label="Primary">
-            <Link className={active === 'dashboard' ? 'is-active' : ''} to="/">
+            <Link className={active === "dashboard" ? "is-active" : ""} to="/">
               Dashboard
             </Link>
-            <Link className={active === 'templates' ? 'is-active' : ''} to="/templates">
+            <Link
+              className={active === "templates" ? "is-active" : ""}
+              to="/templates"
+            >
               Templates
             </Link>
-            <Link className={active === 'network' ? 'is-active' : ''} to="/templates/discover">
+            <Link
+              className={active === "network" ? "is-active" : ""}
+              to="/templates/discover"
+            >
               Network
             </Link>
           </nav>
@@ -92,10 +107,18 @@ export function AppTopNav({
         <div className="topnav__right">
           <label className="topnav__search">
             <Icon className="topnav__search-icon" name="search" />
-            <input aria-label="Search" placeholder={searchPlaceholder} type="text" />
+            <input
+              aria-label="Search"
+              placeholder={searchPlaceholder}
+              type="text"
+            />
           </label>
 
-          <button className="topnav__icon-button" type="button" aria-label="Notifications">
+          <button
+            className="topnav__icon-button"
+            type="button"
+            aria-label="Notifications"
+          >
             <Icon name="notifications" />
           </button>
           <div className="topnav__settings" ref={settingsRef}>
@@ -113,12 +136,18 @@ export function AppTopNav({
               <div className="topnav__settings-menu" role="menu">
                 <div className="topnav__settings-user">
                   <strong>{userName}</strong>
-                  {session?.user.email ? <span>{session.user.email}</span> : null}
+                  {session?.user.email ? (
+                    <span>{session.user.email}</span>
+                  ) : null}
                 </div>
                 {session?.token ? (
-                  <button role="menuitem" type="button" onClick={handleCopyExtensionToken}>
+                  <button
+                    role="menuitem"
+                    type="button"
+                    onClick={handleCopyExtensionToken}
+                  >
                     <Icon name="extension" />
-                    <span>{copyStatus || 'Copy extension token'}</span>
+                    <span>{copyStatus || "Copy extension token"}</span>
                   </button>
                 ) : null}
                 <button role="menuitem" type="button" onClick={handleLogout}>
@@ -133,15 +162,28 @@ export function AppTopNav({
               {actionLabel}
             </Link>
           ) : (
-            <button className="topnav__deploy" type="button" onClick={onActionClick}>
+            <button
+              className="topnav__deploy"
+              type="button"
+              onClick={onActionClick}
+            >
               {actionLabel}
             </button>
           )}
-          {actionStatus ? <span className="topnav__action-status">{actionStatus}</span> : null}
+          {actionStatus ? (
+            <span className="topnav__action-status">{actionStatus}</span>
+          ) : null}
           {session?.user.avatarUrl ? (
-            <img alt={`${userName} avatar`} className="topnav__avatar" src={session.user.avatarUrl} />
+            <img
+              alt={`${userName} avatar`}
+              className="topnav__avatar"
+              src={session.user.avatarUrl}
+            />
           ) : (
-            <span aria-label={userName} className="topnav__avatar topnav__avatar-fallback">
+            <span
+              aria-label={userName}
+              className="topnav__avatar topnav__avatar-fallback"
+            >
               {userInitial}
             </span>
           )}
