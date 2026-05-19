@@ -46,6 +46,7 @@ async function readTemplateStore() {
       templates,
       latest: parsed.latest ?? templates[0] ?? DEFAULT_TEMPLATE_PAYLOAD,
       versions: Array.isArray(parsed.versions) ? parsed.versions : [],
+      publishedTemplates: Array.isArray(parsed.publishedTemplates) ? parsed.publishedTemplates : [],
     };
   } catch (error) {
     if (error?.code !== 'ENOENT') {
@@ -56,6 +57,7 @@ async function readTemplateStore() {
       templates: [DEFAULT_TEMPLATE_PAYLOAD],
       latest: DEFAULT_TEMPLATE_PAYLOAD,
       versions: [],
+      publishedTemplates: [],
     };
   }
 }
@@ -275,6 +277,39 @@ function toTemplateRecord(template) {
   };
 }
 
+function getNetworkLikeUserIds(entry) {
+  return Array.isArray(entry.likeUserIds) ? entry.likeUserIds.filter((item) => typeof item === 'string') : [];
+}
+
+function toNetworkTemplateRecord(entry, currentUserId = '') {
+  const record = toTemplateRecord(entry.template);
+  const likeUserIds = getNetworkLikeUserIds(entry);
+
+  return {
+    ...record,
+    id: entry.id,
+    networkTemplateId: entry.id,
+    sourceTemplateId: entry.sourceTemplateId,
+    publisherUserId: entry.publisherUserId,
+    publisherName: entry.publisherName,
+    publishedAt: entry.publishedAt,
+    importCount: Number(entry.importCount) || 0,
+    likeCount: likeUserIds.length,
+    viewCount: Number(entry.viewCount) || 0,
+    likedByCurrentUser: currentUserId ? likeUserIds.includes(currentUserId) : false,
+    status: 'INACTIVE',
+    syncState: 'Ready to sync',
+    updatedAt: entry.publishedAt ? `Published ${new Date(entry.publishedAt).toLocaleString()}` : 'Published to Network',
+    owner: entry.publisherName || 'Reflow Network',
+    highlights: [
+      'Public template',
+      `${Number(entry.importCount) || 0} imports`,
+      `${likeUserIds.length} likes`,
+      ...record.highlights.slice(0, 2),
+    ],
+  };
+}
+
 function slugify(value) {
   const slug = value
     .toLowerCase()
@@ -299,6 +334,32 @@ function createTemplateId(name, existingTemplates) {
   }
 
   return `${baseId}-${index}`;
+}
+
+function createPublicTemplateId(userId, templateId) {
+  return `network-${slugify(userId)}-${slugify(templateId)}`;
+}
+
+function createUniqueTemplateName(baseName, existingTemplates, userId) {
+  const existingNames = new Set(
+    existingTemplates
+      .filter((template) => belongsToUser(template, userId))
+      .map((template) => template.name.trim().toLowerCase()),
+  );
+
+  if (!existingNames.has(baseName.trim().toLowerCase())) {
+    return baseName;
+  }
+
+  let index = 1;
+  let nextName = `${baseName} (${index})`;
+
+  while (existingNames.has(nextName.trim().toLowerCase())) {
+    index += 1;
+    nextName = `${baseName} (${index})`;
+  }
+
+  return nextName;
 }
 
 function createTemplateFromName(name, existingTemplates) {
@@ -439,12 +500,16 @@ async function handleDeleteTemplate(request, response, templateId) {
 
   const templates = store.templates.filter((item) => item.id !== templateId);
   const versions = store.versions.filter((item) => item.id !== templateId);
+  const publishedTemplates = store.publishedTemplates.filter(
+    (item) => !(item.sourceTemplateId === templateId && item.publisherUserId === session.user.id),
+  );
   const latest = store.latest?.id === templateId ? templates[0] ?? DEFAULT_TEMPLATE_PAYLOAD : store.latest;
 
   await writeTemplateStore({
     latest,
     templates,
     versions,
+    publishedTemplates,
   });
 
   sendJson(response, 200, { ok: true });
@@ -494,6 +559,7 @@ async function handlePostTemplate(request, response) {
     latest: template,
     templates,
     versions,
+    publishedTemplates: store.publishedTemplates,
   };
 
   await writeTemplateStore(nextStore);
@@ -586,9 +652,258 @@ async function handleCreateTemplate(request, response) {
     latest: template,
     templates,
     versions: [template, ...store.versions].slice(0, 25),
+    publishedTemplates: store.publishedTemplates,
   };
 
   await writeTemplateStore(nextStore);
+  sendJson(response, 201, {
+    ok: true,
+    template,
+    record: toTemplateRecord(template),
+  });
+}
+
+async function handleGetNetworkTemplates(request, response) {
+  const store = await readTemplateStore();
+  const session = await getSessionFromRequest(request);
+  const templates = [...store.publishedTemplates]
+    .sort((a, b) => new Date(b.publishedAt ?? 0).getTime() - new Date(a.publishedAt ?? 0).getTime())
+    .map((entry) => toNetworkTemplateRecord(entry, session?.user.id ?? ''));
+
+  sendJson(response, 200, {
+    ok: true,
+    templates,
+  });
+}
+
+async function handleGetNetworkTemplate(request, response, networkTemplateId) {
+  const store = await readTemplateStore();
+  const session = await getSessionFromRequest(request);
+  const entry = store.publishedTemplates.find((item) => item.id === networkTemplateId);
+
+  if (!entry) {
+    sendError(response, 404, 'Network template not found');
+    return;
+  }
+
+  sendJson(response, 200, {
+    ok: true,
+    template: entry.template,
+    record: toNetworkTemplateRecord(entry, session?.user.id ?? ''),
+  });
+}
+
+async function handleSetNetworkTemplateLike(request, response, networkTemplateId) {
+  const session = await requireSession(request, response);
+
+  if (!session) {
+    return;
+  }
+
+  let body;
+
+  try {
+    body = await readJson(request);
+  } catch (error) {
+    sendError(response, error.message === 'Request body too large' ? 413 : 400, error.message);
+    return;
+  }
+
+  const store = await readTemplateStore();
+  const entry = store.publishedTemplates.find((item) => item.id === networkTemplateId);
+
+  if (!entry) {
+    sendError(response, 404, 'Network template not found');
+    return;
+  }
+
+  const liked = Boolean(body.liked);
+  const currentLikeUserIds = getNetworkLikeUserIds(entry);
+  const likeUserIds = liked
+    ? [...new Set([...currentLikeUserIds, session.user.id])]
+    : currentLikeUserIds.filter((userId) => userId !== session.user.id);
+  const publishedTemplates = store.publishedTemplates.map((item) =>
+    item.id === networkTemplateId ? { ...item, likeUserIds } : item,
+  );
+  const nextEntry = { ...entry, likeUserIds };
+
+  await writeTemplateStore({
+    latest: store.latest,
+    templates: store.templates,
+    versions: store.versions,
+    publishedTemplates,
+  });
+
+  sendJson(response, 200, {
+    ok: true,
+    template: toNetworkTemplateRecord(nextEntry, session.user.id),
+  });
+}
+
+async function handleViewNetworkTemplate(request, response, networkTemplateId) {
+  const store = await readTemplateStore();
+  const session = await getSessionFromRequest(request);
+  const entry = store.publishedTemplates.find((item) => item.id === networkTemplateId);
+
+  if (!entry) {
+    sendError(response, 404, 'Network template not found');
+    return;
+  }
+
+  const viewCount = (Number(entry.viewCount) || 0) + 1;
+  const publishedTemplates = store.publishedTemplates.map((item) =>
+    item.id === networkTemplateId ? { ...item, viewCount } : item,
+  );
+  const nextEntry = { ...entry, viewCount };
+
+  await writeTemplateStore({
+    latest: store.latest,
+    templates: store.templates,
+    versions: store.versions,
+    publishedTemplates,
+  });
+
+  sendJson(response, 200, {
+    ok: true,
+    template: toNetworkTemplateRecord(nextEntry, session?.user.id ?? ''),
+  });
+}
+
+async function handlePublishTemplate(request, response, templateId) {
+  const session = await requireSession(request, response);
+
+  if (!session) {
+    return;
+  }
+
+  const store = await readTemplateStore();
+  const template = store.templates.find((item) => item.id === templateId && belongsToUser(item, session.user.id));
+
+  if (!template || isDefaultTemplate(template)) {
+    sendError(response, 404, 'Template not found');
+    return;
+  }
+
+  const existing = store.publishedTemplates.find(
+    (item) => item.sourceTemplateId === templateId && item.publisherUserId === session.user.id,
+  );
+  const now = new Date().toISOString();
+  const entry = {
+    id: existing?.id ?? createPublicTemplateId(session.user.id, template.id),
+    sourceTemplateId: template.id,
+    publisherUserId: session.user.id,
+    publisherName: session.user.name ?? session.user.email,
+    publisherAvatarUrl: session.user.avatarUrl ?? '',
+    publishedAt: existing?.publishedAt ?? now,
+    updatedAt: now,
+    importCount: Number(existing?.importCount) || 0,
+    likeUserIds: getNetworkLikeUserIds(existing ?? {}),
+    viewCount: Number(existing?.viewCount) || 0,
+    template,
+  };
+  const publishedTemplates = [
+    entry,
+    ...store.publishedTemplates.filter(
+      (item) => !(item.sourceTemplateId === templateId && item.publisherUserId === session.user.id),
+    ),
+  ];
+
+  await writeTemplateStore({
+    latest: store.latest,
+    templates: store.templates,
+    versions: store.versions,
+    publishedTemplates,
+  });
+
+  sendJson(response, 200, {
+    ok: true,
+    template: toNetworkTemplateRecord(entry, session.user.id),
+  });
+}
+
+async function handleUnpublishTemplate(request, response, templateId) {
+  const session = await requireSession(request, response);
+
+  if (!session) {
+    return;
+  }
+
+  const store = await readTemplateStore();
+  const publishedTemplates = store.publishedTemplates.filter(
+    (item) => !(item.sourceTemplateId === templateId && item.publisherUserId === session.user.id),
+  );
+
+  await writeTemplateStore({
+    latest: store.latest,
+    templates: store.templates,
+    versions: store.versions,
+    publishedTemplates,
+  });
+
+  sendJson(response, 200, { ok: true });
+}
+
+async function handleImportNetworkTemplate(request, response, networkTemplateId) {
+  const session = await requireSession(request, response);
+
+  if (!session) {
+    return;
+  }
+
+  let body;
+
+  try {
+    body = await readJson(request);
+  } catch (error) {
+    sendError(response, error.message === 'Request body too large' ? 413 : 400, error.message);
+    return;
+  }
+
+  const store = await readTemplateStore();
+  const entry = store.publishedTemplates.find((item) => item.id === networkTemplateId);
+
+  if (!entry) {
+    sendError(response, 404, 'Network template not found');
+    return;
+  }
+
+  const now = new Date().toISOString();
+  const requestedName = typeof body.name === 'string' ? body.name.trim() : '';
+  const baseName = requestedName || `${entry.template.name} (imported)`;
+  const name = createUniqueTemplateName(baseName, store.templates, session.user.id);
+  const template = withTemplateOwner(
+    normalizeTemplatePayload({
+      ...entry.template,
+      id: createTemplateId(name, store.templates),
+      name,
+      description: entry.template.description || `Imported GitHub layout based on ${entry.template.name}.`,
+      source: 'user',
+      metadata: {
+        ...entry.template.metadata,
+        updatedAt: now,
+      },
+      updatedAt: now,
+    }, new Date(now)),
+    session.user.id,
+  );
+  const publishedTemplates = store.publishedTemplates.map((item) =>
+    item.id === networkTemplateId
+      ? {
+          ...item,
+          importCount: (Number(item.importCount) || 0) + 1,
+        }
+      : item,
+  );
+  const templates = [template, ...store.templates.filter((item) => item.id !== template.id)];
+  const versions = [template, ...store.versions].slice(0, 25);
+
+  await writeTemplateStore({
+    latest: template,
+    templates,
+    versions,
+    publishedTemplates,
+  });
+
   sendJson(response, 201, {
     ok: true,
     template,
@@ -710,6 +1025,41 @@ async function handleRequest(request, response) {
     return;
   }
 
+  if (request.method === 'GET' && url.pathname === '/api/templates/network') {
+    await handleGetNetworkTemplates(request, response);
+    return;
+  }
+
+  if (request.method === 'GET' && url.pathname.startsWith('/api/templates/network/')) {
+    const networkTemplateId = decodeURIComponent(url.pathname.replace('/api/templates/network/', ''));
+    await handleGetNetworkTemplate(request, response, networkTemplateId);
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname.startsWith('/api/templates/network/') && url.pathname.endsWith('/like')) {
+    const networkTemplateId = decodeURIComponent(
+      url.pathname.replace('/api/templates/network/', '').replace('/like', ''),
+    );
+    await handleSetNetworkTemplateLike(request, response, networkTemplateId);
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname.startsWith('/api/templates/network/') && url.pathname.endsWith('/view')) {
+    const networkTemplateId = decodeURIComponent(
+      url.pathname.replace('/api/templates/network/', '').replace('/view', ''),
+    );
+    await handleViewNetworkTemplate(request, response, networkTemplateId);
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname.startsWith('/api/templates/network/') && url.pathname.endsWith('/import')) {
+    const networkTemplateId = decodeURIComponent(
+      url.pathname.replace('/api/templates/network/', '').replace('/import', ''),
+    );
+    await handleImportNetworkTemplate(request, response, networkTemplateId);
+    return;
+  }
+
   if (request.method === 'GET' && url.pathname === '/api/template-usage') {
     await handleGetTemplateUsage(request, response);
     return;
@@ -722,6 +1072,18 @@ async function handleRequest(request, response) {
 
   if (request.method === 'POST' && url.pathname === '/api/templates') {
     await handleCreateTemplate(request, response);
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname.startsWith('/api/templates/') && url.pathname.endsWith('/publish')) {
+    const templateId = decodeURIComponent(url.pathname.replace('/api/templates/', '').replace('/publish', ''));
+    await handlePublishTemplate(request, response, templateId);
+    return;
+  }
+
+  if (request.method === 'DELETE' && url.pathname.startsWith('/api/templates/') && url.pathname.endsWith('/publish')) {
+    const templateId = decodeURIComponent(url.pathname.replace('/api/templates/', '').replace('/publish', ''));
+    await handleUnpublishTemplate(request, response, templateId);
     return;
   }
 

@@ -9,15 +9,20 @@ interface TemplateCardProps {
   variant?: 'grid' | 'list';
   canManage?: boolean;
   canCopy?: boolean;
+  copyLabel?: string;
+  canPublish?: boolean;
+  openPath?: string;
   isFavorite?: boolean;
+  isPublished?: boolean;
   onCopy?: (template: TemplateRecord, name: string) => void;
   onDelete?: (template: TemplateRecord) => void;
   onToggleFavorite?: (template: TemplateRecord) => void;
+  onTogglePublish?: (template: TemplateRecord) => void;
   onOpen?: (template: TemplateRecord) => void;
   onRename?: (template: TemplateRecord, name: string) => void;
 }
 
-type TemplateActionPanel = 'copy' | 'rename' | 'delete';
+type TemplateActionPanel = 'copy' | 'rename' | 'publish' | 'delete';
 
 function getPreviewTheme(template: TemplateRecord) {
   const value = `${template.id} ${template.name}`.toLowerCase();
@@ -287,10 +292,15 @@ export function TemplateCard({
   variant = 'grid',
   canManage = true,
   canCopy = true,
+  copyLabel = 'Copy',
+  canPublish = false,
+  openPath,
   isFavorite = false,
+  isPublished = false,
   onCopy,
   onDelete,
   onToggleFavorite,
+  onTogglePublish,
   onOpen,
   onRename,
 }: TemplateCardProps) {
@@ -372,6 +382,52 @@ export function TemplateCard({
     onDelete?.(template);
   };
 
+  const handlePublishSubmit = () => {
+    setMenuOpen(false);
+    closeActionPanel();
+    onTogglePublish?.(template);
+  };
+
+  const templatePath = openPath ?? `/templates/${template.id}`;
+  const canOpenTemplate = Boolean(onOpen);
+  const thumbnailContent = (
+    <>
+      {template.thumbnail ? (
+        <img alt={template.name} src={template.thumbnail} />
+      ) : (
+        <TemplatePreview template={template} />
+      )}
+      <span className={`template-tile__status ${template.status === 'ACTIVE' ? 'is-active' : 'is-inactive'}`}>
+        {template.status}
+      </span>
+    </>
+  );
+  const detailContent = (
+    <>
+      <p className="template-tile__description">{template.description}</p>
+      <div className="template-tile__meta">
+        <div className="template-tile__avatars">
+          {template.collaborators.slice(0, 2).map((collaborator, index) => (
+            <img
+              key={`${template.id}-${index}`}
+              alt=""
+              aria-hidden="true"
+              src={collaborator}
+            />
+          ))}
+        </div>
+        <span>{template.updatedAt}</span>
+      </div>
+      {variant === 'list' ? (
+        <div className="template-tile__highlights">
+          {template.highlights.slice(0, 3).map((highlight) => (
+            <span key={highlight}>{highlight}</span>
+          ))}
+        </div>
+      ) : null}
+    </>
+  );
+
   return (
     <article
       className={[
@@ -381,16 +437,15 @@ export function TemplateCard({
       ].join(' ').trim()}
     >
       <div className="template-tile__thumb">
-        <Link className="template-tile__link" to={`/templates/${template.id}`}>
-          {template.thumbnail ? (
-            <img alt={template.name} src={template.thumbnail} />
-          ) : (
-            <TemplatePreview template={template} />
-          )}
-          <span className={`template-tile__status ${template.status === 'ACTIVE' ? 'is-active' : 'is-inactive'}`}>
-            {template.status}
-          </span>
-        </Link>
+        {canOpenTemplate ? (
+          <Link className="template-tile__link" to={templatePath}>
+            {thumbnailContent}
+          </Link>
+        ) : (
+          <div className="template-tile__link">
+            {thumbnailContent}
+          </div>
+        )}
         <button
           aria-pressed={isFavorite}
           aria-label={isFavorite ? `Remove ${template.name} from favorites` : `Add ${template.name} to favorites`}
@@ -404,9 +459,15 @@ export function TemplateCard({
 
       <div className="template-tile__body">
         <div className="template-tile__title">
-          <Link to={`/templates/${template.id}`}>
-            <h3>{template.name}</h3>
-          </Link>
+          {canOpenTemplate ? (
+            <Link to={templatePath}>
+              <h3>{template.name}</h3>
+            </Link>
+          ) : (
+            <span className="template-tile__title-link">
+              <h3>{template.name}</h3>
+            </span>
+          )}
           <div className="template-tile__menu" ref={menuRef}>
             <button
               aria-expanded={menuOpen}
@@ -420,7 +481,7 @@ export function TemplateCard({
             </button>
             {menuOpen ? (
               <div className="template-tile__menu-popover" role="menu">
-                <button type="button" role="menuitem" onClick={() => handleMenuAction(onOpen)}>
+                <button disabled={!onOpen} type="button" role="menuitem" onClick={() => handleMenuAction(onOpen)}>
                   <Icon name="open_in_new" />
                   <span>Open</span>
                 </button>
@@ -446,7 +507,16 @@ export function TemplateCard({
                   }}
                 >
                   <Icon name="content_copy" />
-                  <span>Copy</span>
+                  <span>{copyLabel}</span>
+                </button>
+                <button
+                  disabled={!canPublish && !isPublished}
+                  type="button"
+                  role="menuitem"
+                  onClick={() => setActionPanel('publish')}
+                >
+                  <Icon name={isPublished ? 'visibility_off' : 'send'} />
+                  <span>{isPublished ? 'Unpublish' : 'Publish to Network'}</span>
                 </button>
                 <button
                   className="is-danger"
@@ -463,7 +533,7 @@ export function TemplateCard({
             {actionPanel === 'copy' ? (
               <div className="template-tile__action-popover template-tile__copy-popover">
                 <label>
-                  <span>Copy as</span>
+                  <span>{copyLabel} as</span>
                   <input
                     autoFocus
                     placeholder={`${template.name} (1)`}
@@ -487,7 +557,7 @@ export function TemplateCard({
                     Cancel
                   </button>
                   <button type="button" onClick={handleCopySubmit}>
-                    Copy
+                    {copyLabel}
                   </button>
                 </div>
               </div>
@@ -537,31 +607,35 @@ export function TemplateCard({
                 </div>
               </div>
             ) : null}
+            {actionPanel === 'publish' ? (
+              <div className="template-tile__action-popover">
+                <strong>{isPublished ? 'Unpublish template?' : 'Publish to Network?'}</strong>
+                <p>
+                  {isPublished
+                    ? 'This removes the template from the public Network view.'
+                    : 'Public templates can be discovered and imported by other users.'}
+                </p>
+                <div>
+                  <button type="button" onClick={closeActionPanel}>
+                    Cancel
+                  </button>
+                  <button type="button" onClick={handlePublishSubmit}>
+                    {isPublished ? 'Unpublish' : 'Publish'}
+                  </button>
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
-        <Link className="template-tile__content-link" to={`/templates/${template.id}`}>
-          <p className="template-tile__description">{template.description}</p>
-          <div className="template-tile__meta">
-            <div className="template-tile__avatars">
-              {template.collaborators.slice(0, 2).map((collaborator, index) => (
-                <img
-                  key={`${template.id}-${index}`}
-                  alt=""
-                  aria-hidden="true"
-                  src={collaborator}
-                />
-              ))}
-            </div>
-            <span>{template.updatedAt}</span>
+        {canOpenTemplate ? (
+          <Link className="template-tile__content-link" to={templatePath}>
+            {detailContent}
+          </Link>
+        ) : (
+          <div className="template-tile__content-link">
+            {detailContent}
           </div>
-          {variant === 'list' ? (
-            <div className="template-tile__highlights">
-              {template.highlights.slice(0, 3).map((highlight) => (
-                <span key={highlight}>{highlight}</span>
-              ))}
-            </div>
-          ) : null}
-        </Link>
+        )}
       </div>
     </article>
   );

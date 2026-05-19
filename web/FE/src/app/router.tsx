@@ -18,6 +18,30 @@ export const router = createBrowserRouter([
     element: <TemplateListPage />,
   },
   {
+    path: '/templates/discover',
+    element: <TemplateListPage />,
+  },
+  {
+    path: '/templates/favorites',
+    element: <TemplateListPage />,
+  },
+  {
+    path: '/templates/imported',
+    element: <TemplateListPage />,
+  },
+  {
+    path: '/templates/published',
+    element: <TemplateListPage />,
+  },
+  {
+    path: '/templates/usage',
+    element: <TemplateListPage />,
+  },
+  {
+    path: '/templates/network/:networkTemplateId',
+    element: <TemplateEditorPage />,
+  },
+  {
     path: '/templates/:templateId',
     element: <TemplateEditorPage />,
   },
@@ -26,4 +50,3 @@ export const router = createBrowserRouter([
     element: <Navigate to="/" replace />,
   },
 ]);
-

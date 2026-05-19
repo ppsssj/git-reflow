@@ -33,7 +33,8 @@ const featureCards = [
 export function IntroPage() {
   const sliderRef = useRef<HTMLDivElement | null>(null);
   const [split, setSplit] = useState(50);
-  const dashboardTarget = isAuthenticated() ? '/templates' : '/login';
+  const authenticated = isAuthenticated();
+  const dashboardTarget = authenticated ? '/templates' : '/login';
 
   const updateSplit = (clientX: number) => {
     const slider = sliderRef.current;
@@ -52,8 +53,8 @@ export function IntroPage() {
       <AppTopNav
         active="dashboard"
         searchPlaceholder="Search..."
-        actionLabel="Login"
-        actionTo="/login"
+        actionLabel={authenticated ? 'Templates' : 'Login'}
+        actionTo={dashboardTarget}
       />
 
       <main className="intro-page">

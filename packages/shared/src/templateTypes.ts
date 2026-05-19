@@ -21,6 +21,15 @@ export interface TemplateRecord {
   owner: string;
   highlights: string[];
   sections: TemplateSection[];
+  networkTemplateId?: string;
+  sourceTemplateId?: string;
+  publisherUserId?: string;
+  publisherName?: string;
+  publishedAt?: string;
+  importCount?: number;
+  likeCount?: number;
+  viewCount?: number;
+  likedByCurrentUser?: boolean;
   preview?: {
     columnLayout?: Partial<TemplateColumnLayout>;
     pageAppearance?: Record<string, unknown>;

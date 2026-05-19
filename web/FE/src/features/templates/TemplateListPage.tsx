@@ -1,9 +1,10 @@
 import type { FormEvent } from 'react';
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { AppTopNav } from '../../components/layout/AppTopNav';
 import { Icon } from '../../components/ui/Icon';
 import { apiDelete, apiGet, apiPost } from '../../lib/api';
+import { getAuthSession } from '../../lib/auth';
 import type { ExtensionTemplatePayload, TemplateRecord } from '../../types/template';
 import { defaultGithubTemplate } from '../editor/templates/defaultGithubTemplate';
 import {
@@ -14,13 +15,13 @@ import {
 import { TemplateCard } from './TemplateCard';
 
 const sidebarItems = [
-  { icon: 'folder', label: 'Projects', active: true },
-  { icon: 'alt_route', label: 'Branches' },
-  { icon: 'history', label: 'Commits' },
-  { icon: 'merge_type', label: 'Pull Requests' },
-  { icon: 'inventory_2', label: 'Assets' },
-  { icon: 'analytics', label: 'Analytics' },
-];
+  { icon: 'folder', label: 'My Templates', path: '/templates' },
+  { icon: 'explore', label: 'Discover', path: '/templates/discover' },
+  { icon: 'star', label: 'Favorites', path: '/templates/favorites' },
+  { icon: 'archive', label: 'Imported', path: '/templates/imported' },
+  { icon: 'send', label: 'Published', path: '/templates/published' },
+  { icon: 'analytics', label: 'Usage', path: '/templates/usage' },
+] as const;
 
 interface TemplateListResponse {
   ok: true;
@@ -34,6 +35,22 @@ interface CreateTemplateResponse {
 
 interface DeleteTemplateResponse {
   ok: true;
+}
+
+interface NetworkTemplateListResponse {
+  ok: true;
+  templates: TemplateRecord[];
+}
+
+interface NetworkTemplateResponse {
+  ok: true;
+  template: TemplateRecord;
+}
+
+interface ImportNetworkTemplateResponse {
+  ok: true;
+  template: ExtensionTemplatePayload;
+  record: TemplateRecord;
 }
 
 interface TemplateUsageSummary {
@@ -59,6 +76,7 @@ interface TemplateUsageResponse {
 }
 
 type TemplateSortMode = 'updated' | 'name' | 'most-used' | 'recently-used';
+type TemplateLibrarySection = 'my' | 'discover' | 'favorites' | 'imported' | 'published' | 'usage';
 
 const DEFAULT_TEMPLATE_ID = defaultGithubTemplate.id;
 const FAVORITE_TEMPLATE_STORAGE_KEY = 'git-reflow.favoriteTemplateIds';
@@ -272,8 +290,97 @@ function readFavoriteTemplateIds() {
   }
 }
 
+function getTemplateLibrarySection(pathname: string): TemplateLibrarySection {
+  if (pathname.endsWith('/discover')) return 'discover';
+  if (pathname.endsWith('/favorites')) return 'favorites';
+  if (pathname.endsWith('/imported')) return 'imported';
+  if (pathname.endsWith('/published')) return 'published';
+  if (pathname.endsWith('/usage')) return 'usage';
+
+  return 'my';
+}
+
+function getSectionCopy(section: TemplateLibrarySection) {
+  if (section === 'discover') {
+    return {
+      title: 'Template Network',
+      description: 'Explore public GitHub layouts and import them into your workspace.',
+      search: 'Search public templates, styles, or sections...',
+      empty: 'No public templates found',
+      emptyHint: 'Try another name, color, or section.',
+    };
+  }
+
+  if (section === 'favorites') {
+    return {
+      title: 'Favorite Templates',
+      description: 'Your saved shortcuts for frequently used layouts.',
+      search: 'Search favorite templates...',
+      empty: 'No favorite templates yet',
+      emptyHint: 'Star templates from My Templates or Discover to collect them here.',
+    };
+  }
+
+  if (section === 'imported') {
+    return {
+      title: 'Imported Templates',
+      description: 'Templates copied from the public network into your workspace.',
+      search: 'Search imported templates...',
+      empty: 'No imported templates yet',
+      emptyHint: 'Open Discover and import a public template to get started.',
+    };
+  }
+
+  if (section === 'published') {
+    return {
+      title: 'Published Templates',
+      description: 'Layouts you have shared with the template network.',
+      search: 'Search published templates...',
+      empty: 'No published templates yet',
+      emptyHint: 'Publishing controls can be added to template actions next.',
+    };
+  }
+
+  if (section === 'usage') {
+    return {
+      title: 'Template Usage',
+      description: 'See which layouts are being previewed through the extension.',
+      search: 'Search templates by usage...',
+      empty: 'No usage templates found',
+      emptyHint: 'Preview templates in the extension to generate activity.',
+    };
+  }
+
+  return {
+    title: 'Repository Templates',
+    description: 'Manage saved GitHub layout templates.',
+    search: 'Search templates, sections, or colors...',
+    empty: 'No templates found',
+    emptyHint: 'Try another name, color, section, or usage sort.',
+  };
+}
+
+function isImportedTemplate(template: TemplateRecord) {
+  const value = `${template.description} ${template.updatedAt}`.toLowerCase();
+
+  return value.includes('copied') || value.includes('imported');
+}
+
+function getSourceTemplateId(template: TemplateRecord) {
+  return template.sourceTemplateId ?? template.id;
+}
+
+function getTemplateOpenPath(template: TemplateRecord) {
+  return template.networkTemplateId
+    ? `/templates/network/${encodeURIComponent(template.networkTemplateId)}`
+    : `/templates/${template.id}`;
+}
+
 export function TemplateListPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const librarySection = getTemplateLibrarySection(location.pathname);
+  const sectionCopy = getSectionCopy(librarySection);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [templateSearchQuery, setTemplateSearchQuery] = useState('');
   const [templateSortMode, setTemplateSortMode] = useState<TemplateSortMode>('updated');
@@ -281,10 +388,12 @@ export function TemplateListPage() {
   const [isLoadingTemplates, setIsLoadingTemplates] = useState(true);
   const [templateError, setTemplateError] = useState('');
   const [templateUsage, setTemplateUsage] = useState<TemplateUsageResponse | null>(null);
+  const [publicTemplates, setPublicTemplates] = useState<TemplateRecord[]>([]);
   const [newTemplateName, setNewTemplateName] = useState('');
   const [createStatus, setCreateStatus] = useState('');
   const [favoriteTemplateIds, setFavoriteTemplateIds] = useState<string[]>(readFavoriteTemplateIds);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const currentUserId = getAuthSession()?.user.id ?? '';
   const remoteTemplateIds = useMemo(() => new Set(remoteTemplates.map((template) => template.id)), [remoteTemplates]);
   const visibleTemplates = useMemo<TemplateRecord[]>(() => {
     const userTemplates = remoteTemplates.filter((template) => template.id !== DEFAULT_TEMPLATE_ID);
@@ -298,17 +407,79 @@ export function TemplateListPage() {
       syncState: template.id === activeTemplateId ? 'Extension connected' : template.syncState,
     }));
   }, [remoteTemplates, templateUsage]);
+  const networkTemplates = useMemo<TemplateRecord[]>(
+    () =>
+      starterGithubTemplateRecords.map((template, index) => ({
+        ...template,
+        owner: ['Reflow Network', 'GitHub Studio', 'Layout Lab'][index % 3],
+        status: 'INACTIVE',
+        syncState: 'Ready to sync',
+        updatedAt: index === 0 ? 'Featured network template' : 'Public template',
+        description: template.description || 'A public GitHub layout shared by the Reflow community.',
+        highlights: [
+          'Public template',
+          'One-click import',
+          ...template.highlights.slice(0, 2),
+        ],
+      })),
+    [],
+  );
   const favoriteTemplateIdSet = useMemo(() => new Set(favoriteTemplateIds), [favoriteTemplateIds]);
+  const publishedTemplateIdSet = useMemo(
+    () =>
+      new Set(
+        publicTemplates
+          .filter((template) => template.publisherUserId === currentUserId)
+          .map((template) => template.sourceTemplateId ?? template.id),
+      ),
+    [currentUserId, publicTemplates],
+  );
+  const publishedTemplates = useMemo<TemplateRecord[]>(
+    () =>
+      publicTemplates.filter((template) => template.publisherUserId === currentUserId),
+    [currentUserId, publicTemplates],
+  );
   const templateUsageById = useMemo(
     () => new Map((templateUsage?.templates ?? []).map((template) => [template.id, template])),
     [templateUsage],
   );
+  const sectionTemplates = useMemo(() => {
+    if (librarySection === 'discover') {
+      return [...publicTemplates, ...networkTemplates];
+    }
+
+    if (librarySection === 'favorites') {
+      return visibleTemplates.filter((template) => favoriteTemplateIdSet.has(template.id));
+    }
+
+    if (librarySection === 'imported') {
+      return visibleTemplates.filter(isImportedTemplate);
+    }
+
+    if (librarySection === 'published') {
+      return publishedTemplates;
+    }
+
+    if (librarySection === 'usage') {
+      return visibleTemplates.filter((template) => templateUsageById.has(template.id));
+    }
+
+    return visibleTemplates;
+  }, [
+    favoriteTemplateIdSet,
+    librarySection,
+    networkTemplates,
+    publicTemplates,
+    publishedTemplates,
+    templateUsageById,
+    visibleTemplates,
+  ]);
   const filteredTemplates = useMemo(() => {
     const query = templateSearchQuery.trim().toLowerCase();
     const searchedTemplates = query
-      ? visibleTemplates.filter((template) => getTemplateSearchText(template).includes(query))
-      : visibleTemplates;
-    const favoriteFilteredTemplates = showFavoritesOnly
+      ? sectionTemplates.filter((template) => getTemplateSearchText(template).includes(query))
+      : sectionTemplates;
+    const favoriteFilteredTemplates = showFavoritesOnly && librarySection === 'my'
       ? searchedTemplates.filter((template) => favoriteTemplateIdSet.has(template.id))
       : searchedTemplates;
 
@@ -339,10 +510,11 @@ export function TemplateListPage() {
   }, [
     favoriteTemplateIdSet,
     showFavoritesOnly,
+    librarySection,
     templateSearchQuery,
     templateSortMode,
     templateUsageById,
-    visibleTemplates,
+    sectionTemplates,
   ]);
   const primaryTemplateId = visibleTemplates[0]?.id ?? 'github-dashboard-reference';
   const recentUsage = templateUsage?.recent[0];
@@ -390,6 +562,42 @@ export function TemplateListPage() {
   useEffect(() => {
     window.localStorage.setItem(FAVORITE_TEMPLATE_STORAGE_KEY, JSON.stringify(favoriteTemplateIds));
   }, [favoriteTemplateIds]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const refreshNetworkTemplates = () => {
+      apiGet<NetworkTemplateListResponse>('/api/templates/network')
+        .then((result) => {
+          if (!cancelled) {
+            setPublicTemplates(result.templates);
+          }
+        })
+        .catch(() => {
+          if (!cancelled) {
+            setPublicTemplates([]);
+          }
+        });
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        refreshNetworkTemplates();
+      }
+    };
+
+    refreshNetworkTemplates();
+    const refreshInterval = window.setInterval(refreshNetworkTemplates, 15000);
+    window.addEventListener('focus', refreshNetworkTemplates);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(refreshInterval);
+      window.removeEventListener('focus', refreshNetworkTemplates);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -460,7 +668,7 @@ export function TemplateListPage() {
   };
 
   const handleOpenTemplate = (template: TemplateRecord) => {
-    navigate(`/templates/${template.id}`);
+    navigate(getTemplateOpenPath(template));
   };
 
   const handleOpenActivityTemplate = (template?: TemplateRecord | null) => {
@@ -475,6 +683,39 @@ export function TemplateListPage() {
         ? current.filter((templateId) => templateId !== template.id)
         : [template.id, ...current],
     );
+  };
+
+  const handleTogglePublishedTemplate = async (template: TemplateRecord) => {
+    const sourceTemplateId = getSourceTemplateId(template);
+    const isPublished = publishedTemplateIdSet.has(sourceTemplateId);
+
+    setCreateStatus(isPublished ? 'Unpublishing...' : 'Publishing...');
+
+    try {
+      if (isPublished) {
+        await apiDelete<{ ok: true }>(`/api/templates/${encodeURIComponent(sourceTemplateId)}/publish`);
+        setPublicTemplates((current) =>
+          current.filter((item) => item.sourceTemplateId !== sourceTemplateId || item.publisherUserId !== currentUserId),
+        );
+        setCreateStatus('Unpublished from Network');
+        return;
+      }
+
+      const result = await apiPost<NetworkTemplateResponse>(
+        `/api/templates/${encodeURIComponent(sourceTemplateId)}/publish`,
+        {},
+      );
+
+      setPublicTemplates((current) => [
+        result.template,
+        ...current.filter(
+          (item) => item.sourceTemplateId !== sourceTemplateId || item.publisherUserId !== currentUserId,
+        ),
+      ]);
+      setCreateStatus('Published to Network');
+    } catch (error) {
+      setCreateStatus(error instanceof Error ? error.message : 'Failed to update Network publishing');
+    }
   };
 
   const handleRenameTemplate = async (template: TemplateRecord, requestedName: string) => {
@@ -547,7 +788,11 @@ export function TemplateListPage() {
     }
   };
 
-  const handleCopyTemplate = async (template: TemplateRecord, requestedName: string) => {
+  const handleCopyTemplate = async (
+    template: TemplateRecord,
+    requestedName: string,
+    action = { progress: 'Copying...', success: 'Copied', failure: 'copy' },
+  ) => {
     const generatedName = getCopyTemplateName(template.name, visibleTemplates);
     const nextName = requestedName ? getUniqueTemplateName(requestedName, visibleTemplates) : generatedName;
 
@@ -556,7 +801,7 @@ export function TemplateListPage() {
       return;
     }
 
-    setCreateStatus('Copying...');
+    setCreateStatus(action.progress);
 
     try {
       const sourcePayload =
@@ -583,16 +828,56 @@ export function TemplateListPage() {
         },
         ...current,
       ]);
-      setCreateStatus('Copied');
+      setCreateStatus(action.success);
       navigate(`/templates/${result.template.id}`);
     } catch (error) {
-      setCreateStatus(error instanceof Error ? error.message : 'Failed to copy template');
+      setCreateStatus(error instanceof Error ? error.message : `Failed to ${action.failure} template`);
     }
+  };
+
+  const handleImportTemplate = async (template: TemplateRecord, requestedName: string) => {
+    if (template.networkTemplateId) {
+      const generatedName = getCopyTemplateName(template.name, visibleTemplates);
+      const nextName = requestedName ? getUniqueTemplateName(requestedName, visibleTemplates) : generatedName;
+
+      setCreateStatus('Importing...');
+
+      try {
+        const result = await apiPost<ImportNetworkTemplateResponse>(
+          `/api/templates/network/${encodeURIComponent(template.networkTemplateId)}/import`,
+          { name: nextName },
+        );
+
+        setRemoteTemplates((current) => [result.record, ...current]);
+        setPublicTemplates((current) =>
+          current.map((item) =>
+            item.networkTemplateId === template.networkTemplateId
+              ? { ...item, importCount: (item.importCount ?? 0) + 1 }
+              : item,
+          ),
+        );
+        setCreateStatus('Imported');
+        navigate(`/templates/${result.template.id}`);
+      } catch (error) {
+        setCreateStatus(error instanceof Error ? error.message : 'Failed to import template');
+      }
+
+      return;
+    }
+
+    await handleCopyTemplate(template, requestedName, {
+      progress: 'Importing...',
+      success: 'Imported',
+      failure: 'import',
+    });
   };
 
   return (
     <div className="dashboard-page">
-      <AppTopNav active="templates" searchPlaceholder="Search resources..." />
+      <AppTopNav
+        active={librarySection === 'discover' ? 'network' : 'templates'}
+        searchPlaceholder="Search resources..."
+      />
 
       <div className="dashboard-shell">
         <aside className="dashboard-sidebar">
@@ -611,12 +896,16 @@ export function TemplateListPage() {
             <span>Create New</span>
           </Link>
 
-          <nav className="sidebar-nav" aria-label="Workspace">
+          <nav className="sidebar-nav" aria-label="Template workspace">
             {sidebarItems.map((item) => (
-              <a key={item.label} className={item.active ? 'is-active' : ''} href={`#${item.label}`}>
+              <Link
+                key={item.label}
+                className={location.pathname === item.path ? 'is-active' : ''}
+                to={item.path}
+              >
                 <Icon name={item.icon} />
                 <span>{item.label}</span>
-              </a>
+              </Link>
             ))}
           </nav>
 
@@ -635,13 +924,13 @@ export function TemplateListPage() {
         <main className="dashboard-main">
           <header className="dashboard-main__header">
             <div>
-              <h1>Repository Templates</h1>
+              <h1>{sectionCopy.title}</h1>
               <p>
                 {isLoadingTemplates
                   ? 'Loading saved templates...'
                   : templateError
                     ? `Using local samples: ${templateError}`
-                    : 'Manage saved GitHub layout templates.'}
+                    : sectionCopy.description}
               </p>
             </div>
 
@@ -669,7 +958,7 @@ export function TemplateListPage() {
             <label className="template-toolbar__search">
               <Icon name="search" />
               <input
-                placeholder="Search templates, sections, or colors..."
+                placeholder={sectionCopy.search}
                 type="search"
                 value={templateSearchQuery}
                 onChange={(event) => setTemplateSearchQuery(event.target.value)}
@@ -687,17 +976,19 @@ export function TemplateListPage() {
                 <option value="recently-used">Recently used</option>
               </select>
             </label>
-            <button
-              className={['template-toolbar__favorite', showFavoritesOnly ? 'is-active' : ''].join(' ').trim()}
-              type="button"
-              aria-pressed={showFavoritesOnly}
-              onClick={() => setShowFavoritesOnly((current) => !current)}
-            >
-              <Icon name="star" />
-              <span>Favorites</span>
-            </button>
+            {librarySection === 'my' ? (
+              <button
+                className={['template-toolbar__favorite', showFavoritesOnly ? 'is-active' : ''].join(' ').trim()}
+                type="button"
+                aria-pressed={showFavoritesOnly}
+                onClick={() => setShowFavoritesOnly((current) => !current)}
+              >
+                <Icon name="star" />
+                <span>Favorites</span>
+              </button>
+            ) : null}
             <span className="template-toolbar__count">
-              {filteredTemplates.length} of {visibleTemplates.length}
+              {filteredTemplates.length} of {sectionTemplates.length}
             </span>
           </section>
 
@@ -706,17 +997,32 @@ export function TemplateListPage() {
               <TemplateCard
                 key={template.id}
                 canManage={
+                  librarySection !== 'discover' &&
                   template.id !== DEFAULT_TEMPLATE_ID &&
                   !isStarterGithubTemplateId(template.id) &&
                   remoteTemplateIds.has(template.id)
                 }
-                canCopy={isStarterGithubTemplateId(template.id) || remoteTemplateIds.has(template.id)}
+                canCopy={
+                  librarySection === 'discover' ||
+                  isStarterGithubTemplateId(template.id) ||
+                  remoteTemplateIds.has(template.id)
+                }
+                copyLabel={librarySection === 'discover' ? 'Import' : 'Copy'}
+                canPublish={
+                  librarySection !== 'discover' &&
+                  getSourceTemplateId(template) !== DEFAULT_TEMPLATE_ID &&
+                  !isStarterGithubTemplateId(getSourceTemplateId(template)) &&
+                  remoteTemplateIds.has(getSourceTemplateId(template))
+                }
                 isFavorite={favoriteTemplateIdSet.has(template.id)}
+                isPublished={publishedTemplateIdSet.has(getSourceTemplateId(template))}
                 template={template}
                 variant={viewMode}
-                onCopy={handleCopyTemplate}
+                onCopy={librarySection === 'discover' ? handleImportTemplate : handleCopyTemplate}
                 onDelete={handleDeleteTemplate}
                 onToggleFavorite={handleToggleFavoriteTemplate}
+                onTogglePublish={handleTogglePublishedTemplate}
+                openPath={getTemplateOpenPath(template)}
                 onOpen={handleOpenTemplate}
                 onRename={handleRenameTemplate}
               />
@@ -725,30 +1031,33 @@ export function TemplateListPage() {
             {filteredTemplates.length === 0 ? (
               <div className="template-empty-results">
                 <Icon name="search" />
-                <strong>No templates found</strong>
-                <span>Try another name, color, section, or usage sort.</span>
+                <strong>{sectionCopy.empty}</strong>
+                <span>{sectionCopy.emptyHint}</span>
               </div>
             ) : null}
 
-            <form className="template-add-card template-create-card" onSubmit={handleCreateTemplate}>
-              <div className="template-add-card__icon">
-                <Icon name="add_circle" />
-              </div>
-              <strong>New Template</strong>
-              <label>
-                <span>Template title</span>
-                <input
-                  placeholder="GitHub focus layout"
-                  type="text"
-                  value={newTemplateName}
-                  onChange={(event) => setNewTemplateName(event.target.value)}
-                />
-              </label>
-              <button type="submit">Create</button>
-              {createStatus ? <em>{createStatus}</em> : null}
-            </form>
+            {librarySection === 'my' ? (
+              <form className="template-add-card template-create-card" onSubmit={handleCreateTemplate}>
+                <div className="template-add-card__icon">
+                  <Icon name="add_circle" />
+                </div>
+                <strong>New Template</strong>
+                <label>
+                  <span>Template title</span>
+                  <input
+                    placeholder="GitHub focus layout"
+                    type="text"
+                    value={newTemplateName}
+                    onChange={(event) => setNewTemplateName(event.target.value)}
+                  />
+                </label>
+                <button type="submit">Create</button>
+                {createStatus ? <em>{createStatus}</em> : null}
+              </form>
+            ) : null}
           </section>
 
+          {librarySection === 'my' || librarySection === 'usage' ? (
           <section className="activity-section">
             <h2>Recent Activity</h2>
 
@@ -841,6 +1150,7 @@ export function TemplateListPage() {
               </article>
             </div>
           </section>
+          ) : null}
         </main>
       </div>
 

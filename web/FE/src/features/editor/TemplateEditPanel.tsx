@@ -16,6 +16,7 @@ interface TemplateEditPanelProps {
   selectedVariationId: TemplateVariationId;
   columnLayout: TemplateColumnLayout;
   leftSidebarResizeEnabled: boolean;
+  readOnly?: boolean;
   variations: TemplateVariation[];
   onChangeColumnLayout: (layout: TemplateColumnLayout) => void;
   onToggleLeftSidebarResize: () => void;
@@ -108,11 +109,12 @@ const topbarActions = ['Copilot', 'Create', 'Issues', 'Pull requests', 'Reposito
 
 interface BlockInspectorProps {
   block: TemplateBlock;
+  readOnly?: boolean;
   onUpdateBlock: (blockId: string, updates: Partial<TemplateBlock>) => void;
   onUpdateBlockProps: (blockId: string, props: Record<string, unknown>) => void;
 }
 
-function BlockInspector({ block, onUpdateBlock, onUpdateBlockProps }: BlockInspectorProps) {
+function BlockInspector({ block, readOnly = false, onUpdateBlock, onUpdateBlockProps }: BlockInspectorProps) {
   const updateProps = (props: Record<string, unknown>) => onUpdateBlockProps(block.id, props);
   const itemLimit = getNumberProp(block, 'itemLimit', Array.isArray(block.props.repositories) ? block.props.repositories.length : 4);
 
@@ -121,6 +123,7 @@ function BlockInspector({ block, onUpdateBlock, onUpdateBlockProps }: BlockInspe
       <label>
         <span>Block title</span>
         <input
+          disabled={readOnly}
           type="text"
           value={block.title}
           onChange={(event) => onUpdateBlock(block.id, { title: event.target.value })}
@@ -132,6 +135,7 @@ function BlockInspector({ block, onUpdateBlock, onUpdateBlockProps }: BlockInspe
           <label>
             <span>Context label</span>
             <input
+              disabled={readOnly}
               type="text"
               value={getStringProp(block, 'context', 'Dashboard')}
               onChange={(event) => updateProps({ context: event.target.value })}
@@ -140,6 +144,7 @@ function BlockInspector({ block, onUpdateBlock, onUpdateBlockProps }: BlockInspe
           <label>
             <span>Search placeholder</span>
             <input
+              disabled={readOnly}
               type="text"
               value={getStringProp(block, 'searchPlaceholder', 'Type / to search')}
               onChange={(event) => updateProps({ searchPlaceholder: event.target.value })}
@@ -148,6 +153,7 @@ function BlockInspector({ block, onUpdateBlock, onUpdateBlockProps }: BlockInspe
           <label>
             <span>Extra links</span>
             <input
+              disabled={readOnly}
               placeholder="Pull requests, Issues"
               type="text"
               value={getStringArrayProp(block, 'links').join(', ')}
@@ -163,6 +169,7 @@ function BlockInspector({ block, onUpdateBlock, onUpdateBlockProps }: BlockInspe
                 <label key={action}>
                   <input
                     checked={actions.includes(action)}
+                    disabled={readOnly}
                     type="checkbox"
                     onChange={(event) =>
                       updateProps({
@@ -185,6 +192,7 @@ function BlockInspector({ block, onUpdateBlock, onUpdateBlockProps }: BlockInspe
           <label>
             <span>Profile name</span>
             <input
+              disabled={readOnly}
               type="text"
               value={getStringProp(block, 'name', 'alex-placeholder')}
               onChange={(event) => updateProps({ name: event.target.value })}
@@ -193,6 +201,7 @@ function BlockInspector({ block, onUpdateBlock, onUpdateBlockProps }: BlockInspe
           <label>
             <span>Handle</span>
             <input
+              disabled={readOnly}
               type="text"
               value={getStringProp(block, 'handle', 'Personal dashboard')}
               onChange={(event) => updateProps({ handle: event.target.value })}
@@ -201,6 +210,7 @@ function BlockInspector({ block, onUpdateBlock, onUpdateBlockProps }: BlockInspe
           <label>
             <span>Bio</span>
             <textarea
+              disabled={readOnly}
               value={getStringProp(block, 'bio')}
               onChange={(event) => updateProps({ bio: event.target.value })}
             />
@@ -213,6 +223,7 @@ function BlockInspector({ block, onUpdateBlock, onUpdateBlockProps }: BlockInspe
           <label>
             <span>Prompt placeholder</span>
             <input
+              disabled={readOnly}
               type="text"
               value={getStringProp(block, 'placeholder', 'Ask anything or type @ to add context')}
               onChange={(event) => updateProps({ placeholder: event.target.value })}
@@ -221,6 +232,7 @@ function BlockInspector({ block, onUpdateBlock, onUpdateBlockProps }: BlockInspe
           <label>
             <span>Model label</span>
             <input
+              disabled={readOnly}
               type="text"
               value={getStringProp(block, 'model')}
               onChange={(event) => updateProps({ model: event.target.value })}
@@ -229,6 +241,7 @@ function BlockInspector({ block, onUpdateBlock, onUpdateBlockProps }: BlockInspe
           <label>
             <span>Prompt chips</span>
             <input
+              disabled={readOnly}
               type="text"
               value={getStringArrayProp(block, 'chips').join(', ')}
               onChange={(event) => updateProps({ chips: parseCsv(event.target.value) })}
@@ -241,6 +254,7 @@ function BlockInspector({ block, onUpdateBlock, onUpdateBlockProps }: BlockInspe
         <label>
           <span>Visible items</span>
           <input
+            disabled={readOnly}
             max={12}
             min={1}
             type="number"
@@ -254,6 +268,7 @@ function BlockInspector({ block, onUpdateBlock, onUpdateBlockProps }: BlockInspe
         <label>
           <span>Repository search placeholder</span>
           <input
+            disabled={readOnly}
             type="text"
             value={getStringProp(block, 'searchPlaceholder', 'Find a repository...')}
             onChange={(event) => updateProps({ searchPlaceholder: event.target.value })}
@@ -268,6 +283,7 @@ export function TemplateEditPanel({
   layout,
   columnLayout,
   leftSidebarResizeEnabled,
+  readOnly = false,
   selectedBlockId,
   selectedVariationId,
   serializedLayout,
@@ -371,7 +387,7 @@ export function TemplateEditPanel({
           <span>Layout Builder</span>
           <strong>{layout.name}</strong>
         </div>
-        <button type="button" onClick={onReset}>
+        <button disabled={readOnly} type="button" onClick={onReset}>
           <Icon name="restart_alt" />
           Reset
         </button>
@@ -405,6 +421,7 @@ export function TemplateEditPanel({
                       <button
                         aria-label={`${block.visible ? 'Hide' : 'Show'} ${block.title}`}
                         aria-pressed={block.visible}
+                        disabled={readOnly}
                         type="button"
                         onClick={() => onToggleBlock(block.id)}
                       >
@@ -412,7 +429,7 @@ export function TemplateEditPanel({
                       </button>
                       <button
                         aria-label={`Move ${block.title} up`}
-                        disabled={!canMoveUp}
+                        disabled={readOnly || !canMoveUp}
                         type="button"
                         onClick={() => onMoveBlock(block.id, 'up')}
                       >
@@ -420,7 +437,7 @@ export function TemplateEditPanel({
                       </button>
                       <button
                         aria-label={`Move ${block.title} down`}
-                        disabled={!canMoveDown}
+                        disabled={readOnly || !canMoveDown}
                         type="button"
                         onClick={() => onMoveBlock(block.id, 'down')}
                       >
@@ -442,6 +459,7 @@ export function TemplateEditPanel({
             <button
               className={variation.id === selectedVariationId ? 'is-active' : ''}
               key={variation.id}
+              disabled={readOnly}
               type="button"
               onClick={() => onSelectVariation(variation.id)}
             >
@@ -465,6 +483,7 @@ export function TemplateEditPanel({
             <button
               aria-label="Resize left and main columns"
               className="column-layout-map__handle is-left-main"
+              disabled={readOnly}
               type="button"
               onPointerDown={(event) => handleColumnDragStart('left-main', event)}
             />
@@ -474,6 +493,7 @@ export function TemplateEditPanel({
             <button
               aria-label="Resize main and right columns"
               className="column-layout-map__handle is-main-right"
+              disabled={readOnly}
               type="button"
               onPointerDown={(event) => handleColumnDragStart('main-right', event)}
             />
@@ -488,6 +508,7 @@ export function TemplateEditPanel({
                 <input
                   max={COLUMN_MAX_WIDTHS[region]}
                   min={COLUMN_MIN_WIDTHS[region]}
+                  disabled={readOnly}
                   type="number"
                   value={columnLayout[region]}
                   onChange={(event) => handleColumnInput(region, event.target.value)}
@@ -499,6 +520,7 @@ export function TemplateEditPanel({
         <label className="controller-toggle">
           <input
             checked={leftSidebarResizeEnabled}
+            disabled={readOnly}
             type="checkbox"
             onChange={onToggleLeftSidebarResize}
           />
@@ -513,6 +535,7 @@ export function TemplateEditPanel({
         <p>Selected Block</p>
         <BlockInspector
           block={selectedBlock}
+          readOnly={readOnly}
           onUpdateBlock={onUpdateBlock}
           onUpdateBlockProps={onUpdateBlockProps}
         />

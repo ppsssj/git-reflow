@@ -5,7 +5,7 @@ import { clearAuthSession, getAuthSession } from '../../lib/auth';
 import { Icon } from '../ui/Icon';
 
 interface AppTopNavProps {
-  active: 'dashboard' | 'templates';
+  active: 'dashboard' | 'templates' | 'network';
   searchPlaceholder?: string;
   actionLabel?: string;
   actionTo?: string;
@@ -83,8 +83,9 @@ export function AppTopNav({
             <Link className={active === 'templates' ? 'is-active' : ''} to="/templates">
               Templates
             </Link>
-            <a href="#network">Network</a>
-            <a href="#docs">Docs</a>
+            <Link className={active === 'network' ? 'is-active' : ''} to="/templates/discover">
+              Network
+            </Link>
           </nav>
         </div>
 

@@ -1,6 +1,6 @@
 import type { CSSProperties, WheelEvent } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { AppTopNav } from '../../components/layout/AppTopNav';
 import { Icon } from '../../components/ui/Icon';
 import { apiGet, apiPost } from '../../lib/api';
@@ -13,6 +13,7 @@ import type {
   TemplateRegion,
   TemplateVariation,
   TemplateVariationId,
+  TemplateRecord,
 } from '../../types/template';
 import { TemplateEditPanel } from './TemplateEditPanel';
 import { TemplateLayoutCanvas } from './TemplateLayoutCanvas';
@@ -44,6 +45,7 @@ const MAX_CANVAS_ZOOM = 2;
 const CANVAS_ZOOM_STEP = 0.1;
 const STYLE_MENU_WIDTH = 260;
 const STYLE_MENU_VISIBLE_GUTTER = 12;
+const VIEWED_NETWORK_TEMPLATE_STORAGE_KEY = 'git-reflow.viewed-network-templates';
 const DEFAULT_COLUMN_LAYOUT: TemplateColumnLayout = {
   left: 320,
   main: 900,
@@ -68,6 +70,23 @@ const githubSafeVariations: TemplateVariation[] = [
 interface SaveTemplateResponse {
   ok: true;
   template: ExtensionTemplatePayload;
+}
+
+interface NetworkTemplateResponse {
+  ok: true;
+  template: ExtensionTemplatePayload;
+  record: TemplateRecord;
+}
+
+interface ImportNetworkTemplateResponse {
+  ok: true;
+  template: ExtensionTemplatePayload;
+  record: TemplateRecord;
+}
+
+interface NetworkMetricResponse {
+  ok: true;
+  template: TemplateRecord;
 }
 
 interface TemplateResetSnapshot {
@@ -108,6 +127,35 @@ function createEditableFallbackTemplate(templateId: string, templateName: string
   };
 }
 
+function formatPublishedDate(value?: string) {
+  if (!value) {
+    return 'Recently published';
+  }
+
+  return `Published ${new Date(value).toLocaleDateString()}`;
+}
+
+function readViewedNetworkTemplateIds() {
+  try {
+    const parsed = JSON.parse(window.sessionStorage.getItem(VIEWED_NETWORK_TEMPLATE_STORAGE_KEY) ?? '[]');
+
+    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+function rememberViewedNetworkTemplate(templateId: string) {
+  const ids = readViewedNetworkTemplateIds();
+
+  if (ids.includes(templateId)) {
+    return false;
+  }
+
+  window.sessionStorage.setItem(VIEWED_NETWORK_TEMPLATE_STORAGE_KEY, JSON.stringify([templateId, ...ids].slice(0, 200)));
+  return true;
+}
+
 function getTemplateResetSnapshot(template: TemplateLayout & Partial<ExtensionTemplatePayload>): TemplateResetSnapshot {
   return {
     layout: template,
@@ -122,7 +170,9 @@ function getTemplateResetSnapshot(template: TemplateLayout & Partial<ExtensionTe
 }
 
 export function TemplateEditorPage() {
-  const { templateId } = useParams();
+  const navigate = useNavigate();
+  const { networkTemplateId, templateId } = useParams();
+  const isNetworkPreview = Boolean(networkTemplateId);
   const templateRecord =
     templateId && isStarterGithubTemplateId(templateId)
       ? getStarterGithubTemplateRecord(templateId) ?? starterGithubTemplateRecord
@@ -146,6 +196,7 @@ export function TemplateEditorPage() {
   const [selectedVariationId, setSelectedVariationId] = useState<TemplateVariationId>('github-default');
   const [pageAppearance, setPageAppearance] = useState<Record<string, unknown>>({});
   const [syncStatus, setSyncStatus] = useState('Not synced');
+  const [networkRecord, setNetworkRecord] = useState<TemplateRecord | null>(null);
   const [resetSnapshot, setResetSnapshot] = useState<TemplateResetSnapshot>(() =>
     getTemplateResetSnapshot(defaultGithubTemplate),
   );
@@ -208,6 +259,48 @@ export function TemplateEditorPage() {
   }, [blockStyleMenu, pageStyleMenu]);
 
   useEffect(() => {
+    if (networkTemplateId) {
+      let cancelled = false;
+      const shouldCountView = rememberViewedNetworkTemplate(networkTemplateId);
+
+      apiGet<NetworkTemplateResponse>(`/api/templates/network/${encodeURIComponent(networkTemplateId)}`)
+        .then((result) => {
+          if (cancelled) {
+            return;
+          }
+
+          setNetworkRecord(result.record);
+          applyTemplateState(result.template);
+          setSyncStatus('Network preview');
+
+          if (shouldCountView) {
+            apiPost<NetworkMetricResponse>(
+              `/api/templates/network/${encodeURIComponent(networkTemplateId)}/view`,
+              {},
+            )
+              .then((viewResult) => {
+                if (!cancelled) {
+                  setNetworkRecord(viewResult.template);
+                }
+              })
+              .catch(() => {
+                if (!cancelled) {
+                  setSyncStatus('View count unavailable');
+                }
+              });
+          }
+        })
+        .catch(() => {
+          if (!cancelled) {
+            setSyncStatus('Network template unavailable');
+          }
+        });
+
+      return () => {
+        cancelled = true;
+      };
+    }
+
     if (!templateId) {
       return;
     }
@@ -249,7 +342,7 @@ export function TemplateEditorPage() {
     return () => {
       cancelled = true;
     };
-  }, [replaceLayout, templateId, templateRecord.name]);
+  }, [networkTemplateId, replaceLayout, templateId, templateRecord.name]);
 
   const visibleCount = useMemo(
     () =>
@@ -286,7 +379,32 @@ export function TemplateEditorPage() {
     setSyncStatus('Reset to loaded draft');
   };
 
+  const handleImportNetworkTemplate = async () => {
+    if (!networkTemplateId) {
+      return;
+    }
+
+    setSyncStatus('Importing...');
+
+    try {
+      const result = await apiPost<ImportNetworkTemplateResponse>(
+        `/api/templates/network/${encodeURIComponent(networkTemplateId)}/import`,
+        { name: `${layout.name} Imported` },
+      );
+
+      setSyncStatus('Imported');
+      navigate(`/templates/${result.template.id}`);
+    } catch {
+      setSyncStatus('Import failed');
+    }
+  };
+
   const handleSyncTemplate = async () => {
+    if (isNetworkPreview) {
+      await handleImportNetworkTemplate();
+      return;
+    }
+
     if (templateId === defaultGithubTemplate.id) {
       setSyncStatus('Create a named template before saving');
       return;
@@ -348,7 +466,36 @@ export function TemplateEditorPage() {
     event.currentTarget.scrollTop += event.deltaY;
   };
 
+  const handleToggleNetworkLike = async () => {
+    if (!networkTemplateId || !networkRecord) {
+      return;
+    }
+
+    const nextLiked = !networkRecord.likedByCurrentUser;
+    setNetworkRecord({
+      ...networkRecord,
+      likedByCurrentUser: nextLiked,
+      likeCount: Math.max(0, (networkRecord.likeCount ?? 0) + (nextLiked ? 1 : -1)),
+    });
+
+    try {
+      const result = await apiPost<NetworkMetricResponse>(
+        `/api/templates/network/${encodeURIComponent(networkTemplateId)}/like`,
+        { liked: nextLiked },
+      );
+
+      setNetworkRecord(result.template);
+    } catch {
+      setNetworkRecord(networkRecord);
+      setSyncStatus('Like failed');
+    }
+  };
+
   const handleOpenBlockStyleMenu = (blockId: string, x: number, y: number) => {
+    if (isNetworkPreview) {
+      return;
+    }
+
     const menuPosition = getCanvasMenuPosition(x, y);
 
     setSelectedBlockId(blockId);
@@ -357,6 +504,10 @@ export function TemplateEditorPage() {
   };
 
   const handleOpenPageStyleMenu = (x: number, y: number) => {
+    if (isNetworkPreview) {
+      return;
+    }
+
     const menuPosition = getCanvasMenuPosition(x, y);
 
     setBlockStyleMenu(null);
@@ -385,6 +536,10 @@ export function TemplateEditorPage() {
   };
 
   const handleUpdateBlockAppearance = (block: TemplateBlock, appearance: Record<string, unknown>) => {
+    if (isNetworkPreview) {
+      return;
+    }
+
     updateBlockTypeProps(block.type, {
       appearance: {
         ...(typeof block.props.appearance === 'object' && block.props.appearance !== null && !Array.isArray(block.props.appearance)
@@ -396,6 +551,10 @@ export function TemplateEditorPage() {
   };
 
   const handleUpdatePageAppearance = (appearance: Record<string, unknown>) => {
+    if (isNetworkPreview) {
+      return;
+    }
+
     setPageAppearance((current) => ({
       ...current,
       ...appearance,
@@ -405,8 +564,8 @@ export function TemplateEditorPage() {
   return (
     <div className="editor-page template-builder-page">
       <AppTopNav
-        active="templates"
-        actionLabel="Save Draft"
+        active={isNetworkPreview ? 'network' : 'templates'}
+        actionLabel={isNetworkPreview ? 'Import Template' : 'Save Draft'}
         actionStatus={syncStatus}
         searchPlaceholder="Search blocks..."
         onActionClick={handleSyncTemplate}
@@ -427,8 +586,8 @@ export function TemplateEditorPage() {
           <section className="template-builder-rail__section">
             <p>Source Template</p>
             <div className="source-template-card">
-              <strong>{templateRecord.name}</strong>
-              <span>{templateRecord.owner}</span>
+              <strong>{networkRecord?.name ?? templateRecord.name}</strong>
+              <span>{networkRecord?.owner ?? templateRecord.owner}</span>
             </div>
           </section>
 
@@ -476,7 +635,7 @@ export function TemplateEditorPage() {
           <section className="template-builder-rail__section">
             <p>State</p>
             <div className="layout-state-summary">
-              <span>{layout.source === 'user' ? 'Draft edited' : 'Default loaded'}</span>
+              <span>{isNetworkPreview ? 'Read-only Network preview' : layout.source === 'user' ? 'Draft edited' : 'Default loaded'}</span>
               <strong>{visibleCount} visible blocks</strong>
             </div>
           </section>
@@ -577,26 +736,132 @@ export function TemplateEditorPage() {
           </div>
         </section>
 
-        <TemplateEditPanel
-          layout={layout}
-          columnLayout={columnLayout}
-          leftSidebarResizeEnabled={leftSidebarResizeEnabled}
-          onChangeColumnLayout={setColumnLayout}
-          onMoveBlock={moveBlock}
-          onReset={handleReset}
-          onSelectBlock={setSelectedBlockId}
-          onSelectVariation={setSelectedVariationId}
-          onUpdateBlock={updateBlock}
-          onUpdateBlockProps={updateBlockProps}
-          onToggleLeftSidebarResize={() => setLeftSidebarResizeEnabled((enabled) => !enabled)}
-          onToggleBlock={toggleBlockVisibility}
-          selectedBlockId={selectedBlockId}
-          selectedVariationId={selectedVariationId}
-          serializedLayout={serializedTemplateState}
-          variations={githubSafeVariations}
-        />
+        {isNetworkPreview ? (
+          <NetworkCommunityPanel
+            layout={layout}
+            record={networkRecord}
+            variationId={selectedVariationId}
+            visibleCount={visibleCount}
+            onImport={handleImportNetworkTemplate}
+            onToggleLike={handleToggleNetworkLike}
+          />
+        ) : (
+          <TemplateEditPanel
+            layout={layout}
+            columnLayout={columnLayout}
+            leftSidebarResizeEnabled={leftSidebarResizeEnabled}
+            onChangeColumnLayout={setColumnLayout}
+            onMoveBlock={moveBlock}
+            onReset={handleReset}
+            onSelectBlock={setSelectedBlockId}
+            onSelectVariation={setSelectedVariationId}
+            onUpdateBlock={updateBlock}
+            onUpdateBlockProps={updateBlockProps}
+            onToggleLeftSidebarResize={() => setLeftSidebarResizeEnabled((enabled) => !enabled)}
+            onToggleBlock={toggleBlockVisibility}
+            selectedBlockId={selectedBlockId}
+            selectedVariationId={selectedVariationId}
+            serializedLayout={serializedTemplateState}
+            variations={githubSafeVariations}
+          />
+        )}
       </main>
     </div>
+  );
+}
+
+function NetworkCommunityPanel({
+  layout,
+  record,
+  variationId,
+  visibleCount,
+  onImport,
+  onToggleLike,
+}: {
+  layout: TemplateLayout;
+  record: TemplateRecord | null;
+  variationId: TemplateVariationId;
+  visibleCount: number;
+  onImport: () => void;
+  onToggleLike: () => void;
+}) {
+  const liked = Boolean(record?.likedByCurrentUser);
+  const likeCount = record?.likeCount ?? 0;
+  const viewCount = record?.viewCount ?? 0;
+  const importCount = record?.importCount ?? 0;
+
+  return (
+    <aside className="network-community-panel">
+      <div className="network-community-panel__header">
+        <span>Network Template</span>
+        <strong>{record?.name ?? layout.name}</strong>
+        <p>{record?.description ?? layout.description}</p>
+      </div>
+
+      <section className="network-community-panel__section">
+        <p>Community</p>
+        <div className="network-stat-grid">
+          <div>
+            <Icon name="star" />
+            <strong>{likeCount}</strong>
+            <span>Likes</span>
+          </div>
+          <div>
+            <Icon name="visibility" />
+            <strong>{viewCount}</strong>
+            <span>Views</span>
+          </div>
+          <div>
+            <Icon name="content_copy" />
+            <strong>{importCount}</strong>
+            <span>Imports</span>
+          </div>
+        </div>
+      </section>
+
+      <section className="network-community-panel__section">
+        <p>Actions</p>
+        <div className="network-action-row">
+          <button className={liked ? 'is-active' : ''} type="button" onClick={onToggleLike}>
+            <Icon name="star" />
+            <span>{liked ? 'Liked' : 'Like'}</span>
+          </button>
+          <button type="button" onClick={onImport}>
+            <Icon name="content_copy" />
+            <span>Import</span>
+          </button>
+        </div>
+      </section>
+
+      <section className="network-community-panel__section">
+        <p>Publisher</p>
+        <div className="network-publisher-card">
+          <div>{(record?.publisherName ?? record?.owner ?? 'R').slice(0, 1).toUpperCase()}</div>
+          <span>
+            <strong>{record?.publisherName ?? record?.owner ?? 'Reflow Network'}</strong>
+            <em>{formatPublishedDate(record?.publishedAt)}</em>
+          </span>
+        </div>
+      </section>
+
+      <section className="network-community-panel__section">
+        <p>Template Signals</p>
+        <div className="network-signal-list">
+          <span>
+            <strong>{visibleCount}</strong>
+            visible blocks
+          </span>
+          <span>
+            <strong>{variationId}</strong>
+            variation
+          </span>
+          <span>
+            <strong>{layout.metadata.browserMappingKey}</strong>
+            mapping
+          </span>
+        </div>
+      </section>
+    </aside>
   );
 }
 
