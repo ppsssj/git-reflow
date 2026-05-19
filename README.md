@@ -9,12 +9,15 @@
   Web App + Chrome Extension 기반 UI 개인화 프로젝트
 </p>
 
-![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=111827)
-![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
-![Vite](https://img.shields.io/badge/Vite-5-646CFF?logo=vite&logoColor=white)
-![Node.js](https://img.shields.io/badge/Node.js-API-339933?logo=nodedotjs&logoColor=white)
-![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-4285F4?logo=googlechrome&logoColor=white)
-![Google Identity](https://img.shields.io/badge/Google-Identity-4285F4?logo=google&logoColor=white)
+<p align="center">
+  <img src="https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=111827" />
+  <img src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white" />
+  <img src="https://img.shields.io/badge/Vite-5-646CFF?logo=vite&logoColor=white" />
+  <img src="https://img.shields.io/badge/Node.js-API-339933?logo=nodedotjs&logoColor=white" />
+  <img src="https://img.shields.io/badge/Chrome-Extension-4285F4?logo=googlechrome&logoColor=white" />
+  <img src="https://img.shields.io/badge/Google-Identity-4285F4?logo=google&logoColor=white" />
+</p>
+
 
 git-reflow는 사용자가 웹에서 GitHub 홈 레이아웃 템플릿을 만들고, Chrome Extension이 그 설정을 실제 GitHub 페이지에 적용하는 UI 개인화 프로젝트입니다.
 
