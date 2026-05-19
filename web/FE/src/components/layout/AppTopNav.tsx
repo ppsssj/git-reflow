@@ -77,13 +77,15 @@ export function AppTopNav({
     <header className="topnav">
       <div className="topnav__inner">
         <div className="topnav__left">
-          <img
-            className="topnav__logo"
-            src="/assets/logo512.png"
-            alt="Reflow logo"
-          />{" "}
-          <Link className="topnav__brand" to="/">
-            GIT-Reflow
+          <Link className="topnav__brand" to="/" aria-label="GIT-Reflow home">
+            <span className="topnav__logo-mark" aria-hidden="true">
+              <img
+                className="topnav__logo"
+                src="/assets/logo512.png"
+                alt=""
+              />
+            </span>
+            <span>GIT-Reflow</span>
           </Link>
           <nav className="topnav__nav" aria-label="Primary">
             <Link className={active === "dashboard" ? "is-active" : ""} to="/">

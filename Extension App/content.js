@@ -1,6 +1,7 @@
 const API_BASE_URL = 'http://localhost:8787';
 const LATEST_TEMPLATE_URL = `${API_BASE_URL}/api/templates/github-home/latest`;
 const CONTROLLER_ID = 'git-reflow-controller';
+const LOGO_URL = chrome.runtime.getURL('assets/logo512.png');
 const RESIZER_CLASS = 'git-reflow-left-resizer';
 const BLOCK_CLASS = 'git-reflow-template-block';
 const GENERATED_BLOCK_CLASS = 'git-reflow-generated-block';
@@ -2311,12 +2312,16 @@ function createController() {
   controller.dataset.gitReflowView = templateListViewMode;
   controller.innerHTML = `
     <button class="git-reflow-launcher" type="button" data-git-reflow-launcher aria-label="Open git-reflow" aria-expanded="false">
-      <span aria-hidden="true">gr</span>
+      <span class="git-reflow-brand-logo git-reflow-brand-logo--launcher" aria-hidden="true">
+        <img src="${LOGO_URL}" alt="" />
+      </span>
     </button>
     <section class="git-reflow-panel" data-git-reflow-panel aria-label="git-reflow templates" hidden>
       <header class="git-reflow-panel__header">
         <div class="git-reflow-panel__brand">
-          <span aria-hidden="true">gr</span>
+          <span class="git-reflow-brand-logo" aria-hidden="true">
+            <img src="${LOGO_URL}" alt="" />
+          </span>
           <div>
             <strong>git-reflow</strong>
           </div>
