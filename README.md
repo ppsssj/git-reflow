@@ -19,9 +19,6 @@
 </p>
 
 
-
-
-
 git-reflow는 사용자가 웹에서 GitHub 홈 레이아웃 템플릿을 만들고, Chrome Extension이 그 설정을 실제 GitHub 페이지에 적용하는 UI 개인화 프로젝트입니다.
 
 현재는 GitHub Home 화면을 우선 대상으로 합니다. 웹에서는 기본 GitHub 템플릿을 복제해 사용자 템플릿을 만들고, 좌측/중앙/우측 컬럼 폭과 안전한 레이아웃 변형을 조정할 수 있습니다. Extension은 저장된 최신 템플릿을 읽어 GitHub DOM에 적용합니다.
