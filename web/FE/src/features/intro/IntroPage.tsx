@@ -284,7 +284,7 @@ export function IntroPage() {
       <footer className="marketing-footer">
         <div>
           <span>REFLOW.IO</span>
-          <p>© 2024 Precision Git Reflow Platform. All rights reserved.</p>
+          <p>© 2026 Precision Git Reflow Platform. All rights reserved.</p>
         </div>
         <nav aria-label="Footer">
           {footerLinks.map((link) => (
