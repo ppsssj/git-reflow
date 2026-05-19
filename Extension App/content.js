@@ -1750,51 +1750,273 @@ function setTemplateFilterOpen(open) {
   syncTemplateFilterControls();
 }
 
+function getPreviewBlock(template, blockType) {
+  return Array.isArray(template?.preview?.blocks)
+    ? template.preview.blocks.find((block) => block?.type === blockType)
+    : undefined;
+}
+
+function getPreviewBlockAppearance(template, blockType) {
+  const appearance = getPreviewBlock(template, blockType)?.appearance;
+
+  return isObject(appearance) ? appearance : undefined;
+}
+
+function getStringValue(value) {
+  return typeof value === 'string' && value.trim() ? value : undefined;
+}
+
+function getNumberValue(value) {
+  const numberValue = Number(value);
+
+  return Number.isFinite(numberValue) ? numberValue : undefined;
+}
+
+function getPreviewTheme(template) {
+  const value = `${template?.id ?? ''} ${template?.name ?? ''}`.toLowerCase();
+  const pageAppearance = isObject(template?.preview?.pageAppearance) ? template.preview.pageAppearance : undefined;
+  const topbarAppearance = getPreviewBlockAppearance(template, 'top-nav');
+  const leftAppearance =
+    getPreviewBlockAppearance(template, 'recent-repos') ?? getPreviewBlockAppearance(template, 'profile-summary');
+  const mainAppearance =
+    getPreviewBlockAppearance(template, 'activity-feed') ?? getPreviewBlockAppearance(template, 'copilot-prompt');
+  const rightAppearance =
+    getPreviewBlockAppearance(template, 'trending-repos') ?? getPreviewBlockAppearance(template, 'repo-updates');
+  const backgroundColor = getStringValue(pageAppearance?.backgroundColor);
+  const leftSidebarBackgroundColor = getStringValue(pageAppearance?.leftSidebarBackgroundColor);
+  const topbarColor = getStringValue(topbarAppearance?.backgroundColor);
+  const panelColor = getStringValue(leftAppearance?.backgroundColor) ?? leftSidebarBackgroundColor;
+  const softColor =
+    getStringValue(leftAppearance?.innerBackgroundColor) ??
+    getStringValue(rightAppearance?.innerBackgroundColor);
+  const mainColor = getStringValue(mainAppearance?.backgroundColor);
+  const mainInnerColor = getStringValue(mainAppearance?.innerBackgroundColor);
+
+  if (backgroundColor || topbarColor || panelColor || mainColor) {
+    return {
+      background: backgroundColor ?? '#dceafe',
+      topbar: topbarColor ?? panelColor ?? '#101827',
+      left: leftSidebarBackgroundColor ?? panelColor ?? topbarColor ?? '#172033',
+      panel: panelColor ?? topbarColor ?? '#172033',
+      soft: softColor ?? mainInnerColor ?? '#22304a',
+      main: mainColor ?? panelColor ?? '#111827',
+      accent: mainInnerColor ?? softColor ?? '#5b8def',
+      right: getStringValue(rightAppearance?.backgroundColor) ?? panelColor ?? '#172033',
+      text: '#e0f2fe',
+    };
+  }
+
+  if (value.includes('red')) {
+    return {
+      background: '#f3d9e0',
+      topbar: '#2a171a',
+      left: '#3a2024',
+      panel: '#3a2024',
+      soft: '#553239',
+      main: '#2c181c',
+      accent: '#c45a6b',
+      right: '#3a2024',
+      text: '#ffe4ea',
+    };
+  }
+
+  if (value.includes('green')) {
+    return {
+      background: '#d8efe4',
+      topbar: '#10231c',
+      left: '#183329',
+      panel: '#183329',
+      soft: '#25483b',
+      main: '#142820',
+      accent: '#3e8b64',
+      right: '#183329',
+      text: '#def7e9',
+    };
+  }
+
+  return {
+    background: '#dceafe',
+    topbar: '#101827',
+    left: '#172033',
+    panel: '#172033',
+    soft: '#22304a',
+    main: '#111827',
+    accent: '#5b8def',
+    right: '#172033',
+    text: '#e0f2fe',
+  };
+}
+
+function getPreviewStyleAttribute(template) {
+  const theme = getPreviewTheme(template);
+
+  return [
+    ['--preview-background', theme.background],
+    ['--preview-topbar', theme.topbar],
+    ['--preview-left', theme.left],
+    ['--preview-panel', theme.panel],
+    ['--preview-soft', theme.soft],
+    ['--preview-main', theme.main],
+    ['--preview-accent', theme.accent],
+    ['--preview-right', theme.right],
+    ['--preview-text', theme.text],
+  ].map(([name, value]) => `${name}: ${escapeAttribute(value)}`).join('; ');
+}
+
+function getBlockMiniStyleAttribute(block) {
+  const appearance = isObject(block?.appearance) ? block.appearance : undefined;
+
+  if (!appearance) {
+    return '';
+  }
+
+  const styles = [];
+  const backgroundColor = getStringValue(appearance.backgroundColor);
+  const innerBackgroundColor = getStringValue(appearance.innerBackgroundColor);
+  const borderRadius = getNumberValue(appearance.borderRadius);
+  const elementGap = getNumberValue(appearance.elementGap);
+
+  if (backgroundColor) {
+    styles.push(`background: ${escapeAttribute(backgroundColor)}`);
+  }
+
+  if (innerBackgroundColor) {
+    styles.push(`--preview-card-inner: ${escapeAttribute(innerBackgroundColor)}`);
+  }
+
+  if (borderRadius !== undefined) {
+    styles.push(`border-radius: ${Math.max(3, Math.min(12, borderRadius * 0.45))}px`);
+  }
+
+  if (elementGap !== undefined) {
+    styles.push(`gap: ${Math.max(3, Math.min(8, elementGap * 0.45))}px`);
+  }
+
+  return styles.length ? ` style="${styles.join('; ')}"` : '';
+}
+
+function formatPreviewLabel(value) {
+  return String(value ?? '')
+    .replace(/[-_]/g, ' ')
+    .replace(/\b\w/g, (letter) => letter.toUpperCase())
+    .slice(0, 18);
+}
+
+function createPreviewSection(id, label, kind = 'content') {
+  return {
+    id,
+    label,
+    kind,
+    visible: true,
+  };
+}
+
 function getTemplateRecordPreviewHtml(template) {
-  const sections = Array.isArray(template.sections)
+  const visibleSections = Array.isArray(template.sections)
     ? template.sections.filter((section) => section?.visible !== false)
     : [];
   const highlights = Array.isArray(template.highlights) ? template.highlights : [];
-  const columnHighlight = highlights.find((item) => typeof item === 'string' && item.startsWith('Columns '));
-  const columns = columnHighlight?.replace('Columns ', '').split('/').map((value) => Number(value)) ?? [320, 900, 315];
-  const total = columns.reduce((sum, value) => sum + (Number.isFinite(value) ? value : 0), 0) || 1;
-  const variation = highlights.find((item) => typeof item === 'string' && item.includes('variation')) ?? 'github-default variation';
-  const sectionOverflowCount = Math.max(0, sections.length - 2);
-  const sectionLabels = sections
-    .slice(0, 2)
-    .map((section) => `<span>${escapeHtml(section.label)}</span>`)
-    .join('')
-    + (sectionOverflowCount > 0 ? `<span>+${sectionOverflowCount}</span>` : '');
-  const sectionDescription = sections.length > 0
-    ? sections.slice(0, 3).map((section) => section.label).join(', ')
-    : 'GitHub dashboard layout';
-  const readableColumns = [
-    `Left ${columns[0] ?? 320}px`,
-    `Feed ${columns[1] ?? 900}px`,
-    `Right ${columns[2] ?? 315}px`,
-  ];
-  const headline = highlights.find((item) => typeof item === 'string' && !item.startsWith('Columns ') && !item.includes('variation'))
-    ?? `${sections.length} visible GitHub sections`;
+  const fallbackSections = visibleSections.length
+    ? visibleSections
+    : highlights.map((highlight, index) => createPreviewSection(`${template.id}-highlight-${index}`, highlight));
+  const headerSections = visibleSections.filter((section) => section.kind === 'header');
+  const sidebarSections = visibleSections.filter((section) => section.kind === 'sidebar');
+  const contentSections = visibleSections.filter((section) => section.kind === 'content');
+  const topbarLabel = headerSections[0]?.label ?? 'Dashboard';
+  const leftLabels = (sidebarSections.length ? sidebarSections : fallbackSections).slice(0, 4);
+  const mainLabels = (contentSections.length ? contentSections : fallbackSections).slice(0, 3);
+  const rightLabels = (sidebarSections.length > 2 ? sidebarSections.slice(2) : fallbackSections).slice(0, 3);
+  const topbarBlock = getPreviewBlock(template, 'top-nav');
+  const leftBlock = getPreviewBlock(template, 'recent-repos') ?? getPreviewBlock(template, 'profile-summary');
+  const copilotBlock = getPreviewBlock(template, 'copilot-prompt');
+  const feedBlock = getPreviewBlock(template, 'activity-feed');
+  const rightBlock = getPreviewBlock(template, 'trending-repos') ?? getPreviewBlock(template, 'repo-updates');
+  const updateBlock = getPreviewBlock(template, 'repo-updates');
+  const columnLayout = isObject(template.preview?.columnLayout) ? template.preview.columnLayout : undefined;
+  const gridTemplateColumns =
+    columnLayout?.left && columnLayout?.main && columnLayout?.right
+      ? `${Number(columnLayout.left)}fr ${Number(columnLayout.main)}fr ${Number(columnLayout.right)}fr`
+      : '';
+  const bodyStyle = gridTemplateColumns ? ` style="grid-template-columns: ${escapeAttribute(gridTemplateColumns)}"` : '';
+  const leftRows = leftLabels.slice(0, 5).map((section) => `
+    <div>
+      <span></span>
+      <strong>${escapeHtml(formatPreviewLabel(section.label))}</strong>
+    </div>
+  `).join('');
+  const mainRows = mainLabels.slice(0, 3).map((section) => `
+    <article>
+      <span></span>
+      <div>
+        <strong>${escapeHtml(formatPreviewLabel(section.label))}</strong>
+        <em></em>
+        <em></em>
+      </div>
+    </article>
+  `).join('');
+  const rightRows = rightLabels.slice(0, 4).map((section) => `
+    <div>
+      <span></span>
+      <p>${escapeHtml(formatPreviewLabel(section.label))}</p>
+    </div>
+  `).join('');
 
   return `
-    <div class="git-reflow-template-preview" aria-hidden="true">
-      <div class="git-reflow-template-preview__layout">
-        ${columns.slice(0, 3).map((width, index) => `
-          <span style="width: ${(width / total) * 100}%">
-            <em>${escapeHtml(readableColumns[index])}</em>
-          </span>
-        `).join('')}
+    <div class="git-reflow-template-preview" style="${getPreviewStyleAttribute(template)}" aria-hidden="true">
+      <div class="git-reflow-template-preview__topbar"${getBlockMiniStyleAttribute(topbarBlock)}>
+        <i></i>
+        <strong>${escapeHtml(formatPreviewLabel(template.name || topbarLabel))}</strong>
+        <span></span>
+        <em></em>
+        <em></em>
+        <em></em>
       </div>
-      <div class="git-reflow-template-preview__summary">
-        <p>${escapeHtml(headline)}</p>
-        <small class="git-reflow-template-preview__description">${escapeHtml(sectionDescription)}</small>
-        <div class="git-reflow-template-preview__meta">
-          <span>${escapeHtml(variation.replace(' variation', ''))}</span>
-          <span>${sections.length} sections</span>
-        </div>
-        <div class="git-reflow-template-preview__sections">
-          ${sectionLabels || '<span>GitHub layout</span>'}
-        </div>
+      <div class="git-reflow-template-preview__body"${bodyStyle}>
+        <aside class="git-reflow-template-preview__left">
+          <div class="git-reflow-template-preview__profile">
+            <span></span>
+            <strong>${escapeHtml(formatPreviewLabel(template.owner ?? 'git-reflow'))}</strong>
+          </div>
+          <section class="git-reflow-template-preview__repo-card"${getBlockMiniStyleAttribute(leftBlock)}>
+            <header>
+              <strong>${escapeHtml(formatPreviewLabel(leftBlock?.title ?? leftLabels[0]?.label ?? 'Top repositories'))}</strong>
+              <i></i>
+            </header>
+            <em></em>
+            ${leftRows}
+          </section>
+        </aside>
+        <main class="git-reflow-template-preview__main">
+          <section class="git-reflow-template-preview__prompt"${getBlockMiniStyleAttribute(copilotBlock)}>
+            <h4>Home</h4>
+            <div></div>
+            <footer>
+              <span></span>
+              <i></i>
+              <b></b>
+            </footer>
+          </section>
+          <section class="git-reflow-template-preview__feed"${getBlockMiniStyleAttribute(feedBlock)}>
+            <header>
+              <strong>${escapeHtml(formatPreviewLabel(feedBlock?.title ?? mainLabels[0]?.label ?? 'Feed'))}</strong>
+              <i></i>
+            </header>
+            ${mainRows}
+          </section>
+          ${updateBlock ? `
+            <section class="git-reflow-template-preview__updates"${getBlockMiniStyleAttribute(updateBlock)}>
+              <strong>${escapeHtml(formatPreviewLabel(updateBlock.title))}</strong>
+              <span></span>
+              <span></span>
+            </section>
+          ` : ''}
+        </main>
+        <aside class="git-reflow-template-preview__right">
+          <section class="git-reflow-template-preview__changelog"${getBlockMiniStyleAttribute(rightBlock)}>
+            <strong>${escapeHtml(formatPreviewLabel(rightBlock?.title ?? rightLabels[0]?.label ?? 'Changelog'))}</strong>
+            ${rightRows}
+          </section>
+        </aside>
       </div>
     </div>
   `;
@@ -1807,6 +2029,10 @@ function escapeHtml(value) {
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#039;');
+}
+
+function escapeAttribute(value) {
+  return escapeHtml(value).replaceAll('`', '&#096;');
 }
 
 function setControllerConnected(connected) {
@@ -2098,7 +2324,11 @@ function createController() {
         </div>
         <div class="git-reflow-panel__status">
           <span data-git-reflow-status>Ready</span>
-          <button type="button" data-git-reflow-close aria-label="Close git-reflow">x</button>
+          <button class="git-reflow-icon-button" type="button" data-git-reflow-close aria-label="Close git-reflow" title="Close">
+            <svg aria-hidden="true" focusable="false" viewBox="0 0 16 16">
+              <path d="M4.22 4.22a.75.75 0 0 1 1.06 0L8 6.94l2.72-2.72a.75.75 0 1 1 1.06 1.06L9.06 8l2.72 2.72a.75.75 0 1 1-1.06 1.06L8 9.06l-2.72 2.72a.75.75 0 0 1-1.06-1.06L6.94 8 4.22 5.28a.75.75 0 0 1 0-1.06Z" />
+            </svg>
+          </button>
         </div>
       </header>
 
@@ -2121,8 +2351,17 @@ function createController() {
             <span><small data-git-reflow-template-count>0/0</small> available</span>
           </div>
           <div class="git-reflow-template-actions">
-            <button type="button" data-git-reflow-filter-toggle aria-expanded="false">Filter</button>
-            <button type="button" data-git-reflow-refresh>Refresh</button>
+            <button class="git-reflow-icon-button" type="button" data-git-reflow-filter-toggle aria-label="Filter templates" title="Filter" aria-expanded="false">
+              <svg aria-hidden="true" focusable="false" viewBox="0 0 16 16">
+                <path d="M2.25 3A.75.75 0 0 1 3 2.25h10a.75.75 0 0 1 .58 1.23L9.75 8.08v3.67a.75.75 0 0 1-.36.64l-2 1.2A.75.75 0 0 1 6.25 13V8.08L2.42 3.48A.75.75 0 0 1 2.25 3Zm2.35.75 2.98 3.58c.11.13.17.3.17.48v3.87l.5-.3V7.81c0-.18.06-.35.17-.48l2.98-3.58H4.6Z" />
+              </svg>
+            </button>
+            <button class="git-reflow-icon-button" type="button" data-git-reflow-refresh aria-label="Refresh templates" title="Refresh">
+              <svg aria-hidden="true" focusable="false" viewBox="0 0 16 16">
+                <path d="M12.78 5.72a.75.75 0 0 1-1.06 0l-.64-.64A4.25 4.25 0 1 0 12.18 9a.75.75 0 0 1 1.47.3 5.75 5.75 0 1 1-1.53-5.28l.66.64a.75.75 0 0 1 0 1.06Z" />
+                <path d="M12.25 2.75A.75.75 0 0 1 13 3.5v2.75a.75.75 0 0 1-.75.75H9.5a.75.75 0 0 1 0-1.5h2V3.5a.75.75 0 0 1 .75-.75Z" />
+              </svg>
+            </button>
           </div>
         </div>
         <div class="git-reflow-template-toolbar">
@@ -2147,8 +2386,17 @@ function createController() {
         </div>
         <div class="git-reflow-template-list" data-git-reflow-template-list></div>
         <div class="git-reflow-panel__actions">
-          <button type="button" data-git-reflow-reset>Reset page</button>
-          <button type="button" data-git-reflow-disconnect>Disconnect</button>
+          <button class="git-reflow-icon-button" type="button" data-git-reflow-reset aria-label="Reset page" title="Reset page">
+            <svg aria-hidden="true" focusable="false" viewBox="0 0 16 16">
+              <path d="M6.47 2.22a.75.75 0 0 1 1.06 1.06L6.56 4.25H9.5a4.25 4.25 0 1 1-3.95 5.82.75.75 0 1 1 1.39-.56A2.75 2.75 0 1 0 9.5 5.75H6.56l.97.97a.75.75 0 0 1-1.06 1.06l-2.25-2.25a.75.75 0 0 1 0-1.06l2.25-2.25Z" />
+            </svg>
+          </button>
+          <button class="git-reflow-icon-button" type="button" data-git-reflow-disconnect aria-label="Disconnect" title="Disconnect">
+            <svg aria-hidden="true" focusable="false" viewBox="0 0 16 16">
+              <path d="M5.25 3.25A2.75 2.75 0 0 1 8 6v1.25h.75A2.75 2.75 0 0 1 11.5 10v.5a2.75 2.75 0 0 1-2.75 2.75h-2A2.75 2.75 0 0 1 4 10.5V10a2.75 2.75 0 0 1 2.5-2.74V6A1.25 1.25 0 0 0 4 6a.75.75 0 0 1-1.5 0 2.75 2.75 0 0 1 2.75-2.75Zm1.5 5.5A1.25 1.25 0 0 0 5.5 10v.5a1.25 1.25 0 0 0 1.25 1.25h2A1.25 1.25 0 0 0 10 10.5V10a1.25 1.25 0 0 0-1.25-1.25h-2Z" />
+              <path d="M11.03 2.97a.75.75 0 0 1 1.06 0l.91.91.91-.91a.75.75 0 0 1 1.06 1.06l-.91.91.91.91a.75.75 0 0 1-1.06 1.06L13 6l-.91.91a.75.75 0 0 1-1.06-1.06l.91-.91-.91-.91a.75.75 0 0 1 0-1.06Z" />
+            </svg>
+          </button>
         </div>
       </div>
 

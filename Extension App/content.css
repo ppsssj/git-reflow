@@ -167,7 +167,7 @@
   background: var(--button-default-bgColor-hover, #f3f4f6);
 }
 
-.git-reflow-panel__header button {
+.git-reflow-icon-button {
   display: grid;
   place-items: center;
   width: 28px;
@@ -175,14 +175,14 @@
   min-height: 28px;
   padding: 0;
   border-radius: 999px;
-  font-size: 0;
   line-height: 1;
 }
 
-.git-reflow-panel__header button::before {
-  content: "x";
-  font-size: 12px;
-  font-weight: 800;
+.git-reflow-icon-button svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+  pointer-events: none;
 }
 
 .git-reflow-token-view,
@@ -226,11 +226,16 @@
   display: none;
 }
 
-.git-reflow-template-actions {
+.git-reflow-template-view__header .git-reflow-template-actions,
+.git-reflow-panel__actions {
   display: flex;
   flex: 0 0 auto;
   align-items: center;
   gap: 6px;
+}
+
+.git-reflow-panel__actions {
+  justify-content: flex-end;
 }
 
 .git-reflow-view-toggle {
@@ -258,13 +263,13 @@
   color: var(--fgColor-default, #1f2328);
 }
 
-.git-reflow-template-actions button,
-.git-reflow-panel__actions button {
+.git-reflow-template-actions button:not(.git-reflow-icon-button),
+.git-reflow-panel__actions button:not(.git-reflow-icon-button) {
   padding: 0 10px;
 }
 
 .git-reflow-template-actions [data-git-reflow-filter-toggle] {
-  padding: 0 8px;
+  padding: 0;
 }
 
 .git-reflow-template-actions [data-git-reflow-filter-toggle].is-active {
@@ -373,112 +378,327 @@
 
 .git-reflow-template-preview {
   display: grid;
-  grid-template-columns: 96px minmax(0, 1fr);
-  align-items: center;
-  justify-self: start;
+  grid-template-rows: 22px minmax(0, 1fr);
   width: 100%;
-  gap: 8px;
-}
-
-.git-reflow-template-preview p {
-  margin: 0;
-  color: var(--fgColor-muted, #656d76);
-  font-size: 11px;
-  font-weight: 500;
-  line-height: 1.25;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.git-reflow-template-preview__description {
-  display: block;
-  min-width: 0;
-  overflow: hidden;
-  color: var(--fgColor-default, #1f2328);
-  font-size: 11px;
-  font-weight: 650;
-  line-height: 1.25;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.git-reflow-template-preview__layout {
-  display: flex;
-  gap: 4px;
-  height: 42px;
-  overflow: hidden;
+  aspect-ratio: 16 / 9;
   border: 1px solid var(--borderColor-default, #d0d7de);
   border-radius: 8px;
-  background: var(--bgColor-muted, #f6f8fa);
+  background: var(--preview-background);
 }
 
-.git-reflow-template-preview__layout span {
-  display: flex;
-  align-items: flex-end;
-  min-width: 18px;
-  padding: 5px;
-  background: var(--bgColor-default, #ffffff);
-}
-
-.git-reflow-template-preview__layout span:nth-child(2) {
-  background: var(--bgColor-accent-muted, #ddf4ff);
-}
-
-.git-reflow-template-preview__layout em {
-  overflow: hidden;
-  color: var(--fgColor-muted, #656d76);
-  font-size: 8px;
-  font-style: normal;
-  font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.git-reflow-template-preview__summary {
+.git-reflow-template-preview__topbar {
   display: grid;
-  min-width: 0;
+  grid-template-columns: 14px auto minmax(28px, 1fr) repeat(3, 12px);
+  align-items: center;
   gap: 4px;
+  min-width: 0;
+  padding: 0 6px;
+  background: var(--preview-topbar);
+  color: var(--preview-text);
 }
 
-.git-reflow-template-preview__meta {
-  display: flex;
-  min-width: 0;
-  gap: 4px;
-  overflow: hidden;
-}
-
-.git-reflow-template-preview__meta span {
+.git-reflow-template-preview__topbar strong {
   min-width: 0;
   overflow: hidden;
-  padding: 3px 7px;
-  border: 1px solid var(--borderColor-default, #d0d7de);
-  border-radius: 999px;
-  background: var(--bgColor-muted, #f6f8fa);
-  color: var(--fgColor-muted, #656d76);
-  font-size: 11px;
-  font-weight: 700;
+  color: var(--preview-text);
+  font-size: 8px;
+  font-weight: 900;
+  line-height: 1;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.git-reflow-template-preview__sections {
-  display: flex;
-  min-width: 0;
-  gap: 4px;
-  overflow: hidden;
+.git-reflow-template-preview__topbar span,
+.git-reflow-template-preview__topbar em,
+.git-reflow-template-preview__topbar i {
+  display: block;
+  background: rgba(255, 255, 255, 0.2);
 }
 
-.git-reflow-template-preview__sections span {
-  max-width: 86px;
+.git-reflow-template-preview__topbar i {
+  width: 13px;
+  height: 13px;
+  border-radius: 4px;
+}
+
+.git-reflow-template-preview__topbar span {
+  height: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  border-radius: 4px;
+  background: rgba(15, 23, 42, 0.12);
+}
+
+.git-reflow-template-preview__topbar em {
+  height: 12px;
+  border-radius: 4px;
+}
+
+.git-reflow-template-preview__body {
+  display: grid;
+  grid-template-columns: 0.72fr 1.35fr 0.82fr;
+  gap: 8px;
+  min-width: 0;
+  min-height: 0;
   overflow: hidden;
-  padding: 3px 6px;
+  background: var(--preview-background);
+}
+
+.git-reflow-template-preview__left,
+.git-reflow-template-preview__main,
+.git-reflow-template-preview__right {
+  min-width: 0;
+}
+
+.git-reflow-template-preview__left {
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  padding: 10px 5px 0;
+  background: var(--preview-left);
+}
+
+.git-reflow-template-preview__right {
+  padding: 10px 5px 0 0;
+}
+
+.git-reflow-template-preview__profile {
+  display: grid;
+  grid-template-columns: 11px minmax(0, 1fr);
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.git-reflow-template-preview__profile span,
+.git-reflow-template-preview__repo-card div span,
+.git-reflow-template-preview__feed article > span,
+.git-reflow-template-preview__changelog div span {
+  display: block;
   border-radius: 999px;
-  background: var(--bgColor-neutral-muted, #afb8c133);
-  color: var(--fgColor-muted, #656d76);
-  font-size: 11px;
-  font-weight: 600;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.git-reflow-template-preview__profile span {
+  width: 11px;
+  height: 11px;
+}
+
+.git-reflow-template-preview__profile strong,
+.git-reflow-template-preview__repo-card strong,
+.git-reflow-template-preview__prompt h4,
+.git-reflow-template-preview__feed strong,
+.git-reflow-template-preview__updates strong,
+.git-reflow-template-preview__changelog strong,
+.git-reflow-template-preview__changelog p {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: var(--preview-text);
+  font-size: 7px;
+  font-weight: 900;
+  line-height: 1.1;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.git-reflow-template-preview__repo-card,
+.git-reflow-template-preview__prompt,
+.git-reflow-template-preview__feed,
+.git-reflow-template-preview__updates,
+.git-reflow-template-preview__changelog {
+  border-radius: 5px;
+  background: var(--preview-panel);
+}
+
+.git-reflow-template-preview__repo-card {
+  display: grid;
+  gap: 3px;
+  padding: 5px 4px;
+}
+
+.git-reflow-template-preview__repo-card header,
+.git-reflow-template-preview__feed header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 18px;
+  align-items: center;
+  gap: 4px;
+}
+
+.git-reflow-template-preview__repo-card header i,
+.git-reflow-template-preview__feed header i {
+  height: 11px;
+  border-radius: 4px;
+  background: #16a34a;
+}
+
+.git-reflow-template-preview__repo-card > em {
+  display: block;
+  height: 10px;
+  border-radius: 4px;
+  background: var(--preview-card-inner, rgba(15, 23, 42, 0.5));
+}
+
+.git-reflow-template-preview__repo-card div {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr);
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+}
+
+.git-reflow-template-preview__repo-card div span {
+  width: 8px;
+  height: 8px;
+}
+
+.git-reflow-template-preview__main {
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  padding: 10px 0 0;
+}
+
+.git-reflow-template-preview__prompt {
+  display: grid;
+  gap: 4px;
+  padding: 5px;
+}
+
+.git-reflow-template-preview__prompt h4 {
+  font-size: 9px;
+}
+
+.git-reflow-template-preview__prompt > div {
+  height: 16px;
+  border-radius: 4px;
+  background: var(--preview-card-inner, rgba(15, 23, 42, 0.6));
+}
+
+.git-reflow-template-preview__prompt footer {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) 14px;
+  gap: 4px;
+}
+
+.git-reflow-template-preview__prompt footer span,
+.git-reflow-template-preview__prompt footer i,
+.git-reflow-template-preview__prompt footer b {
+  display: block;
+  height: 11px;
+  border-radius: 4px;
+  background: var(--preview-accent);
+}
+
+.git-reflow-template-preview__feed {
+  display: grid;
+  gap: 4px;
+  padding: 5px;
+  background: var(--preview-main);
+}
+
+.git-reflow-template-preview__feed article {
+  display: grid;
+  grid-template-columns: 11px minmax(0, 1fr);
+  gap: 4px;
+  min-height: 20px;
+  padding: 4px;
+  border-radius: 4px;
+  background: var(--preview-card-inner, rgba(15, 23, 42, 0.46));
+}
+
+.git-reflow-template-preview__feed article > span {
+  width: 10px;
+  height: 10px;
+}
+
+.git-reflow-template-preview__feed article div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.git-reflow-template-preview__feed article em,
+.git-reflow-template-preview__updates span {
+  display: block;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.git-reflow-template-preview__updates {
+  display: grid;
+  gap: 3px;
+  padding: 5px;
+  opacity: 0.72;
+}
+
+.git-reflow-template-preview__changelog {
+  display: grid;
+  gap: 5px;
+  padding: 6px;
+  background: var(--preview-right);
+}
+
+.git-reflow-template-preview__changelog div {
+  display: grid;
+  grid-template-columns: 7px minmax(0, 1fr);
+  gap: 4px;
+  min-width: 0;
+}
+
+.git-reflow-template-preview__changelog div span {
+  width: 5px;
+  height: 5px;
+  margin-top: 2px;
+  opacity: 0.7;
+}
+
+.git-reflow-template-preview__changelog p {
+  white-space: normal;
+}
+
+.git-reflow-template-preview :is(strong, h4, p) {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.24);
+  color: transparent;
+  font-size: 0;
+  line-height: 0;
+  text-indent: -999px;
+  white-space: nowrap;
+}
+
+.git-reflow-template-preview__topbar strong {
+  width: min(54px, 100%);
+  height: 6px;
+}
+
+.git-reflow-template-preview__prompt h4 {
+  width: 28px;
+  height: 7px;
+}
+
+.git-reflow-template-preview__repo-card header strong,
+.git-reflow-template-preview__feed header strong,
+.git-reflow-template-preview__changelog > strong {
+  width: 72%;
+}
+
+.git-reflow-template-preview__repo-card div strong,
+.git-reflow-template-preview__feed article strong,
+.git-reflow-template-preview__updates strong,
+.git-reflow-template-preview__changelog p {
+  width: 88%;
+  height: 4px;
+  opacity: 0.86;
+}
+
+.git-reflow-template-preview__changelog p {
   white-space: nowrap;
 }
 
@@ -486,7 +706,7 @@
   grid-template-columns: minmax(0, 1fr);
   align-items: start;
   gap: 6px;
-  min-height: 108px;
+  min-height: 230px;
 }
 
 .git-reflow-controller[data-git-reflow-view="preview"] .git-reflow-template-item__content {
