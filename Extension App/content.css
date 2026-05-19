@@ -57,7 +57,6 @@
 
 .git-reflow-panel__header,
 .git-reflow-template-view__header,
-.git-reflow-template-toolbar,
 .git-reflow-panel__actions {
   display: flex;
   align-items: center;
@@ -74,7 +73,7 @@
   display: flex;
   align-items: center;
   min-width: 0;
-  gap: 9px;
+  gap: 8px;
 }
 
 .git-reflow-panel__brand > span {
@@ -94,7 +93,6 @@
 .git-reflow-template-view__header div {
   display: grid;
   min-width: 0;
-  gap: 1px;
 }
 
 .git-reflow-panel__brand strong,
@@ -241,7 +239,7 @@
 .git-reflow-view-toggle {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  width: 100%;
+  width: 148px;
   padding: 2px;
   border: 1px solid var(--borderColor-default, #d0d7de);
   border-radius: 8px;

@@ -2319,7 +2319,6 @@ function createController() {
           <span aria-hidden="true">gr</span>
           <div>
             <strong>git-reflow</strong>
-            <small>GitHub style preview</small>
           </div>
         </div>
         <div class="git-reflow-panel__status">
@@ -2346,9 +2345,9 @@ function createController() {
 
       <div class="git-reflow-template-view">
         <div class="git-reflow-template-view__header">
-          <div>
-            <strong>Templates</strong>
-            <span><small data-git-reflow-template-count>0/0</small> available</span>
+          <div class="git-reflow-view-toggle" aria-label="Template display mode">
+            <button class="is-active" type="button" data-git-reflow-view-mode="preview">Preview</button>
+            <button type="button" data-git-reflow-view-mode="list">List</button>
           </div>
           <div class="git-reflow-template-actions">
             <button class="git-reflow-icon-button" type="button" data-git-reflow-filter-toggle aria-label="Filter templates" title="Filter" aria-expanded="false">
@@ -2362,12 +2361,6 @@ function createController() {
                 <path d="M12.25 2.75A.75.75 0 0 1 13 3.5v2.75a.75.75 0 0 1-.75.75H9.5a.75.75 0 0 1 0-1.5h2V3.5a.75.75 0 0 1 .75-.75Z" />
               </svg>
             </button>
-          </div>
-        </div>
-        <div class="git-reflow-template-toolbar">
-          <div class="git-reflow-view-toggle" aria-label="Template display mode">
-            <button class="is-active" type="button" data-git-reflow-view-mode="preview">Preview</button>
-            <button type="button" data-git-reflow-view-mode="list">List</button>
           </div>
         </div>
         <div class="git-reflow-template-filter" data-git-reflow-filter-panel hidden>
