@@ -561,8 +561,8 @@ export function TemplateEditorPage() {
           <section className="template-builder-rail__section">
             <p>Source Template</p>
             <div className="source-template-card">
-              <strong>{networkRecord?.name ?? templateRecord.name}</strong>
-              <span>{networkRecord?.owner ?? templateRecord.owner}</span>
+              <strong>{isNetworkPreview ? networkRecord?.name ?? templateRecord.name : layout.name}</strong>
+              <span>{isNetworkPreview ? networkRecord?.owner ?? templateRecord.owner : 'Personal Workspace'}</span>
             </div>
           </section>
 

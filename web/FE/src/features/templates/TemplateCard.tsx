@@ -58,7 +58,7 @@ function getPreviewTheme(template: TemplateRecord) {
     };
   }
 
-  if (value.includes('red')) {
+  if (value.includes('polished') && value.includes('red')) {
     return {
       background: '#f3d9e0',
       topbar: '#2a171a',
@@ -72,7 +72,7 @@ function getPreviewTheme(template: TemplateRecord) {
     };
   }
 
-  if (value.includes('green')) {
+  if (value.includes('polished') && value.includes('green')) {
     return {
       background: '#d8efe4',
       topbar: '#10231c',
@@ -87,15 +87,15 @@ function getPreviewTheme(template: TemplateRecord) {
   }
 
   return {
-    background: '#dceafe',
-    topbar: '#101827',
-    left: '#172033',
-    panel: '#172033',
-    soft: '#22304a',
-    main: '#111827',
-    accent: '#5b8def',
-    right: '#172033',
-    text: '#e0f2fe',
+    background: '#f6f8fa',
+    topbar: '#ffffff',
+    left: '#ffffff',
+    panel: '#ffffff',
+    soft: '#f6f8fa',
+    main: '#f6f8fa',
+    accent: '#0969da',
+    right: '#ffffff',
+    text: '#1f2328',
   };
 }
 

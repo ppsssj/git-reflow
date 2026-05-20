@@ -312,6 +312,8 @@ let templateListViewMode = 'preview';
 let templateFilterOpen = false;
 let templateSearchQuery = '';
 let templateSortMode = 'updated';
+let templateApplyRequestId = 0;
+let templateRenderGeneration = 0;
 
 function isGitHubDashboard() {
   return queryFirst(githubHomeSelectors.dashboardRoot) !== null;
@@ -988,9 +990,13 @@ function applyActivityFeedCardAppearance(element, appearance) {
   });
 }
 
-function reapplyActivityFeedAppearance(target, appearance) {
+function reapplyActivityFeedAppearance(target, appearance, generation) {
   [150, 500, 1200, 2500].forEach((delay) => {
     window.setTimeout(() => {
+      if (generation !== templateRenderGeneration) {
+        return;
+      }
+
       applyActivityFeedCardAppearance(target, appearance);
       applyTypographyAppearance(target, appearance);
       applyElementSpacing(target, appearance);
@@ -1102,6 +1108,24 @@ function applyPageAppearance(appearance) {
       }
     });
   }
+}
+
+function clearPageAppearance() {
+  document.documentElement.style.removeProperty('--git-reflow-page-background');
+  document.documentElement.style.removeProperty('--git-reflow-left-sidebar-background');
+
+  [
+    document.body,
+    document.documentElement,
+    queryFirst(githubHomeSelectors.dashboardRoot),
+    queryFirst(['.application-main', '#js-pjax-container', '[data-turbo-body]']),
+    queryFirst(githubHomeSelectors.feedMain),
+    queryFirst(githubHomeSelectors.mainContent),
+    queryFirst(githubHomeSelectors.rightSidebar),
+    queryFirst(githubHomeSelectors.rightColumn),
+    queryFirst(githubHomeSelectors.leftSidebar),
+    queryFirst(githubHomeSelectors.leftSidebarContent),
+  ].forEach(clearAppearance);
 }
 
 function getAppearanceTargets(block, element) {
@@ -1431,7 +1455,7 @@ function applyTopbarProps(block) {
   }
 }
 
-function applyBlockProps(block, element) {
+function applyBlockProps(block, element, generation) {
   const props = isObject(block.props) ? block.props : {};
 
   if (block.type === 'top-nav') {
@@ -1446,7 +1470,7 @@ function applyBlockProps(block, element) {
     applyAppearance(target, props.appearance);
     if (block.type === 'activity-feed') {
       applyActivityFeedCardAppearance(target, props.appearance);
-      reapplyActivityFeedAppearance(target, props.appearance);
+      reapplyActivityFeedAppearance(target, props.appearance, generation);
     } else {
       applyInnerAppearance(target, props.appearance);
     }
@@ -1474,7 +1498,7 @@ function applyBlockProps(block, element) {
   }
 }
 
-function applyTemplateBlocks(template) {
+function applyTemplateBlocks(template, generation) {
   document.querySelectorAll(`.${HIDDEN_CLASS}`).forEach((element) => {
     element.classList.remove(HIDDEN_CLASS);
   });
@@ -1530,7 +1554,7 @@ function applyTemplateBlocks(template) {
       element.style.order = String(index);
       element.classList.toggle(HIDDEN_CLASS, block.visible === false);
 
-      applyBlockProps(block, element);
+      applyBlockProps(block, element, generation);
     });
   });
 }
@@ -1807,7 +1831,7 @@ function getPreviewTheme(template) {
     };
   }
 
-  if (value.includes('red')) {
+  if (value.includes('polished') && value.includes('red')) {
     return {
       background: '#f3d9e0',
       topbar: '#2a171a',
@@ -1821,7 +1845,7 @@ function getPreviewTheme(template) {
     };
   }
 
-  if (value.includes('green')) {
+  if (value.includes('polished') && value.includes('green')) {
     return {
       background: '#d8efe4',
       topbar: '#10231c',
@@ -1836,15 +1860,15 @@ function getPreviewTheme(template) {
   }
 
   return {
-    background: '#dceafe',
-    topbar: '#101827',
-    left: '#172033',
-    panel: '#172033',
-    soft: '#22304a',
-    main: '#111827',
-    accent: '#5b8def',
-    right: '#172033',
-    text: '#e0f2fe',
+    background: '#f6f8fa',
+    topbar: '#ffffff',
+    left: '#ffffff',
+    panel: '#ffffff',
+    soft: '#f6f8fa',
+    main: '#f6f8fa',
+    accent: '#0969da',
+    right: '#ffffff',
+    text: '#1f2328',
   };
 }
 
@@ -2192,15 +2216,17 @@ function ensureLeftSidebarResizer() {
 }
 
 function applyTemplate(template) {
+  const generation = ++templateRenderGeneration;
   latestTemplate = normalizeTemplate(template);
 
+  clearPageAppearance();
   document.querySelectorAll(`.${APPEARANCE_CLASS}`).forEach(clearAppearance);
   document.body.classList.add(LAYOUT_CLASS);
   document.body.classList.toggle('git-reflow-feed-two-column', latestTemplate.selectedVariationId === 'feed-two-column');
   applySidebarWidth(getTemplateSidebarWidth(latestTemplate));
   applyMainColumnWidth(getTemplateMainColumnWidth(latestTemplate));
   applyRightSidebarWidth(getTemplateRightSidebarWidth(latestTemplate));
-  applyTemplateBlocks(latestTemplate);
+  applyTemplateBlocks(latestTemplate, generation);
   applyPageAppearance(latestTemplate.pageAppearance);
   if (latestTemplate.leftSidebarResizeEnabled === false) {
     removeLeftSidebarResizer();
@@ -2235,10 +2261,15 @@ async function loadAndApplySelectedTemplate(token, templateId, options = {}) {
     return;
   }
 
+  const requestId = ++templateApplyRequestId;
   const selectedTemplateRecord = availableTemplates.find((template) => template.id === templateId);
   const starterTemplate = selectedTemplateRecord?.source === 'starter' ? starterTemplatesById.get(templateId) : null;
 
   if (starterTemplate) {
+    if (requestId !== templateApplyRequestId) {
+      return;
+    }
+
     setStoredSelectedTemplateId(templateId);
     applyTemplate(starterTemplate);
     if (options.recordUsage) {
@@ -2256,6 +2287,11 @@ async function loadAndApplySelectedTemplate(token, templateId, options = {}) {
   try {
     setStatus('Applying selected template...');
     const template = await fetchJson(`/api/templates/${encodeURIComponent(templateId)}`, token);
+
+    if (requestId !== templateApplyRequestId) {
+      return;
+    }
+
     setStoredSelectedTemplateId(templateId);
     applyTemplate(template);
     if (options.recordUsage) {
@@ -2485,6 +2521,7 @@ function createController() {
 }
 
 function resetAppliedStyles() {
+  templateRenderGeneration += 1;
   customLeftSidebarWidthPx = null;
   clearStoredLeftSidebarWidth();
   document.body.classList.remove(LAYOUT_CLASS);
