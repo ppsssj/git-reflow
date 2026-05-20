@@ -407,23 +407,6 @@ export function TemplateListPage() {
       syncState: template.id === activeTemplateId ? 'Extension connected' : template.syncState,
     }));
   }, [remoteTemplates, templateUsage]);
-  const networkTemplates = useMemo<TemplateRecord[]>(
-    () =>
-      starterGithubTemplateRecords.map((template, index) => ({
-        ...template,
-        owner: ['Reflow Network', 'GitHub Studio', 'Layout Lab'][index % 3],
-        status: 'INACTIVE',
-        syncState: 'Ready to sync',
-        updatedAt: index === 0 ? 'Featured network template' : 'Public template',
-        description: template.description || 'A public GitHub layout shared by the Reflow community.',
-        highlights: [
-          'Public template',
-          'One-click import',
-          ...template.highlights.slice(0, 2),
-        ],
-      })),
-    [],
-  );
   const favoriteTemplateIdSet = useMemo(() => new Set(favoriteTemplateIds), [favoriteTemplateIds]);
   const publishedTemplateIdSet = useMemo(
     () =>
@@ -445,7 +428,7 @@ export function TemplateListPage() {
   );
   const sectionTemplates = useMemo(() => {
     if (librarySection === 'discover') {
-      return [...publicTemplates, ...networkTemplates];
+      return publicTemplates;
     }
 
     if (librarySection === 'favorites') {
@@ -468,7 +451,6 @@ export function TemplateListPage() {
   }, [
     favoriteTemplateIdSet,
     librarySection,
-    networkTemplates,
     publicTemplates,
     publishedTemplates,
     templateUsageById,

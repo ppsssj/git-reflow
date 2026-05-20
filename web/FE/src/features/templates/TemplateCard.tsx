@@ -176,6 +176,22 @@ function formatPreviewLabel(value: string) {
     .slice(0, 18);
 }
 
+function formatMetric(value: number | undefined) {
+  return new Intl.NumberFormat(undefined, {
+    notation: value !== undefined && value >= 1000 ? 'compact' : 'standard',
+    maximumFractionDigits: 1,
+  }).format(value ?? 0);
+}
+
+function hasNetworkMetrics(template: TemplateRecord) {
+  return Boolean(
+    template.networkTemplateId ||
+      template.likeCount !== undefined ||
+      template.viewCount !== undefined ||
+      template.importCount !== undefined,
+  );
+}
+
 function TemplatePreview({ template }: { template: TemplateRecord }) {
   const visibleSections = template.sections.filter((section) => section.visible);
   const headerSections = visibleSections.filter((section) => section.kind === 'header');
@@ -390,6 +406,7 @@ export function TemplateCard({
 
   const templatePath = openPath ?? `/templates/${template.id}`;
   const canOpenTemplate = Boolean(onOpen);
+  const showNetworkMetrics = hasNetworkMetrics(template);
   const thumbnailContent = (
     <>
       {template.thumbnail ? (
@@ -418,6 +435,22 @@ export function TemplateCard({
         </div>
         <span>{template.updatedAt}</span>
       </div>
+      {showNetworkMetrics ? (
+        <div className="template-tile__network-metrics" aria-label="Network template metrics">
+          <span title={`${template.likeCount ?? 0} likes`}>
+            <Icon name="star" />
+            <strong>{formatMetric(template.likeCount)}</strong>
+          </span>
+          <span title={`${template.viewCount ?? 0} views`}>
+            <Icon name="visibility" />
+            <strong>{formatMetric(template.viewCount)}</strong>
+          </span>
+          <span title={`${template.importCount ?? 0} imports`}>
+            <Icon name="content_copy" />
+            <strong>{formatMetric(template.importCount)}</strong>
+          </span>
+        </div>
+      ) : null}
       {variant === 'list' ? (
         <div className="template-tile__highlights">
           {template.highlights.slice(0, 3).map((highlight) => (

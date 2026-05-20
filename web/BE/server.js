@@ -1,10 +1,15 @@
 import { createServer } from 'node:http';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { randomBytes } from 'node:crypto';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import 'dotenv/config';
 import { OAuth2Client } from 'google-auth-library';
+import {
+  readSessionStore,
+  readTemplateStore,
+  readTemplateUsageStore,
+  writeSessionStore,
+  writeTemplateStore,
+  writeTemplateUsageStore,
+} from './db.js';
 import {
   DEFAULT_TEMPLATE_PAYLOAD,
   normalizeTemplatePayload,
@@ -13,103 +18,8 @@ import {
 
 const PORT = Number(process.env.PORT ?? 8787);
 const MAX_BODY_BYTES = 1024 * 1024;
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = join(__dirname, 'data');
-const TEMPLATE_STORE_PATH = join(DATA_DIR, 'templates.json');
-const SESSION_STORE_PATH = join(DATA_DIR, 'sessions.json');
-const TEMPLATE_USAGE_STORE_PATH = join(DATA_DIR, 'template-usage.json');
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID ?? '';
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
-
-async function ensureDataDir() {
-  await mkdir(DATA_DIR, { recursive: true });
-}
-
-async function readTemplateStore() {
-  try {
-    const raw = await readFile(TEMPLATE_STORE_PATH, 'utf8');
-    const parsed = JSON.parse(raw);
-    const rawTemplates = Array.isArray(parsed.templates)
-      ? parsed.templates
-      : [parsed.latest ?? DEFAULT_TEMPLATE_PAYLOAD, ...(Array.isArray(parsed.versions) ? parsed.versions : [])];
-    const templates = [];
-    const seenIds = new Set();
-
-    for (const template of rawTemplates) {
-      if (template?.id && !seenIds.has(template.id)) {
-        seenIds.add(template.id);
-        templates.push(template);
-      }
-    }
-
-    return {
-      templates,
-      latest: parsed.latest ?? templates[0] ?? DEFAULT_TEMPLATE_PAYLOAD,
-      versions: Array.isArray(parsed.versions) ? parsed.versions : [],
-      publishedTemplates: Array.isArray(parsed.publishedTemplates) ? parsed.publishedTemplates : [],
-    };
-  } catch (error) {
-    if (error?.code !== 'ENOENT') {
-      console.warn('Failed to read template store. Falling back to default template.', error);
-    }
-
-    return {
-      templates: [DEFAULT_TEMPLATE_PAYLOAD],
-      latest: DEFAULT_TEMPLATE_PAYLOAD,
-      versions: [],
-      publishedTemplates: [],
-    };
-  }
-}
-
-async function writeTemplateStore(store) {
-  await ensureDataDir();
-  await writeFile(TEMPLATE_STORE_PATH, `${JSON.stringify(store, null, 2)}\n`, 'utf8');
-}
-
-async function readSessionStore() {
-  try {
-    const raw = await readFile(SESSION_STORE_PATH, 'utf8');
-    const parsed = JSON.parse(raw);
-
-    return {
-      sessions: Array.isArray(parsed.sessions) ? parsed.sessions : [],
-    };
-  } catch (error) {
-    if (error?.code !== 'ENOENT') {
-      console.warn('Failed to read session store. Falling back to empty sessions.', error);
-    }
-
-    return { sessions: [] };
-  }
-}
-
-async function writeSessionStore(store) {
-  await ensureDataDir();
-  await writeFile(SESSION_STORE_PATH, `${JSON.stringify(store, null, 2)}\n`, 'utf8');
-}
-
-async function readTemplateUsageStore() {
-  try {
-    const raw = await readFile(TEMPLATE_USAGE_STORE_PATH, 'utf8');
-    const parsed = JSON.parse(raw);
-
-    return {
-      events: Array.isArray(parsed.events) ? parsed.events : [],
-    };
-  } catch (error) {
-    if (error?.code !== 'ENOENT') {
-      console.warn('Failed to read template usage store. Falling back to empty usage.', error);
-    }
-
-    return { events: [] };
-  }
-}
-
-async function writeTemplateUsageStore(store) {
-  await ensureDataDir();
-  await writeFile(TEMPLATE_USAGE_STORE_PATH, `${JSON.stringify(store, null, 2)}\n`, 'utf8');
-}
 
 function sendJson(response, status, body) {
   response.writeHead(status, {

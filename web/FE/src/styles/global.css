@@ -2451,6 +2451,42 @@ img {
   font-weight: 600;
 }
 
+.template-tile__network-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.template-tile__network-metrics span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  height: 30px;
+  gap: 5px;
+  border: 1px solid rgba(191, 199, 212, 0.34);
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #64748b;
+}
+
+.template-tile__network-metrics .material-symbols-outlined {
+  width: 14px;
+  height: 14px;
+}
+
+.template-tile__network-metrics strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 0.6875rem;
+  font-weight: 900;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .template-tile__avatars {
   display: flex;
   margin-right: 2px;

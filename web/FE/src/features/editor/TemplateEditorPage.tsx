@@ -45,7 +45,6 @@ const MAX_CANVAS_ZOOM = 2;
 const CANVAS_ZOOM_STEP = 0.1;
 const STYLE_MENU_WIDTH = 260;
 const STYLE_MENU_VISIBLE_GUTTER = 12;
-const VIEWED_NETWORK_TEMPLATE_STORAGE_KEY = 'git-reflow.viewed-network-templates';
 const DEFAULT_COLUMN_LAYOUT: TemplateColumnLayout = {
   left: 320,
   main: 900,
@@ -133,27 +132,6 @@ function formatPublishedDate(value?: string) {
   }
 
   return `Published ${new Date(value).toLocaleDateString()}`;
-}
-
-function readViewedNetworkTemplateIds() {
-  try {
-    const parsed = JSON.parse(window.sessionStorage.getItem(VIEWED_NETWORK_TEMPLATE_STORAGE_KEY) ?? '[]');
-
-    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : [];
-  } catch {
-    return [];
-  }
-}
-
-function rememberViewedNetworkTemplate(templateId: string) {
-  const ids = readViewedNetworkTemplateIds();
-
-  if (ids.includes(templateId)) {
-    return false;
-  }
-
-  window.sessionStorage.setItem(VIEWED_NETWORK_TEMPLATE_STORAGE_KEY, JSON.stringify([templateId, ...ids].slice(0, 200)));
-  return true;
 }
 
 function getTemplateResetSnapshot(template: TemplateLayout & Partial<ExtensionTemplatePayload>): TemplateResetSnapshot {
@@ -261,7 +239,6 @@ export function TemplateEditorPage() {
   useEffect(() => {
     if (networkTemplateId) {
       let cancelled = false;
-      const shouldCountView = rememberViewedNetworkTemplate(networkTemplateId);
 
       apiGet<NetworkTemplateResponse>(`/api/templates/network/${encodeURIComponent(networkTemplateId)}`)
         .then((result) => {
@@ -273,22 +250,20 @@ export function TemplateEditorPage() {
           applyTemplateState(result.template);
           setSyncStatus('Network preview');
 
-          if (shouldCountView) {
-            apiPost<NetworkMetricResponse>(
-              `/api/templates/network/${encodeURIComponent(networkTemplateId)}/view`,
-              {},
-            )
-              .then((viewResult) => {
-                if (!cancelled) {
-                  setNetworkRecord(viewResult.template);
-                }
-              })
-              .catch(() => {
-                if (!cancelled) {
-                  setSyncStatus('View count unavailable');
-                }
-              });
-          }
+          apiPost<NetworkMetricResponse>(
+            `/api/templates/network/${encodeURIComponent(networkTemplateId)}/view`,
+            {},
+          )
+            .then((viewResult) => {
+              if (!cancelled) {
+                setNetworkRecord(viewResult.template);
+              }
+            })
+            .catch(() => {
+              if (!cancelled) {
+                setSyncStatus('View count unavailable');
+              }
+            });
         })
         .catch(() => {
           if (!cancelled) {
