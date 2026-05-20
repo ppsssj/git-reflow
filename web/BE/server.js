@@ -18,15 +18,34 @@ import {
 
 const PORT = Number(process.env.PORT ?? 8787);
 const MAX_BODY_BYTES = 1024 * 1024;
+const MAX_NAME_LENGTH = 120;
+const MAX_USAGE_NAME_LENGTH = 180;
+const SESSION_TTL_MS = Number(process.env.SESSION_TTL_MS ?? 7 * 24 * 60 * 60 * 1000);
+const DEFAULT_ALLOWED_ORIGINS = [
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'http://localhost:4173',
+  'http://127.0.0.1:4173',
+  'https://github.com',
+  'chrome-extension://*',
+];
+const ALLOWED_ORIGINS = (process.env.CORS_ALLOWED_ORIGINS ?? DEFAULT_ALLOWED_ORIGINS.join(','))
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID ?? '';
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 function sendJson(response, status, body) {
+  const corsOrigin = response.corsOrigin ?? ALLOWED_ORIGINS[0] ?? 'http://localhost:5173';
+
   response.writeHead(status, {
+    ...securityHeaders(),
     'Access-Control-Allow-Headers': 'Authorization, Content-Type',
     'Access-Control-Allow-Methods': 'DELETE,GET,POST,OPTIONS',
-    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Origin': corsOrigin,
     'Content-Type': 'application/json; charset=utf-8',
+    Vary: 'Origin',
   });
 
   if (status === 204) {
@@ -43,6 +62,34 @@ function sendError(response, status, error, details = undefined) {
     error,
     ...(details ? { details } : {}),
   });
+}
+
+function securityHeaders() {
+  return {
+    'Cross-Origin-Resource-Policy': 'cross-origin',
+    'Referrer-Policy': 'no-referrer',
+    'X-Content-Type-Options': 'nosniff',
+  };
+}
+
+function isOriginAllowed(origin) {
+  if (!origin) {
+    return true;
+  }
+
+  return ALLOWED_ORIGINS.some((allowedOrigin) => {
+    if (allowedOrigin === origin || allowedOrigin === '*') {
+      return true;
+    }
+
+    return allowedOrigin === 'chrome-extension://*' && origin.startsWith('chrome-extension://');
+  });
+}
+
+function applyCors(request, response) {
+  const origin = request.headers.origin ?? '';
+
+  response.corsOrigin = isOriginAllowed(origin) ? origin || ALLOWED_ORIGINS[0] : ALLOWED_ORIGINS[0];
 }
 
 function readJson(request) {
@@ -92,6 +139,45 @@ function getBearerToken(request) {
   return authorization.slice('Bearer '.length).trim();
 }
 
+function isSessionExpired(session) {
+  if (!Number.isFinite(SESSION_TTL_MS) || SESSION_TTL_MS <= 0) {
+    return false;
+  }
+
+  const createdAt = new Date(session.createdAt).getTime();
+
+  return !Number.isFinite(createdAt) || Date.now() - createdAt > SESSION_TTL_MS;
+}
+
+async function pruneExpiredSessions(store) {
+  const sessions = store.sessions.filter((session) => !isSessionExpired(session));
+
+  if (sessions.length !== store.sessions.length) {
+    await writeSessionStore({ sessions });
+  }
+
+  return { sessions };
+}
+
+function decodePathParam(value) {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return null;
+  }
+}
+
+function readRouteId(response, value) {
+  const decoded = decodePathParam(value);
+
+  if (decoded === null) {
+    sendError(response, 400, 'Malformed path parameter');
+    return null;
+  }
+
+  return decoded;
+}
+
 async function getSessionFromRequest(request) {
   const token = getBearerToken(request);
 
@@ -99,7 +185,7 @@ async function getSessionFromRequest(request) {
     return null;
   }
 
-  const store = await readSessionStore();
+  const store = await pruneExpiredSessions(await readSessionStore());
 
   return store.sessions.find((item) => item.token === token) ?? null;
 }
@@ -450,6 +536,12 @@ async function handlePostTemplate(request, response) {
 
   const store = await readTemplateStore();
   const template = withTemplateOwner(normalizeTemplatePayload(validation.value), session.user.id);
+
+  if (template.name.trim().length > MAX_NAME_LENGTH) {
+    sendError(response, 400, `Template name must be ${MAX_NAME_LENGTH} characters or fewer`);
+    return;
+  }
+
   const normalizedName = template.name.trim().toLowerCase();
   const nameExists = store.templates.some(
     (item) =>
@@ -516,6 +608,11 @@ async function handlePostTemplateUsage(request, response) {
     return;
   }
 
+  if (templateId.length > MAX_NAME_LENGTH || templateName.length > MAX_USAGE_NAME_LENGTH) {
+    sendError(response, 400, 'Template usage identifiers are too long');
+    return;
+  }
+
   const store = await readTemplateUsageStore();
   const event = {
     userId: session.user.id,
@@ -552,6 +649,11 @@ async function handleCreateTemplate(request, response) {
 
   if (name.length < 2) {
     sendError(response, 400, 'Template name must be at least 2 characters');
+    return;
+  }
+
+  if (name.length > MAX_NAME_LENGTH) {
+    sendError(response, 400, `Template name must be ${MAX_NAME_LENGTH} characters or fewer`);
     return;
   }
 
@@ -627,7 +729,12 @@ async function handleSetNetworkTemplateLike(request, response, networkTemplateId
     return;
   }
 
-  const liked = Boolean(body.liked);
+  if (typeof body.liked !== 'boolean') {
+    sendError(response, 400, 'Network template like requires a boolean liked value');
+    return;
+  }
+
+  const liked = body.liked;
   const currentLikeUserIds = getNetworkLikeUserIds(entry);
   const likeUserIds = liked
     ? [...new Set([...currentLikeUserIds, session.user.id])]
@@ -779,6 +886,12 @@ async function handleImportNetworkTemplate(request, response, networkTemplateId)
 
   const now = new Date().toISOString();
   const requestedName = typeof body.name === 'string' ? body.name.trim() : '';
+
+  if (requestedName.length > MAX_NAME_LENGTH) {
+    sendError(response, 400, `Template name must be ${MAX_NAME_LENGTH} characters or fewer`);
+    return;
+  }
+
   const baseName = requestedName || `${entry.template.name} (imported)`;
   const name = createUniqueTemplateName(baseName, store.templates, session.user.id);
   const template = withTemplateOwner(
@@ -878,18 +991,10 @@ async function handlePostGoogleAuth(request, response) {
 }
 
 async function handleGetMe(request, response) {
-  const token = getBearerToken(request);
-
-  if (!token) {
-    sendError(response, 401, 'Missing bearer token');
-    return;
-  }
-
-  const store = await readSessionStore();
-  const session = store.sessions.find((item) => item.token === token);
+  const session = await getSessionFromRequest(request);
 
   if (!session) {
-    sendError(response, 401, 'Session not found');
+    sendError(response, 401, 'Missing or invalid session');
     return;
   }
 
@@ -913,6 +1018,13 @@ async function handlePostLogout(request, response) {
 }
 
 async function handleRequest(request, response) {
+  applyCors(request, response);
+
+  if (request.headers.origin && !isOriginAllowed(request.headers.origin)) {
+    sendError(response, 403, 'Origin not allowed');
+    return;
+  }
+
   const url = parseUrl(request);
 
   if (request.method === 'OPTIONS') {
@@ -941,31 +1053,51 @@ async function handleRequest(request, response) {
   }
 
   if (request.method === 'GET' && url.pathname.startsWith('/api/templates/network/')) {
-    const networkTemplateId = decodeURIComponent(url.pathname.replace('/api/templates/network/', ''));
+    const networkTemplateId = readRouteId(response, url.pathname.replace('/api/templates/network/', ''));
+
+    if (networkTemplateId === null) {
+      return;
+    }
+
     await handleGetNetworkTemplate(request, response, networkTemplateId);
     return;
   }
 
   if (request.method === 'POST' && url.pathname.startsWith('/api/templates/network/') && url.pathname.endsWith('/like')) {
-    const networkTemplateId = decodeURIComponent(
+    const networkTemplateId = readRouteId(response,
       url.pathname.replace('/api/templates/network/', '').replace('/like', ''),
     );
+
+    if (networkTemplateId === null) {
+      return;
+    }
+
     await handleSetNetworkTemplateLike(request, response, networkTemplateId);
     return;
   }
 
   if (request.method === 'POST' && url.pathname.startsWith('/api/templates/network/') && url.pathname.endsWith('/view')) {
-    const networkTemplateId = decodeURIComponent(
+    const networkTemplateId = readRouteId(response,
       url.pathname.replace('/api/templates/network/', '').replace('/view', ''),
     );
+
+    if (networkTemplateId === null) {
+      return;
+    }
+
     await handleViewNetworkTemplate(request, response, networkTemplateId);
     return;
   }
 
   if (request.method === 'POST' && url.pathname.startsWith('/api/templates/network/') && url.pathname.endsWith('/import')) {
-    const networkTemplateId = decodeURIComponent(
+    const networkTemplateId = readRouteId(response,
       url.pathname.replace('/api/templates/network/', '').replace('/import', ''),
     );
+
+    if (networkTemplateId === null) {
+      return;
+    }
+
     await handleImportNetworkTemplate(request, response, networkTemplateId);
     return;
   }
@@ -986,25 +1118,45 @@ async function handleRequest(request, response) {
   }
 
   if (request.method === 'POST' && url.pathname.startsWith('/api/templates/') && url.pathname.endsWith('/publish')) {
-    const templateId = decodeURIComponent(url.pathname.replace('/api/templates/', '').replace('/publish', ''));
+    const templateId = readRouteId(response, url.pathname.replace('/api/templates/', '').replace('/publish', ''));
+
+    if (templateId === null) {
+      return;
+    }
+
     await handlePublishTemplate(request, response, templateId);
     return;
   }
 
   if (request.method === 'DELETE' && url.pathname.startsWith('/api/templates/') && url.pathname.endsWith('/publish')) {
-    const templateId = decodeURIComponent(url.pathname.replace('/api/templates/', '').replace('/publish', ''));
+    const templateId = readRouteId(response, url.pathname.replace('/api/templates/', '').replace('/publish', ''));
+
+    if (templateId === null) {
+      return;
+    }
+
     await handleUnpublishTemplate(request, response, templateId);
     return;
   }
 
   if (request.method === 'GET' && url.pathname.startsWith('/api/templates/')) {
-    const templateId = decodeURIComponent(url.pathname.replace('/api/templates/', ''));
+    const templateId = readRouteId(response, url.pathname.replace('/api/templates/', ''));
+
+    if (templateId === null) {
+      return;
+    }
+
     await handleGetTemplate(request, response, templateId);
     return;
   }
 
   if (request.method === 'DELETE' && url.pathname.startsWith('/api/templates/')) {
-    const templateId = decodeURIComponent(url.pathname.replace('/api/templates/', ''));
+    const templateId = readRouteId(response, url.pathname.replace('/api/templates/', ''));
+
+    if (templateId === null) {
+      return;
+    }
+
     await handleDeleteTemplate(request, response, templateId);
     return;
   }

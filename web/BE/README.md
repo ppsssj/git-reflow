@@ -42,6 +42,8 @@ Create `web/BE/.env`:
 ```env
 PORT=8787
 GOOGLE_CLIENT_ID=your-google-oauth-web-client-id.apps.googleusercontent.com
+CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,https://github.com,chrome-extension://*
+SESSION_TTL_MS=604800000
 ```
 
 Optional:
@@ -51,6 +53,10 @@ SQLITE_DB_PATH=C:\absolute\path\to\git-reflow.sqlite
 ```
 
 `GOOGLE_CLIENT_ID` must match the frontend `VITE_GOOGLE_CLIENT_ID`. No client secret is used because the app verifies Google ID tokens.
+
+`CORS_ALLOWED_ORIGINS` is a comma-separated allowlist. `chrome-extension://*` allows the local Chrome extension origin while still echoing the concrete request origin.
+
+`SESSION_TTL_MS` controls local bearer session lifetime. Set it to `0` to disable expiration during local debugging.
 
 ## Local Data
 
@@ -112,4 +118,3 @@ POST /api/template-usage
 node --check server.js
 node --check db.js
 ```
-
