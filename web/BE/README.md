@@ -44,6 +44,10 @@ PORT=8787
 GOOGLE_CLIENT_ID=your-google-oauth-web-client-id.apps.googleusercontent.com
 CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,https://github.com,chrome-extension://*
 SESSION_TTL_MS=604800000
+RATE_LIMIT_WINDOW_MS=60000
+RATE_LIMIT_MAX_REQUESTS=120
+MUTATION_RATE_LIMIT_MAX_REQUESTS=60
+TRUST_PROXY=false
 ```
 
 Optional:
@@ -57,6 +61,12 @@ SQLITE_DB_PATH=C:\absolute\path\to\git-reflow.sqlite
 `CORS_ALLOWED_ORIGINS` is a comma-separated allowlist. `chrome-extension://*` allows the local Chrome extension origin while still echoing the concrete request origin.
 
 `SESSION_TTL_MS` controls local bearer session lifetime. Set it to `0` to disable expiration during local debugging.
+
+`RATE_LIMIT_WINDOW_MS`, `RATE_LIMIT_MAX_REQUESTS`, and `MUTATION_RATE_LIMIT_MAX_REQUESTS` control a lightweight in-memory request limiter for local abuse protection.
+
+`TRUST_PROXY=true` makes the rate limiter use `x-forwarded-for`. Keep it `false` unless the server is behind a trusted reverse proxy.
+
+Session tokens are returned to the client once at login, but only a SHA-256 hash is stored in SQLite for newly written sessions.
 
 ## Local Data
 

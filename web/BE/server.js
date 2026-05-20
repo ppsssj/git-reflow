@@ -1,5 +1,5 @@
 import { createServer } from 'node:http';
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import 'dotenv/config';
 import { OAuth2Client } from 'google-auth-library';
 import {
@@ -21,6 +21,12 @@ const MAX_BODY_BYTES = 1024 * 1024;
 const MAX_NAME_LENGTH = 120;
 const MAX_USAGE_NAME_LENGTH = 180;
 const SESSION_TTL_MS = Number(process.env.SESSION_TTL_MS ?? 7 * 24 * 60 * 60 * 1000);
+const SESSION_TOKEN_HASH_PREFIX = 'sha256:';
+const RATE_LIMIT_WINDOW_MS = Number(process.env.RATE_LIMIT_WINDOW_MS ?? 60 * 1000);
+const RATE_LIMIT_MAX_REQUESTS = Number(process.env.RATE_LIMIT_MAX_REQUESTS ?? 120);
+const MUTATION_RATE_LIMIT_MAX_REQUESTS = Number(process.env.MUTATION_RATE_LIMIT_MAX_REQUESTS ?? 60);
+const TRUST_PROXY = process.env.TRUST_PROXY === 'true';
+const rateLimitBuckets = new Map();
 const DEFAULT_ALLOWED_ORIGINS = [
   'http://localhost:5173',
   'http://127.0.0.1:5173',
@@ -92,6 +98,88 @@ function applyCors(request, response) {
   response.corsOrigin = isOriginAllowed(origin) ? origin || ALLOWED_ORIGINS[0] : ALLOWED_ORIGINS[0];
 }
 
+function getClientKey(request) {
+  const remoteAddress = request.socket.remoteAddress ?? 'local';
+
+  if (!TRUST_PROXY) {
+    return remoteAddress;
+  }
+
+  const forwardedFor = request.headers['x-forwarded-for'];
+  const forwardedAddress = Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor;
+
+  return (forwardedAddress?.split(',')[0] ?? remoteAddress).trim();
+}
+
+function getRateLimitConfig(request, pathname) {
+  if (!Number.isFinite(RATE_LIMIT_WINDOW_MS) || RATE_LIMIT_WINDOW_MS <= 0) {
+    return null;
+  }
+
+  if (request.method === 'OPTIONS' || request.method === 'GET') {
+    return {
+      scope: 'read',
+      maxRequests: RATE_LIMIT_MAX_REQUESTS,
+    };
+  }
+
+  const isMutation = ['POST', 'DELETE'].includes(request.method ?? '');
+
+  if (!isMutation) {
+    return {
+      scope: 'other',
+      maxRequests: RATE_LIMIT_MAX_REQUESTS,
+    };
+  }
+
+  const isNetworkMetric = pathname.startsWith('/api/templates/network/') && (
+    pathname.endsWith('/view') ||
+    pathname.endsWith('/like') ||
+    pathname.endsWith('/import')
+  );
+
+  return {
+    scope: isNetworkMetric ? 'network-metric' : 'mutation',
+    maxRequests: MUTATION_RATE_LIMIT_MAX_REQUESTS,
+  };
+}
+
+function isRateLimited(request, pathname) {
+  const config = getRateLimitConfig(request, pathname);
+
+  if (!config || !Number.isFinite(config.maxRequests) || config.maxRequests <= 0) {
+    return false;
+  }
+
+  const now = Date.now();
+  const key = `${getClientKey(request)}:${config.scope}`;
+  const bucket = rateLimitBuckets.get(key);
+
+  if (!bucket || now >= bucket.resetAt) {
+    rateLimitBuckets.set(key, {
+      count: 1,
+      resetAt: now + RATE_LIMIT_WINDOW_MS,
+    });
+    return false;
+  }
+
+  bucket.count += 1;
+
+  if (bucket.count > config.maxRequests) {
+    return true;
+  }
+
+  if (rateLimitBuckets.size > 1000) {
+    for (const [bucketKey, value] of rateLimitBuckets.entries()) {
+      if (now >= value.resetAt) {
+        rateLimitBuckets.delete(bucketKey);
+      }
+    }
+  }
+
+  return false;
+}
+
 function readJson(request) {
   return new Promise((resolve, reject) => {
     let body = '';
@@ -129,6 +217,10 @@ function createSessionToken() {
   return randomBytes(32).toString('base64url');
 }
 
+function hashSessionToken(token) {
+  return `${SESSION_TOKEN_HASH_PREFIX}${createHash('sha256').update(token).digest('hex')}`;
+}
+
 function getBearerToken(request) {
   const authorization = request.headers.authorization ?? '';
 
@@ -137,6 +229,10 @@ function getBearerToken(request) {
   }
 
   return authorization.slice('Bearer '.length).trim();
+}
+
+function sessionTokenMatches(session, token) {
+  return session.token === token || session.token === hashSessionToken(token);
 }
 
 function isSessionExpired(session) {
@@ -187,7 +283,7 @@ async function getSessionFromRequest(request) {
 
   const store = await pruneExpiredSessions(await readSessionStore());
 
-  return store.sessions.find((item) => item.token === token) ?? null;
+  return store.sessions.find((item) => sessionTokenMatches(item, token)) ?? null;
 }
 
 async function requireSession(request, response) {
@@ -1010,7 +1106,7 @@ async function handlePostLogout(request, response) {
   if (token) {
     const store = await readSessionStore();
     await writeSessionStore({
-      sessions: store.sessions.filter((session) => session.token !== token),
+      sessions: store.sessions.filter((session) => !sessionTokenMatches(session, token)),
     });
   }
 
@@ -1026,6 +1122,11 @@ async function handleRequest(request, response) {
   }
 
   const url = parseUrl(request);
+
+  if (isRateLimited(request, url.pathname)) {
+    sendError(response, 429, 'Too many requests');
+    return;
+  }
 
   if (request.method === 'OPTIONS') {
     sendJson(response, 204, {});

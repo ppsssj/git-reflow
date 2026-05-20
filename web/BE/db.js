@@ -1,4 +1,5 @@
 import Database from 'better-sqlite3';
+import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -10,6 +11,7 @@ const DB_PATH = process.env.SQLITE_DB_PATH ?? join(DATA_DIR, 'git-reflow.sqlite'
 const LEGACY_TEMPLATE_STORE_PATH = join(DATA_DIR, 'templates.json');
 const LEGACY_SESSION_STORE_PATH = join(DATA_DIR, 'sessions.json');
 const LEGACY_TEMPLATE_USAGE_STORE_PATH = join(DATA_DIR, 'template-usage.json');
+const SESSION_TOKEN_HASH_PREFIX = 'sha256:';
 
 mkdirSync(DATA_DIR, { recursive: true });
 
@@ -92,6 +94,14 @@ function parseJson(value, fallback) {
 
 function getTemplateOwnerId(template) {
   return template.ownerUserId ?? template.metadata?.ownerUserId ?? '';
+}
+
+function hashSessionToken(token) {
+  if (typeof token !== 'string' || token.startsWith(SESSION_TOKEN_HASH_PREFIX)) {
+    return token;
+  }
+
+  return `${SESSION_TOKEN_HASH_PREFIX}${createHash('sha256').update(token).digest('hex')}`;
 }
 
 function readLegacyJson(path) {
@@ -370,7 +380,7 @@ export const writeSessionStore = db.transaction((store) => {
       now,
     });
     upsertSessionStatement.run({
-      token: session.token,
+      token: hashSessionToken(session.token),
       userId: session.user.id,
       createdAt: session.createdAt,
     });
