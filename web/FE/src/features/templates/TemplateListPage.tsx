@@ -391,6 +391,7 @@ export function TemplateListPage() {
   const [publicTemplates, setPublicTemplates] = useState<TemplateRecord[]>([]);
   const [newTemplateName, setNewTemplateName] = useState('');
   const [createStatus, setCreateStatus] = useState('');
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [favoriteTemplateIds, setFavoriteTemplateIds] = useState<string[]>(readFavoriteTemplateIds);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const currentUserId = getAuthSession()?.user.id ?? '';
@@ -498,7 +499,6 @@ export function TemplateListPage() {
     templateUsageById,
     sectionTemplates,
   ]);
-  const primaryTemplateId = visibleTemplates[0]?.id ?? 'github-dashboard-reference';
   const recentUsage = templateUsage?.recent[0];
   const mostUsedTemplate = templateUsage ? getTopUsageTemplates(templateUsage.templates)[0] : undefined;
   const topUsageTemplates = templateUsage ? getTopUsageTemplates(templateUsage.templates) : [];
@@ -642,6 +642,7 @@ export function TemplateListPage() {
       const result = await apiPost<CreateTemplateResponse>('/api/templates/github-home', createTemplateDraft(name));
 
       setNewTemplateName('');
+      setCreateDialogOpen(false);
       setCreateStatus('Created');
       navigate(`/templates/${result.template.id}`);
     } catch (error) {
@@ -873,10 +874,18 @@ export function TemplateListPage() {
             </div>
           </div>
 
-          <Link className="sidebar-create" to={`/templates/${primaryTemplateId}`}>
+          <button
+            className="sidebar-create"
+            type="button"
+            onClick={() => {
+              setCreateStatus('');
+              setNewTemplateName('');
+              setCreateDialogOpen(true);
+            }}
+          >
             <Icon name="add" />
             <span>Create New</span>
-          </Link>
+          </button>
 
           <nav className="sidebar-nav" aria-label="Template workspace">
             {sidebarItems.map((item) => (
@@ -1135,6 +1144,42 @@ export function TemplateListPage() {
           ) : null}
         </main>
       </div>
+
+      {createDialogOpen ? (
+        <div className="create-template-dialog" role="dialog" aria-modal="true" aria-labelledby="create-template-title">
+          <form className="create-template-dialog__panel" onSubmit={handleCreateTemplate}>
+            <div className="create-template-dialog__header">
+              <div className="template-add-card__icon">
+                <Icon name="add_circle" />
+              </div>
+              <div>
+                <strong id="create-template-title">New Template</strong>
+                <span>Start from the plain GitHub Home draft.</span>
+              </div>
+              <button aria-label="Close new template dialog" type="button" onClick={() => setCreateDialogOpen(false)}>
+                <Icon name="close" />
+              </button>
+            </div>
+            <label>
+              <span>Template title</span>
+              <input
+                autoFocus
+                placeholder="GitHub focus layout"
+                type="text"
+                value={newTemplateName}
+                onChange={(event) => setNewTemplateName(event.target.value)}
+              />
+            </label>
+            <div className="create-template-dialog__actions">
+              <span>{createStatus}</span>
+              <button type="button" onClick={() => setCreateDialogOpen(false)}>
+                Cancel
+              </button>
+              <button type="submit">Create</button>
+            </div>
+          </form>
+        </div>
+      ) : null}
 
       <footer className="dashboard-footer">
         <div>

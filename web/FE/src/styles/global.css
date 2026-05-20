@@ -1587,6 +1587,107 @@ img {
   cursor: pointer;
 }
 
+.create-template-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.36);
+}
+
+.create-template-dialog__panel {
+  display: grid;
+  width: min(420px, 100%);
+  gap: 18px;
+  padding: 18px;
+  border: 1px solid rgba(191, 199, 212, 0.32);
+  border-radius: 12px;
+  background: white;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.2);
+}
+
+.create-template-dialog__header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.create-template-dialog__header strong {
+  display: block;
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.create-template-dialog__header span,
+.create-template-dialog label span,
+.create-template-dialog__actions span {
+  color: var(--text-muted);
+  font-size: 0.6875rem;
+  font-weight: 800;
+}
+
+.create-template-dialog__header button {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: var(--surface-low);
+  color: var(--text-soft);
+  cursor: pointer;
+}
+
+.create-template-dialog label {
+  display: grid;
+  gap: 8px;
+}
+
+.create-template-dialog input {
+  width: 100%;
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid rgba(191, 199, 212, 0.5);
+  border-radius: 8px;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.875rem;
+  outline: 0;
+}
+
+.create-template-dialog input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(0, 98, 158, 0.12);
+}
+
+.create-template-dialog__actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.create-template-dialog__actions button {
+  height: 34px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--surface-low);
+  color: var(--text-soft);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.create-template-dialog__actions button[type='submit'] {
+  background: var(--primary);
+  color: white;
+}
+
 .sidebar-nav,
 .sidebar-bottom {
   display: grid;
