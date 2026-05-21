@@ -60,10 +60,6 @@ export function IntroPage() {
       <main className="intro-page">
         <section className="intro-hero">
           <div className="intro-hero__copy">
-            <div className="intro-pill">
-              <Icon name="sync" />
-              <span>Cloud Sync Enabled</span>
-            </div>
             <h1>
               Design on Web,
               <br />
@@ -80,7 +76,7 @@ export function IntroPage() {
               </button>
               <Link className="secondary-cta" to={dashboardTarget}>
                 <Icon name="open_in_new" />
-                <span>Go to Dashboard</span>
+                <span>Go to Templates</span>
               </Link>
             </div>
           </div>

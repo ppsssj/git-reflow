@@ -400,18 +400,21 @@ export function TemplateListPage() {
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const currentUserId = getAuthSession()?.user.id ?? '';
   const remoteTemplateIds = useMemo(() => new Set(remoteTemplates.map((template) => template.id)), [remoteTemplates]);
+  const savedUserTemplates = useMemo(
+    () => remoteTemplates.filter((template) => template.id !== DEFAULT_TEMPLATE_ID),
+    [remoteTemplates],
+  );
   const visibleTemplates = useMemo<TemplateRecord[]>(() => {
-    const userTemplates = remoteTemplates.filter((template) => template.id !== DEFAULT_TEMPLATE_ID);
-    const savedTemplateIds = new Set(userTemplates.map((template) => template.id));
+    const savedTemplateIds = new Set(savedUserTemplates.map((template) => template.id));
     const unsavedStarterTemplates = starterGithubTemplateRecords.filter((template) => !savedTemplateIds.has(template.id));
     const activeTemplateId = templateUsage?.recent[0]?.id ?? '';
 
-    return [...unsavedStarterTemplates, ...userTemplates].map((template) => ({
+    return [...unsavedStarterTemplates, ...savedUserTemplates].map((template) => ({
       ...template,
       status: template.id === activeTemplateId ? 'ACTIVE' : 'INACTIVE',
       syncState: template.id === activeTemplateId ? 'Extension connected' : template.syncState,
     }));
-  }, [remoteTemplates, templateUsage]);
+  }, [savedUserTemplates, templateUsage]);
   const favoriteTemplateIdSet = useMemo(() => new Set(favoriteTemplateIds), [favoriteTemplateIds]);
   const publishedTemplateIdSet = useMemo(
     () =>
@@ -828,8 +831,8 @@ export function TemplateListPage() {
 
   const handleImportTemplate = async (template: TemplateRecord, requestedName: string) => {
     if (template.networkTemplateId) {
-      const generatedName = getCopyTemplateName(template.name, visibleTemplates);
-      const nextName = requestedName ? getUniqueTemplateName(requestedName, visibleTemplates) : generatedName;
+      const generatedName = getCopyTemplateName(template.name, savedUserTemplates);
+      const nextName = requestedName ? getUniqueTemplateName(requestedName, savedUserTemplates) : generatedName;
 
       setCreateStatus('Importing...');
 

@@ -1,4 +1,4 @@
-import type { CSSProperties, WheelEvent } from 'react';
+import type { CSSProperties, FormEvent, WheelEvent } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AppTopNav } from '../../components/layout/AppTopNav';
@@ -175,6 +175,8 @@ export function TemplateEditorPage() {
   const [pageAppearance, setPageAppearance] = useState<Record<string, unknown>>({});
   const [syncStatus, setSyncStatus] = useState('Not synced');
   const [networkRecord, setNetworkRecord] = useState<TemplateRecord | null>(null);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [importTemplateName, setImportTemplateName] = useState('');
   const [resetSnapshot, setResetSnapshot] = useState<TemplateResetSnapshot>(() =>
     getTemplateResetSnapshot(defaultGithubTemplate),
   );
@@ -354,8 +356,22 @@ export function TemplateEditorPage() {
     setSyncStatus('Reset to loaded draft');
   };
 
-  const handleImportNetworkTemplate = async () => {
+  const openImportDialog = () => {
+    setImportTemplateName(`${layout.name} Imported`);
+    setImportDialogOpen(true);
+  };
+
+  const handleImportNetworkTemplate = async (event?: FormEvent<HTMLFormElement>) => {
+    event?.preventDefault();
+
     if (!networkTemplateId) {
+      return;
+    }
+
+    const nextName = importTemplateName.trim();
+
+    if (nextName.length < 2) {
+      setSyncStatus('Template name must be at least 2 characters');
       return;
     }
 
@@ -364,19 +380,20 @@ export function TemplateEditorPage() {
     try {
       const result = await apiPost<ImportNetworkTemplateResponse>(
         `/api/templates/network/${encodeURIComponent(networkTemplateId)}/import`,
-        { name: `${layout.name} Imported` },
+        { name: nextName },
       );
 
+      setImportDialogOpen(false);
       setSyncStatus('Imported');
       navigate(`/templates/${result.template.id}`);
-    } catch {
-      setSyncStatus('Import failed');
+    } catch (error) {
+      setSyncStatus(error instanceof Error ? error.message : 'Import failed');
     }
   };
 
   const handleSyncTemplate = async () => {
     if (isNetworkPreview) {
-      await handleImportNetworkTemplate();
+      openImportDialog();
       return;
     }
 
@@ -717,7 +734,7 @@ export function TemplateEditorPage() {
             record={networkRecord}
             variationId={selectedVariationId}
             visibleCount={visibleCount}
-            onImport={handleImportNetworkTemplate}
+            onImport={openImportDialog}
             onToggleLike={handleToggleNetworkLike}
           />
         ) : (
@@ -741,6 +758,41 @@ export function TemplateEditorPage() {
           />
         )}
       </main>
+
+      {isNetworkPreview && importDialogOpen ? (
+        <div className="create-template-dialog" role="dialog" aria-modal="true" aria-labelledby="import-template-title">
+          <form className="create-template-dialog__panel" onSubmit={handleImportNetworkTemplate}>
+            <div className="create-template-dialog__header">
+              <div className="template-add-card__icon">
+                <Icon name="archive" />
+              </div>
+              <div>
+                <strong id="import-template-title">Import Network Template</strong>
+                <span>Name the copy that will be saved in your workspace.</span>
+              </div>
+              <button aria-label="Close import dialog" type="button" onClick={() => setImportDialogOpen(false)}>
+                <Icon name="close" />
+              </button>
+            </div>
+            <label>
+              <span>Template title</span>
+              <input
+                autoFocus
+                type="text"
+                value={importTemplateName}
+                onChange={(event) => setImportTemplateName(event.target.value)}
+              />
+            </label>
+            <div className="create-template-dialog__actions">
+              <span>{syncStatus}</span>
+              <button type="button" onClick={() => setImportDialogOpen(false)}>
+                Cancel
+              </button>
+              <button type="submit">Import</button>
+            </div>
+          </form>
+        </div>
+      ) : null}
     </div>
   );
 }
