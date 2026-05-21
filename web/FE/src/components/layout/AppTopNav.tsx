@@ -141,6 +141,7 @@ export function AppTopNav({
   const session = getAuthSession();
   const userName = session?.user.name ?? session?.user.email ?? "User";
   const userInitial = userName.slice(0, 1).toUpperCase();
+  const dashboardPath = "/";
 
   useEffect(() => {
     const handlePointerDown = (event: PointerEvent) => {
@@ -306,7 +307,7 @@ export function AppTopNav({
     <header className="topnav">
       <div className="topnav__inner">
         <div className="topnav__left">
-          <Link className="topnav__brand" to="/" aria-label="GIT-Reflow home">
+          <Link className="topnav__brand" to={dashboardPath} aria-label="GIT-Reflow home">
             <span className="topnav__logo-mark" aria-hidden="true">
               <img
                 className="topnav__logo"
@@ -317,7 +318,7 @@ export function AppTopNav({
             <span>GIT-Reflow</span>
           </Link>
           <nav className="topnav__nav" aria-label="Primary">
-            <Link className={active === "dashboard" ? "is-active" : ""} to="/">
+            <Link className={active === "dashboard" ? "is-active" : ""} to={dashboardPath}>
               Dashboard
             </Link>
             <Link

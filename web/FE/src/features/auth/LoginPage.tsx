@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Icon } from '../../components/ui/Icon';
-import { apiPost } from '../../lib/api';
-import { isAuthenticated, setAuthSession, type AuthSession } from '../../lib/auth';
+import { apiGet, apiPost } from '../../lib/api';
+import { clearAuthSession, isAuthenticated, setAuthSession, type AuthSession } from '../../lib/auth';
 
 const footerLinks = ['Privacy Policy', 'Terms of Service', 'Security Standards', 'Platform Status'];
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? '';
@@ -12,18 +12,35 @@ interface GoogleAuthResponse {
   session: AuthSession;
 }
 
+interface MeResponse {
+  ok: true;
+}
+
 export function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const googleButtonRef = useRef<HTMLDivElement | null>(null);
+  const redirectPath =
+    typeof location.state === 'object' &&
+    location.state !== null &&
+    'from' in location.state &&
+    typeof location.state.from === 'string'
+      ? location.state.from
+      : '/';
   const [loginStatus, setLoginStatus] = useState(
     GOOGLE_CLIENT_ID ? 'Waiting for Google sign-in' : 'Google client id is not configured',
   );
 
   useEffect(() => {
     if (isAuthenticated()) {
-      navigate('/templates', { replace: true });
+      apiGet<MeResponse>('/api/auth/me')
+        .then(() => navigate(redirectPath, { replace: true }))
+        .catch(() => {
+          clearAuthSession();
+          setLoginStatus(GOOGLE_CLIENT_ID ? 'Use your Google account to continue' : 'Google client id is not configured');
+        });
     }
-  }, [navigate]);
+  }, [navigate, redirectPath]);
 
   useEffect(() => {
     if (!GOOGLE_CLIENT_ID || !googleButtonRef.current) {
@@ -48,7 +65,7 @@ export function LoginPage() {
             });
 
             setAuthSession(result.session);
-            navigate('/templates');
+            navigate(redirectPath);
           } catch (error) {
             setLoginStatus(error instanceof Error ? error.message : 'Google sign-in failed');
           }

@@ -2,6 +2,16 @@ import { getAuthSession } from './auth';
 
 export const API_BASE_URL = import.meta.env.VITE_GIT_REFLOW_API_URL ?? 'http://localhost:8787';
 
+export class ApiError extends Error {
+  status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+  }
+}
+
 function getDefaultHeaders(init?: RequestInit) {
   const session = getAuthSession();
 
@@ -20,7 +30,7 @@ export async function apiGet<TResponse>(path: string, init?: RequestInit): Promi
 
   if (!response.ok) {
     const result = await response.json().catch(() => null);
-    throw new Error(result?.error ?? `Request failed with ${response.status}`);
+    throw new ApiError(result?.error ?? `Request failed with ${response.status}`, response.status);
   }
 
   return response.json() as Promise<TResponse>;
@@ -39,7 +49,7 @@ export async function apiPost<TResponse>(path: string, body: unknown, init?: Req
 
   if (!response.ok) {
     const result = await response.json().catch(() => null);
-    throw new Error(result?.error ?? `Request failed with ${response.status}`);
+    throw new ApiError(result?.error ?? `Request failed with ${response.status}`, response.status);
   }
 
   return response.json() as Promise<TResponse>;
@@ -54,7 +64,7 @@ export async function apiDelete<TResponse>(path: string, init?: RequestInit): Pr
 
   if (!response.ok) {
     const result = await response.json().catch(() => null);
-    throw new Error(result?.error ?? `Request failed with ${response.status}`);
+    throw new ApiError(result?.error ?? `Request failed with ${response.status}`, response.status);
   }
 
   return response.json() as Promise<TResponse>;

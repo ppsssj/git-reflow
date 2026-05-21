@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { AppTopNav } from '../../components/layout/AppTopNav';
 import { Icon } from '../../components/ui/Icon';
 import { isAuthenticated } from '../../lib/auth';
+import { TemplatePracticeLab } from '../dashboard/TemplatePracticeLab';
 
 const footerLinks = ['Privacy', 'Terms', 'Security', 'Status'];
 
@@ -256,6 +257,8 @@ export function IntroPage() {
             ))}
           </div>
         </section>
+
+        <TemplatePracticeLab />
 
         <section className="intro-cta">
           <div className="intro-cta__blur intro-cta__blur--right" />
