@@ -1,5 +1,5 @@
 import Database from 'better-sqlite3';
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -81,6 +81,20 @@ db.exec(`
     template_id TEXT NOT NULL,
     template_name TEXT NOT NULL,
     used_at TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS notifications (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    type TEXT NOT NULL,
+    actor_user_id TEXT NOT NULL DEFAULT '',
+    actor_name TEXT NOT NULL DEFAULT '',
+    actor_avatar_url TEXT NOT NULL DEFAULT '',
+    template_id TEXT NOT NULL DEFAULT '',
+    template_name TEXT NOT NULL DEFAULT '',
+    network_template_id TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL,
+    read_at TEXT
   );
 `);
 
@@ -418,6 +432,125 @@ export const writeTemplateUsageStore = db.transaction((store) => {
     `).run(event.userId, event.templateId, event.templateName, event.usedAt);
   }
 });
+
+export function createNotification({
+  userId,
+  type,
+  actorUserId = '',
+  actorName = '',
+  actorAvatarUrl = '',
+  templateId = '',
+  templateName = '',
+  networkTemplateId = '',
+}) {
+  if (!userId || !type) {
+    return null;
+  }
+
+  const notification = {
+    id: randomUUID(),
+    userId,
+    type,
+    actorUserId,
+    actorName,
+    actorAvatarUrl,
+    templateId,
+    templateName,
+    networkTemplateId,
+    createdAt: new Date().toISOString(),
+    readAt: null,
+  };
+
+  db.prepare(`
+    INSERT INTO notifications (
+      id,
+      user_id,
+      type,
+      actor_user_id,
+      actor_name,
+      actor_avatar_url,
+      template_id,
+      template_name,
+      network_template_id,
+      created_at,
+      read_at
+    )
+    VALUES (
+      @id,
+      @userId,
+      @type,
+      @actorUserId,
+      @actorName,
+      @actorAvatarUrl,
+      @templateId,
+      @templateName,
+      @networkTemplateId,
+      @createdAt,
+      @readAt
+    )
+  `).run(notification);
+
+  db.prepare(`
+    DELETE FROM notifications
+    WHERE user_id = ?
+      AND id NOT IN (
+        SELECT id
+        FROM notifications
+        WHERE user_id = ?
+        ORDER BY created_at DESC
+        LIMIT 100
+      )
+  `).run(userId, userId);
+
+  return notification;
+}
+
+export function readNotifications(userId, limit = 30) {
+  if (!userId) {
+    return [];
+  }
+
+  return db.prepare(`
+    SELECT
+      id,
+      type,
+      actor_user_id,
+      actor_name,
+      actor_avatar_url,
+      template_id,
+      template_name,
+      network_template_id,
+      created_at,
+      read_at
+    FROM notifications
+    WHERE user_id = ?
+    ORDER BY created_at DESC
+    LIMIT ?
+  `).all(userId, limit).map((row) => ({
+    id: row.id,
+    type: row.type,
+    actorUserId: row.actor_user_id,
+    actorName: row.actor_name,
+    actorAvatarUrl: row.actor_avatar_url,
+    templateId: row.template_id,
+    templateName: row.template_name,
+    networkTemplateId: row.network_template_id,
+    createdAt: row.created_at,
+    readAt: row.read_at,
+  }));
+}
+
+export function markNotificationsRead(userId) {
+  if (!userId) {
+    return;
+  }
+
+  db.prepare(`
+    UPDATE notifications
+    SET read_at = COALESCE(read_at, ?)
+    WHERE user_id = ?
+  `).run(new Date().toISOString(), userId);
+}
 
 function migrateLegacyJsonStores() {
   const templateCount = db.prepare('SELECT COUNT(*) AS count FROM templates').get().count;

@@ -361,9 +361,11 @@ function getSectionCopy(section: TemplateLibrarySection) {
 }
 
 function isImportedTemplate(template: TemplateRecord) {
-  const value = `${template.description} ${template.updatedAt}`.toLowerCase();
+  const value = `${template.name} ${template.description} ${template.updatedAt}`.toLowerCase();
 
-  return value.includes('copied') || value.includes('imported');
+  return Boolean(template.importedFromNetworkTemplateId || template.importedFromTemplateId)
+    || value.includes('copied')
+    || value.includes('imported');
 }
 
 function getSourceTemplateId(template: TemplateRecord) {
@@ -382,7 +384,9 @@ export function TemplateListPage() {
   const librarySection = getTemplateLibrarySection(location.pathname);
   const sectionCopy = getSectionCopy(librarySection);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [templateSearchQuery, setTemplateSearchQuery] = useState('');
+  const [templateSearchQuery, setTemplateSearchQuery] = useState(
+    () => new URLSearchParams(location.search).get('search') ?? '',
+  );
   const [templateSortMode, setTemplateSortMode] = useState<TemplateSortMode>('updated');
   const [remoteTemplates, setRemoteTemplates] = useState<TemplateRecord[]>([]);
   const [isLoadingTemplates, setIsLoadingTemplates] = useState(true);
@@ -510,6 +514,10 @@ export function TemplateListPage() {
     visibleTemplates.find((template) => template.id === mostUsedTemplate?.id) ?? createUsageTemplateRecord(mostUsedTemplate);
   const recentAccent = getUsageAccent(recentUsage?.id, recentUsage?.name);
   const mostUsedAccent = getUsageAccent(mostUsedTemplate?.id, mostUsedTemplate?.name);
+
+  useEffect(() => {
+    setTemplateSearchQuery(new URLSearchParams(location.search).get('search') ?? '');
+  }, [location.search]);
 
   useEffect(() => {
     let cancelled = false;

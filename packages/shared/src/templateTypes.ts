@@ -23,6 +23,9 @@ export interface TemplateRecord {
   sections: TemplateSection[];
   networkTemplateId?: string;
   sourceTemplateId?: string;
+  importedFromNetworkTemplateId?: string;
+  importedFromTemplateId?: string;
+  importedAt?: string;
   publisherUserId?: string;
   publisherName?: string;
   publishedAt?: string;

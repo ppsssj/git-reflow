@@ -3,6 +3,9 @@ import { createHash, randomBytes } from 'node:crypto';
 import 'dotenv/config';
 import { OAuth2Client } from 'google-auth-library';
 import {
+  createNotification,
+  markNotificationsRead,
+  readNotifications,
   readSessionStore,
   readTemplateStore,
   readTemplateUsageStore,
@@ -366,6 +369,18 @@ function toTemplateRecord(template) {
           : {},
       blocks: previewBlocks,
     },
+    importedFromNetworkTemplateId:
+      typeof template.metadata?.importedFromNetworkTemplateId === 'string'
+        ? template.metadata.importedFromNetworkTemplateId
+        : undefined,
+    importedFromTemplateId:
+      typeof template.metadata?.importedFromTemplateId === 'string'
+        ? template.metadata.importedFromTemplateId
+        : undefined,
+    importedAt:
+      typeof template.metadata?.importedAt === 'string'
+        ? template.metadata.importedAt
+        : undefined,
   };
 }
 
@@ -847,6 +862,19 @@ async function handleSetNetworkTemplateLike(request, response, networkTemplateId
     publishedTemplates,
   });
 
+  if (liked && entry.publisherUserId !== session.user.id) {
+    createNotification({
+      userId: entry.publisherUserId,
+      type: 'network_like',
+      actorUserId: session.user.id,
+      actorName: session.user.name ?? session.user.email,
+      actorAvatarUrl: session.user.avatarUrl ?? '',
+      templateId: entry.sourceTemplateId,
+      templateName: entry.template.name,
+      networkTemplateId: entry.id,
+    });
+  }
+
   sendJson(response, 200, {
     ok: true,
     template: toNetworkTemplateRecord(nextEntry, session.user.id),
@@ -999,6 +1027,10 @@ async function handleImportNetworkTemplate(request, response, networkTemplateId)
       source: 'user',
       metadata: {
         ...entry.template.metadata,
+        importedAt: now,
+        importedFromNetworkTemplateId: entry.id,
+        importedFromTemplateId: entry.sourceTemplateId,
+        importedFromTemplateName: entry.template.name,
         updatedAt: now,
       },
       updatedAt: now,
@@ -1023,11 +1055,107 @@ async function handleImportNetworkTemplate(request, response, networkTemplateId)
     publishedTemplates,
   });
 
+  if (entry.publisherUserId !== session.user.id) {
+    createNotification({
+      userId: entry.publisherUserId,
+      type: 'network_import',
+      actorUserId: session.user.id,
+      actorName: session.user.name ?? session.user.email,
+      actorAvatarUrl: session.user.avatarUrl ?? '',
+      templateId: entry.sourceTemplateId,
+      templateName: entry.template.name,
+      networkTemplateId: entry.id,
+    });
+  }
+
+  createNotification({
+    userId: session.user.id,
+    type: 'template_imported',
+    actorUserId: entry.publisherUserId,
+    actorName: entry.publisherName || 'Reflow Network',
+    actorAvatarUrl: entry.publisherAvatarUrl ?? '',
+    templateId: template.id,
+    templateName: entry.template.name,
+    networkTemplateId: entry.id,
+  });
+
   sendJson(response, 201, {
     ok: true,
     template,
     record: toTemplateRecord(template),
   });
+}
+
+async function handleGetNotifications(request, response) {
+  const session = await requireSession(request, response);
+
+  if (!session) {
+    return;
+  }
+
+  const store = await readTemplateStore();
+  const existingNotifications = readNotifications(session.user.id, 100);
+
+  for (const entry of store.publishedTemplates.filter((item) => item.publisherUserId === session.user.id)) {
+    if (
+      Number(entry.importCount) > 0 &&
+      !existingNotifications.some(
+        (notification) =>
+          notification.type === 'network_import_summary' &&
+          notification.networkTemplateId === entry.id,
+      )
+    ) {
+      createNotification({
+        userId: session.user.id,
+        type: 'network_import_summary',
+        actorName: `${Number(entry.importCount) || 0} people`,
+        templateId: entry.sourceTemplateId,
+        templateName: entry.template.name,
+        networkTemplateId: entry.id,
+      });
+    }
+
+    for (const likeUserId of getNetworkLikeUserIds(entry)) {
+      if (
+        likeUserId !== session.user.id &&
+        !existingNotifications.some(
+          (notification) =>
+            notification.type === 'network_like' &&
+            notification.networkTemplateId === entry.id &&
+            notification.actorUserId === likeUserId,
+        )
+      ) {
+        createNotification({
+          userId: session.user.id,
+          type: 'network_like',
+          actorUserId: likeUserId,
+          actorName: 'Someone',
+          templateId: entry.sourceTemplateId,
+          templateName: entry.template.name,
+          networkTemplateId: entry.id,
+        });
+      }
+    }
+  }
+
+  const notifications = readNotifications(session.user.id);
+
+  sendJson(response, 200, {
+    ok: true,
+    notifications,
+    unreadCount: notifications.filter((notification) => !notification.readAt).length,
+  });
+}
+
+async function handleMarkNotificationsRead(request, response) {
+  const session = await requireSession(request, response);
+
+  if (!session) {
+    return;
+  }
+
+  markNotificationsRead(session.user.id);
+  sendJson(response, 200, { ok: true });
 }
 
 async function handlePostGoogleAuth(request, response) {
@@ -1210,6 +1338,16 @@ async function handleRequest(request, response) {
 
   if (request.method === 'POST' && url.pathname === '/api/template-usage') {
     await handlePostTemplateUsage(request, response);
+    return;
+  }
+
+  if (request.method === 'GET' && url.pathname === '/api/notifications') {
+    await handleGetNotifications(request, response);
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/api/notifications/read') {
+    await handleMarkNotificationsRead(request, response);
     return;
   }
 
