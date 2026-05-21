@@ -165,6 +165,7 @@ export function TemplateEditorPage() {
     updateBlockProps,
     updateBlockTypeProps,
     moveBlock,
+    moveBlockToRegion,
     replaceLayout,
   } = useTemplateLayout(defaultGithubTemplate);
   const [selectedBlockId, setSelectedBlockId] = useState('');
@@ -658,8 +659,12 @@ export function TemplateEditorPage() {
               columnLayout={columnLayout}
               onOpenBlockMenu={handleOpenBlockStyleMenu}
               onOpenPageMenu={handleOpenPageStyleMenu}
+              onMoveBlock={moveBlock}
+              onMoveBlockToRegion={moveBlockToRegion}
               onSelectBlock={setSelectedBlockId}
+              onToggleBlock={toggleBlockVisibility}
               pageAppearance={pageAppearance}
+              readOnly={isNetworkPreview}
               screen={activeScreen}
               selectedBlockId={selectedBlockId}
               variationId={selectedVariationId}
@@ -1038,6 +1043,16 @@ function PageStyleMenuControls({
     typeof pageAppearance.leftSidebarBackgroundColor === 'string'
       ? pageAppearance.leftSidebarBackgroundColor
       : '#ffffff';
+  const backgroundImageUrl =
+    typeof pageAppearance.backgroundImageUrl === 'string' ? pageAppearance.backgroundImageUrl : '';
+  const backgroundImagePosition =
+    typeof pageAppearance.backgroundImagePosition === 'string'
+      ? pageAppearance.backgroundImagePosition
+      : 'right top';
+  const backgroundImageSize =
+    typeof pageAppearance.backgroundImageSize === 'string' ? pageAppearance.backgroundImageSize : '360px auto';
+  const backgroundImageRepeat =
+    typeof pageAppearance.backgroundImageRepeat === 'string' ? pageAppearance.backgroundImageRepeat : 'no-repeat';
 
   return (
     <div className="block-style-menu__controls block-style-menu__controls--page">
@@ -1057,6 +1072,73 @@ function PageStyleMenuControls({
           onChange={(event) => onChange({ leftSidebarBackgroundColor: event.target.value })}
         />
       </label>
+      <label className="block-style-menu__wide-control">
+        <span>Image URL</span>
+        <input
+          placeholder="https://.../character.png"
+          type="url"
+          value={backgroundImageUrl}
+          onChange={(event) => onChange({ backgroundImageUrl: event.target.value })}
+        />
+      </label>
+      <label>
+        <span>Image position</span>
+        <select
+          value={backgroundImagePosition}
+          onChange={(event) => onChange({ backgroundImagePosition: event.target.value })}
+        >
+          <option value="left top">Left top</option>
+          <option value="center top">Center top</option>
+          <option value="right top">Right top</option>
+          <option value="left center">Left center</option>
+          <option value="center center">Center</option>
+          <option value="right center">Right center</option>
+          <option value="left bottom">Left bottom</option>
+          <option value="center bottom">Center bottom</option>
+          <option value="right bottom">Right bottom</option>
+        </select>
+      </label>
+      <label>
+        <span>Image size</span>
+        <select
+          value={backgroundImageSize}
+          onChange={(event) => onChange({ backgroundImageSize: event.target.value })}
+        >
+          <option value="auto">Original</option>
+          <option value="cover">Cover</option>
+          <option value="contain">Contain</option>
+          <option value="240px auto">Small character</option>
+          <option value="360px auto">Medium character</option>
+          <option value="520px auto">Large character</option>
+          <option value="100% auto">Full width</option>
+        </select>
+      </label>
+      <label>
+        <span>Image repeat</span>
+        <select
+          value={backgroundImageRepeat}
+          onChange={(event) => onChange({ backgroundImageRepeat: event.target.value })}
+        >
+          <option value="no-repeat">No repeat</option>
+          <option value="repeat">Tile</option>
+          <option value="repeat-x">Repeat X</option>
+          <option value="repeat-y">Repeat Y</option>
+        </select>
+      </label>
+      <button
+        className="block-style-menu__secondary-action"
+        type="button"
+        onClick={() =>
+          onChange({
+            backgroundImageUrl: '',
+            backgroundImagePosition: 'right top',
+            backgroundImageSize: '360px auto',
+            backgroundImageRepeat: 'no-repeat',
+          })
+        }
+      >
+        Clear image
+      </button>
     </div>
   );
 }

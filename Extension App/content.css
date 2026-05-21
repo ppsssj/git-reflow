@@ -796,7 +796,11 @@ body.git-reflow-resizing-left-sidebar {
 body.git-reflow-template-active .feed-background,
 body.git-reflow-template-active feed-container,
 body.git-reflow-template-active #dashboard {
-  background: var(--git-reflow-page-background, inherit) !important;
+  background-color: var(--git-reflow-page-background, inherit) !important;
+  background-image: var(--git-reflow-page-background-image, none) !important;
+  background-position: var(--git-reflow-page-background-position, right top) !important;
+  background-repeat: var(--git-reflow-page-background-repeat, no-repeat) !important;
+  background-size: var(--git-reflow-page-background-size, 360px auto) !important;
 }
 
 body.git-reflow-template-active .feed-left-sidebar {
@@ -819,7 +823,7 @@ body.git-reflow-template-active .feed-main {
   box-sizing: border-box !important;
   flex: 1 1 var(--git-reflow-main-column-width, 900px) !important;
   max-width: var(--git-reflow-main-column-width, 900px) !important;
-  background: var(--git-reflow-page-background, inherit) !important;
+  background-color: transparent !important;
 }
 
 body.git-reflow-template-active .feed-main main,
@@ -836,7 +840,7 @@ body.git-reflow-template-active .feed-right-column {
   width: var(--git-reflow-right-sidebar-width, 315px) !important;
   min-width: var(--git-reflow-right-sidebar-width, 315px) !important;
   max-width: var(--git-reflow-right-sidebar-width, 315px) !important;
-  background: var(--git-reflow-page-background, inherit) !important;
+  background-color: transparent !important;
 }
 
 .git-reflow-region-container {
@@ -929,6 +933,45 @@ body.git-reflow-template-active .feed-right-column {
 
 .git-reflow-template-block {
   box-sizing: border-box !important;
+}
+
+.git-reflow-template-block[data-git-reflow-region] {
+  min-width: 0 !important;
+}
+
+.git-reflow-template-block[data-git-reflow-region="left-sidebar"],
+.git-reflow-template-block[data-git-reflow-region="main-feed"],
+.git-reflow-template-block[data-git-reflow-region="right-sidebar"] {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.git-reflow-template-block[data-git-reflow-region="right-sidebar"] {
+  overflow: hidden !important;
+}
+
+.git-reflow-template-block[data-git-reflow-block-type="activity-feed"] {
+  display: block !important;
+}
+
+.git-reflow-template-block[data-git-reflow-block-type="activity-feed"][data-git-reflow-region="right-sidebar"] {
+  margin: 0 0 16px !important;
+}
+
+.git-reflow-template-block[data-git-reflow-block-type="activity-feed"][data-git-reflow-region="right-sidebar"]
+  :is(#conduit-feed-frame, #dashboard-feed-frame, .js-for-you-feed-items, turbo-frame.js-for-you-feed-items, [id*="feed-frame"]) {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+.git-reflow-template-block[data-git-reflow-block-type="activity-feed"][data-git-reflow-region="right-sidebar"]
+  :is(.js-feed-item-component, [class*="FeedItem"], [class*="feed-item"], [class*="TimelineItem"]) {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-right: 0 !important;
+  margin-left: 0 !important;
 }
 
 .git-reflow-template-block,

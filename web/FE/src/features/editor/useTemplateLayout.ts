@@ -7,6 +7,7 @@ type TemplateLayoutAction =
   | { type: 'update-block-props'; blockId: string; props: Record<string, unknown> }
   | { type: 'update-block-type-props'; blockType: TemplateBlock['type']; props: Record<string, unknown> }
   | { type: 'move-block'; blockId: string; direction: 'up' | 'down' }
+  | { type: 'move-block-region'; blockId: string; region: TemplateRegion }
   | { type: 'set-active-screen'; screenId: string }
   | { type: 'replace'; layout: TemplateLayout }
   | { type: 'reset'; layout: TemplateLayout };
@@ -113,6 +114,14 @@ function templateLayoutReducer(layout: TemplateLayout, action: TemplateLayoutAct
       };
     case 'move-block':
       return moveBlock(layout, action.blockId, action.direction);
+    case 'move-block-region':
+      return {
+        ...layout,
+        source: 'user',
+        blocks: layout.blocks.map((block) =>
+          block.id === action.blockId ? { ...block, region: action.region, visible: true } : block,
+        ),
+      };
     case 'set-active-screen':
       if (!layout.screens.some((screen) => screen.id === action.screenId)) {
         return layout;
@@ -172,6 +181,10 @@ export function useTemplateLayout(defaultLayout: TemplateLayout) {
     (blockId: string, direction: 'up' | 'down') => dispatch({ type: 'move-block', blockId, direction }),
     [],
   );
+  const moveBlockToRegion = useCallback(
+    (blockId: string, region: TemplateRegion) => dispatch({ type: 'move-block-region', blockId, region }),
+    [],
+  );
   const resetLayout = useCallback(() => dispatch({ type: 'reset', layout: defaultLayout }), [defaultLayout]);
 
   return {
@@ -186,6 +199,7 @@ export function useTemplateLayout(defaultLayout: TemplateLayout) {
     updateBlockProps,
     updateBlockTypeProps,
     moveBlock: moveBlockByDirection,
+    moveBlockToRegion,
     resetLayout,
   };
 }

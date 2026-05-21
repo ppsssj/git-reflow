@@ -608,6 +608,14 @@ function getText(value, fallback = '') {
   return typeof value === 'string' && value.trim() ? value.trim() : fallback;
 }
 
+function getCssBackgroundImage(value) {
+  if (typeof value !== 'string' || !value.trim()) {
+    return '';
+  }
+
+  return `url("${value.trim().replace(/"/g, '\\"')}")`;
+}
+
 function getArray(value) {
   return Array.isArray(value) ? value : [];
 }
@@ -727,6 +735,10 @@ function clearAppearance(element) {
   element.classList.remove('git-reflow-activity-feed-card', 'git-reflow-activity-feed-item');
   element.style.removeProperty('background');
   element.style.removeProperty('background-color');
+  element.style.removeProperty('background-image');
+  element.style.removeProperty('background-position');
+  element.style.removeProperty('background-repeat');
+  element.style.removeProperty('background-size');
   element.style.removeProperty('margin-top');
   element.style.removeProperty('margin-bottom');
   element.style.removeProperty('padding');
@@ -1071,25 +1083,65 @@ function applyPageAppearance(appearance) {
     return;
   }
 
+  const pageTargets = [
+    document.body,
+    document.documentElement,
+    queryFirst(githubHomeSelectors.dashboardRoot),
+    queryFirst(['.application-main', '#js-pjax-container', '[data-turbo-body]']),
+    queryFirst(githubHomeSelectors.feedMain),
+    queryFirst(githubHomeSelectors.mainContent),
+    queryFirst(githubHomeSelectors.rightSidebar),
+    queryFirst(githubHomeSelectors.rightColumn),
+  ];
+  const pageImageTargets = [
+    document.body,
+    document.documentElement,
+    queryFirst(githubHomeSelectors.dashboardRoot),
+    queryFirst(['.application-main', '#js-pjax-container', '[data-turbo-body]']),
+  ];
+  const backgroundImage = getCssBackgroundImage(appearance.backgroundImageUrl);
+
   if (typeof appearance.backgroundColor === 'string') {
     document.documentElement.style.setProperty('--git-reflow-page-background', appearance.backgroundColor);
 
-    const targets = [
-      document.body,
-      document.documentElement,
-      queryFirst(githubHomeSelectors.dashboardRoot),
-      queryFirst(['.application-main', '#js-pjax-container', '[data-turbo-body]']),
-      queryFirst(githubHomeSelectors.feedMain),
-      queryFirst(githubHomeSelectors.mainContent),
-      queryFirst(githubHomeSelectors.rightSidebar),
-      queryFirst(githubHomeSelectors.rightColumn),
-    ];
-
-    targets.forEach((target) => {
+    pageTargets.forEach((target) => {
       if (target instanceof HTMLElement) {
         target.classList.add(APPEARANCE_CLASS);
-        target.style.setProperty('background', appearance.backgroundColor, 'important');
         target.style.setProperty('background-color', appearance.backgroundColor, 'important');
+      }
+    });
+  }
+
+  if (backgroundImage) {
+    document.documentElement.style.setProperty('--git-reflow-page-background-image', backgroundImage);
+    document.documentElement.style.setProperty(
+      '--git-reflow-page-background-position',
+      getText(appearance.backgroundImagePosition, 'right top'),
+    );
+    document.documentElement.style.setProperty(
+      '--git-reflow-page-background-size',
+      getText(appearance.backgroundImageSize, '360px auto'),
+    );
+    document.documentElement.style.setProperty(
+      '--git-reflow-page-background-repeat',
+      getText(appearance.backgroundImageRepeat, 'no-repeat'),
+    );
+
+    pageImageTargets.forEach((target) => {
+      if (target instanceof HTMLElement) {
+        target.classList.add(APPEARANCE_CLASS);
+        target.style.setProperty('background-image', backgroundImage, 'important');
+        target.style.setProperty(
+          'background-position',
+          getText(appearance.backgroundImagePosition, 'right top'),
+          'important',
+        );
+        target.style.setProperty('background-size', getText(appearance.backgroundImageSize, '360px auto'), 'important');
+        target.style.setProperty(
+          'background-repeat',
+          getText(appearance.backgroundImageRepeat, 'no-repeat'),
+          'important',
+        );
       }
     });
   }
@@ -1112,6 +1164,10 @@ function applyPageAppearance(appearance) {
 
 function clearPageAppearance() {
   document.documentElement.style.removeProperty('--git-reflow-page-background');
+  document.documentElement.style.removeProperty('--git-reflow-page-background-image');
+  document.documentElement.style.removeProperty('--git-reflow-page-background-position');
+  document.documentElement.style.removeProperty('--git-reflow-page-background-size');
+  document.documentElement.style.removeProperty('--git-reflow-page-background-repeat');
   document.documentElement.style.removeProperty('--git-reflow-left-sidebar-background');
 
   [
@@ -1223,6 +1279,61 @@ function findRightSidebarCardRoot(element, regionRoot) {
   return findClosestSection(element);
 }
 
+function findContainingRegionInfo(element) {
+  if (!(element instanceof HTMLElement)) {
+    return null;
+  }
+
+  for (const [region, selectors] of Object.entries(regionContainers)) {
+    const regionRoot = queryFirst(selectors);
+
+    if (regionRoot instanceof HTMLElement && regionRoot.contains(element)) {
+      return { region, root: regionRoot };
+    }
+  }
+
+  return null;
+}
+
+function findContainingRegionRoot(element) {
+  return findContainingRegionInfo(element)?.root ?? null;
+}
+
+function getNativeBlockRegion(block) {
+  const registrySelectors = blockSelectorRegistry[block.type] ?? [];
+
+  for (const [region, selectors] of Object.entries(regionContainers)) {
+    if (registrySelectors.some((selector) => selectors.includes(selector))) {
+      return region;
+    }
+  }
+
+  const defaultRegions = {
+    'top-nav': 'topbar',
+    'profile-summary': 'left-sidebar',
+    'recent-repos': 'left-sidebar',
+    'copilot-prompt': 'main-feed',
+    'activity-feed': 'main-feed',
+    'repo-updates': 'right-sidebar',
+    'pinned-repos': 'right-sidebar',
+    'issue-pr-updates': 'right-sidebar',
+    'trending-repos': 'right-sidebar',
+    'recommended-repos': 'right-sidebar',
+  };
+
+  return defaultRegions[block.type] ?? block.region;
+}
+
+function getBlockRootFromMatchedElement(block, element, root) {
+  const containingRegion = findContainingRegionInfo(element);
+  const blockRoot = root instanceof HTMLElement && root !== document.body ? root : containingRegion?.root;
+  const currentRegion = containingRegion?.region;
+
+  return currentRegion === 'right-sidebar'
+    ? findRightSidebarCardRoot(element, blockRoot)
+    : findRegionBlockRoot(element, blockRoot);
+}
+
 function findElementByText(root, texts) {
   if (!(root instanceof Element) || !Array.isArray(texts) || texts.length === 0) {
     return null;
@@ -1241,33 +1352,72 @@ function findElementByText(root, texts) {
   return null;
 }
 
-function findBlockElement(block) {
+function findBlockElementInRoot(block, root) {
   const selectors = blockSelectorRegistry[block.type] ?? [];
-  const regionRoot = queryFirst(regionContainers[block.region] ?? []);
 
   for (const selector of selectors) {
-    const element = queryFirst([selector], regionRoot ?? document);
+    const element = queryFirst([selector], root ?? document);
 
     if (element instanceof HTMLElement) {
-      return isRightSidebarBlock(block)
-        ? findRightSidebarCardRoot(element, regionRoot)
-        : findRegionBlockRoot(element, regionRoot);
+      return getBlockRootFromMatchedElement(block, element, root);
     }
   }
 
-  const textMatched = findElementByText(regionRoot ?? document, blockTextMatchers[block.type]);
+  const textMatched = findElementByText(root ?? document, blockTextMatchers[block.type]);
   if (!(textMatched instanceof HTMLElement)) {
     return null;
   }
 
-  return isRightSidebarBlock(block)
-    ? findRightSidebarCardRoot(textMatched, regionRoot)
-    : findRegionBlockRoot(textMatched, regionRoot);
+  return getBlockRootFromMatchedElement(block, textMatched, root);
+}
+
+function findBlockElement(block) {
+  const existingGenerated = document.querySelector(
+    `.${GENERATED_BLOCK_CLASS}[data-git-reflow-block-id="${CSS.escape(block.id)}"]`,
+  );
+
+  if (existingGenerated instanceof HTMLElement) {
+    return existingGenerated;
+  }
+
+  const existingApplied = document.querySelector(
+    `.${BLOCK_CLASS}[data-git-reflow-block-id="${CSS.escape(block.id)}"]`,
+  );
+
+  if (existingApplied instanceof HTMLElement) {
+    return existingApplied;
+  }
+
+  const regionRoot = queryFirst(regionContainers[block.region] ?? []);
+  const nativeRegionRoot = queryFirst(regionContainers[getNativeBlockRegion(block)] ?? []);
+  const searchRoots = [regionRoot, nativeRegionRoot, document].filter(
+    (root, index, roots) => root && roots.indexOf(root) === index,
+  );
+
+  for (const root of searchRoots) {
+    const match = findBlockElementInRoot(block, root);
+
+    if (match instanceof HTMLElement) {
+      return match;
+    }
+  }
+
+  return null;
 }
 
 function getRegionContainer(region) {
   const container = queryFirst(regionContainers[region] ?? []);
   return container instanceof HTMLElement ? container : null;
+}
+
+function moveBlockElementToRegion(element, container, region) {
+  if (!(element instanceof HTMLElement) || !(container instanceof HTMLElement) || region === 'topbar') {
+    return;
+  }
+
+  if (!container.contains(element)) {
+    container.append(element);
+  }
 }
 
 function rememberText(element) {
@@ -1511,6 +1661,8 @@ function applyTemplateBlocks(template, generation) {
     clearAppearance(element);
     delete element.dataset.gitReflowBlockId;
     delete element.dataset.gitReflowBlockType;
+    delete element.dataset.gitReflowRegion;
+    delete element.dataset.gitReflowNativeRegion;
   });
   document.querySelectorAll('.git-reflow-region-container').forEach((element) => {
     element.classList.remove('git-reflow-region-container');
@@ -1548,9 +1700,15 @@ function applyTemplateBlocks(template, generation) {
         return;
       }
 
+      if (block.visible !== false) {
+        moveBlockElementToRegion(element, container, region);
+      }
+
       element.classList.add(BLOCK_CLASS);
       element.dataset.gitReflowBlockId = block.id;
       element.dataset.gitReflowBlockType = block.type;
+      element.dataset.gitReflowRegion = region;
+      element.dataset.gitReflowNativeRegion = getNativeBlockRegion(block);
       element.style.order = String(index);
       element.classList.toggle(HIDDEN_CLASS, block.visible === false);
 
@@ -1639,6 +1797,18 @@ function recordTemplateUsage(token, template) {
     templateName: template.name,
   }, token).catch(() => {
     // Usage stats should never block applying a preview.
+  });
+}
+
+function reapplyTemplateBlocksAfterGitHubHydration(template, generation) {
+  [350, 900, 1800, 3200].forEach((delay) => {
+    window.setTimeout(() => {
+      if (generation !== templateRenderGeneration) {
+        return;
+      }
+
+      applyTemplateBlocks(template, generation);
+    }, delay);
   });
 }
 
@@ -2227,6 +2397,7 @@ function applyTemplate(template) {
   applyMainColumnWidth(getTemplateMainColumnWidth(latestTemplate));
   applyRightSidebarWidth(getTemplateRightSidebarWidth(latestTemplate));
   applyTemplateBlocks(latestTemplate, generation);
+  reapplyTemplateBlocksAfterGitHubHydration(latestTemplate, generation);
   applyPageAppearance(latestTemplate.pageAppearance);
   if (latestTemplate.leftSidebarResizeEnabled === false) {
     removeLeftSidebarResizer();
@@ -2544,6 +2715,8 @@ function resetAppliedStyles() {
     clearAppearance(element);
     delete element.dataset.gitReflowBlockId;
     delete element.dataset.gitReflowBlockType;
+    delete element.dataset.gitReflowRegion;
+    delete element.dataset.gitReflowNativeRegion;
   });
   document.querySelectorAll('.git-reflow-region-container').forEach((element) => {
     element.classList.remove('git-reflow-region-container');
