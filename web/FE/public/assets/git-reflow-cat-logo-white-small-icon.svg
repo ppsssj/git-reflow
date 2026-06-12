@@ -1,0 +1,55 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <title>git-reflow minimal cat logo</title>
+  <desc>Minimal black cat-head logo with no facial features and an integrated Git branch tail.</desc>
+
+  <!-- Cat head silhouette -->
+  <path fill="#FFFFFF" d="
+    M280 356
+    L338 196
+    C345 176 372 172 384 190
+    L456 296
+    C493 288 531 288 568 296
+    L640 190
+    C652 172 679 176 686 196
+    L744 356
+    C798 413 828 490 828 572
+    C828 748 687 876 512 876
+    C337 876 196 748 196 572
+    C196 490 226 413 280 356
+    Z" />
+
+  <!-- Subtle cut to round lower silhouette slightly cleaner through transparent negative edge -->
+  <path fill="#FFFFFF" d="
+    M512 888
+    C350 888 220 781 181 634
+    C206 787 339 908 512 908
+    C685 908 818 787 843 634
+    C804 781 674 888 512 888
+    Z" opacity="1"/>
+
+  <!-- Integrated git-flow tail / branch -->
+  <path d="M704 672
+           C792 666 846 706 856 772
+           C866 842 815 892 748 892
+           C674 892 628 846 628 790"
+        stroke="#FFFFFF"
+        stroke-width="72"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
+
+  <!-- Git branch inner path as transparent negative space -->
+  <path d="M694 672
+           C776 672 818 708 824 760
+           C831 817 790 852 742 852
+           C690 852 668 818 668 790"
+        stroke="transparent"
+        stroke-width="28"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
+
+  <!-- Git nodes -->
+  <circle cx="704" cy="672" r="52" fill="#FFFFFF"/>
+  <circle cx="846" cy="772" r="52" fill="#FFFFFF"/>
+  <circle cx="748" cy="892" r="52" fill="#FFFFFF"/>
+
+</svg>
