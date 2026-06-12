@@ -15,7 +15,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["assets/logo512.png"],
+      "resources": ["assets/git-reflow-cat-logo-small-icon.svg"],
       "matches": ["https://github.com/*"]
     }
   ]

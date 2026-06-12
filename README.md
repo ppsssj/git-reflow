@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./assets/logo512.png" width="140" alt="git-reflow logo" />
+  <img src="./web/FE/public/assets/git-reflow-cat-logo.svg" width="140" alt="git-reflow logo" />
 </p>
 
 <h1 align="center">git-reflow</h1>

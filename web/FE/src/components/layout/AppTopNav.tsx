@@ -311,7 +311,7 @@ export function AppTopNav({
             <span className="topnav__logo-mark" aria-hidden="true">
               <img
                 className="topnav__logo"
-                src="/assets/logo512.png"
+                src="/assets/git-reflow-cat-logo-small-icon.svg"
                 alt=""
               />
             </span>
