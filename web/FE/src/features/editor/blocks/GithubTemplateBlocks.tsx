@@ -76,6 +76,10 @@ function getAppearanceStyle(block: TemplateBlock) {
     customStyle['--github-block-link-color'] = styles.linkColor;
   }
 
+  if (typeof styles.mutedTextColor === 'string' && styles.mutedTextColor) {
+    customStyle['--github-block-muted-text-color'] = styles.mutedTextColor;
+  }
+
   if (Number.isFinite(marginY)) {
     style.marginTop = `${marginY}px`;
     style.marginBottom = `${marginY}px`;

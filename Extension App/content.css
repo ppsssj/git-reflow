@@ -803,6 +803,33 @@ body.git-reflow-template-active #dashboard {
   background-size: var(--git-reflow-page-background-size, 360px auto) !important;
 }
 
+body.git-reflow-template-active .git-reflow-background-host {
+  position: relative !important;
+  isolation: isolate !important;
+  overflow: visible !important;
+}
+
+body.git-reflow-template-active .git-reflow-background-host > :not(.git-reflow-background-image-layer) {
+  position: relative;
+  z-index: 1;
+}
+
+body.git-reflow-template-active .git-reflow-background-image-layer {
+  position: absolute !important;
+  z-index: 0 !important;
+  display: block !important;
+  max-width: none !important;
+  height: auto !important;
+  pointer-events: none !important;
+  user-select: none !important;
+}
+
+body.git-reflow-template-active.git-reflow-has-background-image
+  :is(.application-main, #js-pjax-container, [data-turbo-body], .feed-background, feed-container, #dashboard, .feed-main, .feed-right-sidebar, .feed-right-column) {
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
 body.git-reflow-template-active .feed-left-sidebar {
   box-sizing: border-box !important;
   flex: 0 0 var(--git-reflow-left-sidebar-width, 320px) !important;
@@ -866,14 +893,14 @@ body.git-reflow-template-active .feed-right-column {
 
 .git-reflow-generated-block h2 {
   margin: 0;
-  color: var(--fgColor-default, #1f2328);
+  color: var(--git-reflow-block-text-color, var(--fgColor-default, #1f2328));
   font-size: 14px;
   font-weight: 600;
 }
 
 .git-reflow-generated-block p {
   margin: 0;
-  color: var(--fgColor-muted, #656d76);
+  color: var(--git-reflow-block-muted-text-color, var(--fgColor-muted, #656d76));
 }
 
 .git-reflow-block-list {
@@ -897,8 +924,18 @@ body.git-reflow-template-active .feed-right-column {
   text-decoration: none;
 }
 
+.git-reflow-block-row strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--git-reflow-block-link-color, var(--git-reflow-block-text-color, var(--fgColor-accent, #0969da)));
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .git-reflow-block-row span {
-  color: var(--fgColor-muted, #656d76);
+  flex: 0 0 auto;
+  color: var(--git-reflow-block-muted-text-color, var(--fgColor-muted, #656d76));
   font-size: 11px;
 }
 
@@ -993,6 +1030,25 @@ body.git-reflow-template-active .feed-right-column {
   color: var(--git-reflow-block-link-color, var(--git-reflow-block-text-color, var(--fgColor-accent, #0969da))) !important;
   font-family: var(--git-reflow-block-font-family, inherit) !important;
   font-size: var(--git-reflow-block-font-size, inherit) !important;
+}
+
+.git-reflow-template-block[data-git-reflow-block-type="recent-repos"]
+  :is(.mini-repo-list-item, .repo-and-owner, .repo, .owner, a, [role="link"]),
+.git-reflow-generated-block[data-git-reflow-block-type="recent-repos"] .git-reflow-block-row {
+  color: var(--git-reflow-block-link-color, var(--git-reflow-block-text-color, var(--fgColor-accent, #0969da))) !important;
+}
+
+.git-reflow-template-block[data-git-reflow-block-type="recent-repos"]
+  :is(.repo-icon, .owner, .stars, .repo-description, small, em),
+.git-reflow-generated-block[data-git-reflow-block-type="recent-repos"] .git-reflow-block-row span {
+  color: var(--git-reflow-block-muted-text-color, var(--git-reflow-block-text-color, var(--fgColor-muted, #656d76))) !important;
+}
+
+.git-reflow-template-block[data-git-reflow-block-type="recent-repos"]
+  :is(.mini-repo-list-item, .Box-row, li, [role="listitem"]),
+.git-reflow-generated-block[data-git-reflow-block-type="recent-repos"] .git-reflow-block-row {
+  background: transparent !important;
+  background-color: transparent !important;
 }
 
 .git-reflow-template-block :is(input, textarea, button, article, article > *, .Box, .Box-row, .js-feed-item-component, .js-feed-item-component > *, [class*="Card"], [class*="Box"], [class*="FeedItem"], [class*="feed-item"], [class*="TimelineItem"]) {

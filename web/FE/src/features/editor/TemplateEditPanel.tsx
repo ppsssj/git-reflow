@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react';
 import type { CSSProperties, PointerEvent } from 'react';
 import { Icon } from '../../components/ui/Icon';
 import type {
@@ -26,8 +27,11 @@ interface TemplateEditPanelProps {
   onUpdateBlock: (blockId: string, updates: Partial<TemplateBlock>) => void;
   onUpdateBlockProps: (blockId: string, props: Record<string, unknown>) => void;
   onMoveBlock: (blockId: string, direction: 'up' | 'down') => void;
+  onApplyQuickTheme: (themeId: QuickThemeId) => void;
   onReset: () => void;
 }
+
+export type QuickThemeId = 'github-light' | 'polished-blue' | 'polished-green' | 'polished-red';
 
 const regionLabels: Record<TemplateRegion, string> = {
   topbar: 'Topbar',
@@ -106,6 +110,33 @@ function clampItemLimit(value: string, fallback: number) {
 }
 
 const topbarActions = ['Copilot', 'Create', 'Issues', 'Pull requests', 'Repositories', 'Inbox'];
+
+const quickThemes: Array<{ id: QuickThemeId; label: string; description: string; colors: string[] }> = [
+  {
+    id: 'github-light',
+    label: 'GitHub Light',
+    description: 'Native GitHub spacing and light panels.',
+    colors: ['#ffffff', '#f6f8fa', '#0969da'],
+  },
+  {
+    id: 'polished-blue',
+    label: 'Polished Blue',
+    description: 'Dark blue starter with readable sidebars.',
+    colors: ['#0b1120', '#172033', '#f8fbff'],
+  },
+  {
+    id: 'polished-green',
+    label: 'Polished Green',
+    description: 'Calm green panels for the home layout.',
+    colors: ['#0d1b16', '#183329', '#f7fffb'],
+  },
+  {
+    id: 'polished-red',
+    label: 'Polished Red',
+    description: 'Warm dark red dashboard styling.',
+    colors: ['#1f1113', '#3a2024', '#fff8f9'],
+  },
+];
 
 interface BlockInspectorProps {
   block: TemplateBlock;
@@ -296,9 +327,16 @@ export function TemplateEditPanel({
   onUpdateBlock,
   onUpdateBlockProps,
   onMoveBlock,
+  onApplyQuickTheme,
   onReset,
 }: TemplateEditPanelProps) {
+  const [editMode, setEditMode] = useState<'simple' | 'advanced'>('simple');
   const selectedBlock = layout.blocks.find((block) => block.id === selectedBlockId) ?? layout.blocks[0];
+  const activeScreenBlocks = useMemo(
+    () => layout.blocks.filter((block) => getBlockScreenId(layout, block) === layout.activeScreenId),
+    [layout],
+  );
+  const visibleBlocks = activeScreenBlocks.filter((block) => block.visible);
 
   if (!selectedBlock) {
     return null;
@@ -380,11 +418,65 @@ export function TemplateEditPanel({
     window.addEventListener('pointercancel', handlePointerUp);
   };
 
+  const renderBlockRows = (region: TemplateRegion, compact = false) => (
+    <div className="block-control-group" key={region}>
+      {!compact ? <h2>{regionLabels[region]}</h2> : null}
+      {getRegionBlocks(layout, region).map((block) => {
+        const { canMoveDown, canMoveUp } = getMoveState(layout, block);
+
+        return (
+          <div
+            className={['block-control-row', compact ? 'is-compact' : '', block.id === selectedBlockId ? 'is-selected' : '']
+              .join(' ')
+              .trim()}
+            key={block.id}
+          >
+            <button
+              className="block-control-row__select"
+              type="button"
+              onClick={() => onSelectBlock(block.id)}
+            >
+              <Icon name={block.visible ? 'check_box' : 'check_box_outline_blank'} />
+              <span>{block.title}</span>
+            </button>
+            <div className="block-control-row__actions">
+              <button
+                aria-label={`${block.visible ? 'Hide' : 'Show'} ${block.title}`}
+                aria-pressed={block.visible}
+                disabled={readOnly}
+                type="button"
+                onClick={() => onToggleBlock(block.id)}
+              >
+                <Icon name={block.visible ? 'visibility' : 'visibility_off'} />
+              </button>
+              <button
+                aria-label={`Move ${block.title} up`}
+                disabled={readOnly || !canMoveUp}
+                type="button"
+                onClick={() => onMoveBlock(block.id, 'up')}
+              >
+                <Icon name="keyboard_arrow_up" />
+              </button>
+              <button
+                aria-label={`Move ${block.title} down`}
+                disabled={readOnly || !canMoveDown}
+                type="button"
+                onClick={() => onMoveBlock(block.id, 'down')}
+              >
+                <Icon name="keyboard_arrow_down" />
+              </button>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+
   return (
     <aside className="layout-edit-panel">
       <div className="layout-edit-panel__header">
         <div>
-          <span>Layout Builder</span>
+          <span>{editMode === 'simple' ? 'Quick Editor' : 'Advanced Editor'}</span>
           <strong>{layout.name}</strong>
         </div>
         <button disabled={readOnly} type="button" onClick={onReset}>
@@ -393,62 +485,129 @@ export function TemplateEditPanel({
         </button>
       </div>
 
+      <div className="layout-edit-panel__mode-switch" role="tablist" aria-label="Editor mode">
+        <button
+          aria-selected={editMode === 'simple'}
+          className={editMode === 'simple' ? 'is-active' : ''}
+          role="tab"
+          type="button"
+          onClick={() => setEditMode('simple')}
+        >
+          Simple
+        </button>
+        <button
+          aria-selected={editMode === 'advanced'}
+          className={editMode === 'advanced' ? 'is-active' : ''}
+          role="tab"
+          type="button"
+          onClick={() => setEditMode('advanced')}
+        >
+          Advanced
+        </button>
+      </div>
+
+      <section className="layout-edit-panel__section layout-edit-panel__section--summary">
+        <p>What You Are Editing</p>
+        <div className="editor-focus-card">
+          <span>{selectedBlock.visible ? 'Visible block' : 'Hidden block'}</span>
+          <strong>{selectedBlock.title}</strong>
+          <em>{regionLabels[selectedBlock.region]} · {selectedBlock.type}</em>
+        </div>
+        <div className="editor-stat-row">
+          <span>
+            <strong>{visibleBlocks.length}</strong>
+            visible
+          </span>
+          <span>
+            <strong>{activeScreenBlocks.length}</strong>
+            blocks
+          </span>
+          <span>
+            <strong>{selectedVariationId === 'feed-two-column' ? '2 col' : 'default'}</strong>
+            feed
+          </span>
+        </div>
+      </section>
+
+      {editMode === 'simple' ? (
+        <>
+          <section className="layout-edit-panel__section">
+            <p>Quick Theme</p>
+            <div className="quick-theme-grid">
+              {quickThemes.map((theme) => (
+                <button
+                  disabled={readOnly}
+                  key={theme.id}
+                  type="button"
+                  onClick={() => onApplyQuickTheme(theme.id)}
+                >
+                  <span aria-hidden="true">
+                    {theme.colors.map((color) => (
+                      <i key={color} style={{ background: color }} />
+                    ))}
+                  </span>
+                  <strong>{theme.label}</strong>
+                  <em>{theme.description}</em>
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <section className="layout-edit-panel__section">
+            <p>Show And Order</p>
+            <div className="block-control-groups block-control-groups--simple">
+              {layout.regions.map((region) => renderBlockRows(region, true))}
+            </div>
+          </section>
+
+          <section className="layout-edit-panel__section">
+            <p>Selected Block Content</p>
+            <BlockInspector
+              block={selectedBlock}
+              readOnly={readOnly}
+              onUpdateBlock={onUpdateBlock}
+              onUpdateBlockProps={onUpdateBlockProps}
+            />
+          </section>
+
+          <section className="layout-edit-panel__section">
+            <p>Column Width</p>
+            <div className="column-layout-control column-layout-control--simple">
+              <div className="column-layout-map" style={columnMapStyle}>
+                <div className="column-layout-map__region is-left">
+                  <span>Left</span>
+                </div>
+                <button
+                  aria-label="Resize left and main columns"
+                  className="column-layout-map__handle is-left-main"
+                  disabled={readOnly}
+                  type="button"
+                  onPointerDown={(event) => handleColumnDragStart('left-main', event)}
+                />
+                <div className="column-layout-map__region is-main">
+                  <span>Main</span>
+                </div>
+                <button
+                  aria-label="Resize main and right columns"
+                  className="column-layout-map__handle is-main-right"
+                  disabled={readOnly}
+                  type="button"
+                  onPointerDown={(event) => handleColumnDragStart('main-right', event)}
+                />
+                <div className="column-layout-map__region is-right">
+                  <span>Right</span>
+                </div>
+              </div>
+            </div>
+          </section>
+        </>
+      ) : (
+        <>
+
       <section className="layout-edit-panel__section">
         <p>Blocks</p>
         <div className="block-control-groups">
-          {layout.regions.map((region) => (
-            <div className="block-control-group" key={region}>
-              <h2>{regionLabels[region]}</h2>
-              {getRegionBlocks(layout, region).map((block) => {
-                const { canMoveDown, canMoveUp } = getMoveState(layout, block);
-
-                return (
-                  <div
-                    className={['block-control-row', block.id === selectedBlockId ? 'is-selected' : '']
-                      .join(' ')
-                      .trim()}
-                    key={block.id}
-                  >
-                    <button
-                      className="block-control-row__select"
-                      type="button"
-                      onClick={() => onSelectBlock(block.id)}
-                    >
-                      <Icon name={block.visible ? 'check_box' : 'check_box_outline_blank'} />
-                      <span>{block.title}</span>
-                    </button>
-                    <div className="block-control-row__actions">
-                      <button
-                        aria-label={`${block.visible ? 'Hide' : 'Show'} ${block.title}`}
-                        aria-pressed={block.visible}
-                        disabled={readOnly}
-                        type="button"
-                        onClick={() => onToggleBlock(block.id)}
-                      >
-                        <Icon name={block.visible ? 'visibility' : 'visibility_off'} />
-                      </button>
-                      <button
-                        aria-label={`Move ${block.title} up`}
-                        disabled={readOnly || !canMoveUp}
-                        type="button"
-                        onClick={() => onMoveBlock(block.id, 'up')}
-                      >
-                        <Icon name="keyboard_arrow_up" />
-                      </button>
-                      <button
-                        aria-label={`Move ${block.title} down`}
-                        disabled={readOnly || !canMoveDown}
-                        type="button"
-                        onClick={() => onMoveBlock(block.id, 'down')}
-                      >
-                        <Icon name="keyboard_arrow_down" />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ))}
+          {layout.regions.map((region) => renderBlockRows(region))}
         </div>
       </section>
 
@@ -563,6 +722,8 @@ export function TemplateEditPanel({
         <p>Persist Later</p>
         <textarea aria-label="Serialized template layout" readOnly value={serializedLayout} />
       </section>
+        </>
+      )}
     </aside>
   );
 }

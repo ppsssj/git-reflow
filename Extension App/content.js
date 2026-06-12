@@ -10,6 +10,9 @@ const LAYOUT_CLASS = 'git-reflow-template-active';
 const HIDDEN_CLASS = 'git-reflow-template-hidden';
 const ORIGINAL_TEXT_ATTR = 'data-git-reflow-original-text';
 const ORIGINAL_PLACEHOLDER_ATTR = 'data-git-reflow-original-placeholder';
+const BACKGROUND_IMAGE_LAYER_ID = 'git-reflow-background-image-layer';
+const BACKGROUND_IMAGE_FRAME_WIDTH = 1120;
+const BACKGROUND_IMAGE_FRAME_HEIGHT = 760;
 const LEFT_WIDTH_STORAGE_KEY = 'gitReflowLeftSidebarWidthPx';
 const AUTH_TOKEN_STORAGE_KEY = 'gitReflowAuthToken';
 const SELECTED_TEMPLATE_STORAGE_KEY = 'gitReflowSelectedTemplateId';
@@ -47,6 +50,9 @@ const STARTER_TEMPLATE_THEMES = [
     description: 'A soft blue GitHub Home preset with dark panels, compact spacing, and readable content groups.',
     pageBackgroundColor: '#0b1120',
     leftSidebarBackgroundColor: '#0f172a',
+    textColor: '#e5edf7',
+    linkColor: '#f8fbff',
+    mutedTextColor: '#a9b8cf',
     colors: {
       topbar: '#101827',
       panel: '#172033',
@@ -61,6 +67,9 @@ const STARTER_TEMPLATE_THEMES = [
     description: 'A soft green GitHub Home preset with calm panels, compact spacing, and readable content groups.',
     pageBackgroundColor: '#0d1b16',
     leftSidebarBackgroundColor: '#10261f',
+    textColor: '#e4f7ec',
+    linkColor: '#f7fffb',
+    mutedTextColor: '#a8c8b8',
     colors: {
       topbar: '#10231c',
       panel: '#183329',
@@ -75,6 +84,9 @@ const STARTER_TEMPLATE_THEMES = [
     description: 'A soft red GitHub Home preset with warm panels, compact spacing, and readable content groups.',
     pageBackgroundColor: '#1f1113',
     leftSidebarBackgroundColor: '#2a171a',
+    textColor: '#ffe7eb',
+    linkColor: '#fff8f9',
+    mutedTextColor: '#e0aeb8',
     colors: {
       topbar: '#2a171a',
       panel: '#3a2024',
@@ -393,6 +405,8 @@ function createStarterBlockAppearances(theme) {
       padding: 12,
       elementGap: 10,
       fontSize: 13,
+      textColor: theme.textColor,
+      linkColor: theme.linkColor,
     },
     'profile-summary': {
       backgroundColor: theme.colors.panel,
@@ -401,6 +415,8 @@ function createStarterBlockAppearances(theme) {
       padding: 14,
       marginY: 8,
       fontSize: 14,
+      textColor: theme.textColor,
+      linkColor: theme.linkColor,
     },
     'recent-repos': {
       backgroundColor: theme.colors.panel,
@@ -409,6 +425,9 @@ function createStarterBlockAppearances(theme) {
       padding: 16,
       elementGap: 10,
       fontSize: 14,
+      textColor: theme.textColor,
+      linkColor: theme.linkColor,
+      mutedTextColor: theme.mutedTextColor,
     },
     'copilot-prompt': {
       backgroundColor: theme.colors.panelSoft,
@@ -418,6 +437,8 @@ function createStarterBlockAppearances(theme) {
       marginY: 10,
       elementGap: 12,
       fontSize: 15,
+      textColor: theme.textColor,
+      linkColor: theme.linkColor,
     },
     'activity-feed': {
       backgroundColor: theme.colors.mainPanel,
@@ -427,6 +448,8 @@ function createStarterBlockAppearances(theme) {
       marginY: 10,
       elementGap: 14,
       fontSize: 14,
+      textColor: theme.textColor,
+      linkColor: theme.linkColor,
     },
     'repo-updates': {
       backgroundColor: theme.colors.panel,
@@ -435,6 +458,8 @@ function createStarterBlockAppearances(theme) {
       padding: 16,
       marginY: 10,
       elementGap: 12,
+      textColor: theme.textColor,
+      linkColor: theme.linkColor,
     },
     'trending-repos': {
       backgroundColor: theme.colors.panel,
@@ -444,6 +469,9 @@ function createStarterBlockAppearances(theme) {
       marginY: 8,
       elementGap: 12,
       fontSize: 13,
+      textColor: theme.textColor,
+      linkColor: theme.linkColor,
+      mutedTextColor: theme.mutedTextColor,
     },
   };
 }
@@ -616,6 +644,80 @@ function getCssBackgroundImage(value) {
   return `url("${value.trim().replace(/"/g, '\\"')}")`;
 }
 
+function getBackgroundImageLayerHost() {
+  return (
+    queryFirst(githubHomeSelectors.dashboardRoot) ??
+    queryFirst(['.application-main', '#js-pjax-container', '[data-turbo-body]']) ??
+    document.body
+  );
+}
+
+function getBackgroundImageLayerStyle(position, size) {
+  const widthMatch = typeof size === 'string' ? size.match(/^(\d+)px\s+auto$/) : null;
+  const width = widthMatch ? Number(widthMatch[1]) : 420;
+  const pixelPositionMatch = typeof position === 'string' ? position.match(/^(-?\d+(?:\.\d+)?)px\s+(-?\d+(?:\.\d+)?)px$/) : null;
+  const x = pixelPositionMatch ? Number(pixelPositionMatch[1]) : (BACKGROUND_IMAGE_FRAME_WIDTH - width) / 2;
+  const y = pixelPositionMatch ? Number(pixelPositionMatch[2]) : 120;
+
+  return {
+    left: `${(x / BACKGROUND_IMAGE_FRAME_WIDTH) * 100}%`,
+    top: `${(y / BACKGROUND_IMAGE_FRAME_HEIGHT) * 100}%`,
+    width: `${(width / BACKGROUND_IMAGE_FRAME_WIDTH) * 100}%`,
+  };
+}
+
+function removeBackgroundImageLayer() {
+  document.getElementById(BACKGROUND_IMAGE_LAYER_ID)?.remove();
+  document.body.classList.remove('git-reflow-has-background-image');
+  document
+    .querySelectorAll('.git-reflow-background-host')
+    .forEach((target) => target.classList.remove('git-reflow-background-host'));
+}
+
+function applyBackgroundImageLayer(appearance) {
+  const imageUrl = getText(appearance?.backgroundImageUrl, '');
+
+  if (!imageUrl) {
+    removeBackgroundImageLayer();
+    return;
+  }
+
+  const host = getBackgroundImageLayerHost();
+
+  if (!(host instanceof HTMLElement)) {
+    return;
+  }
+
+  let imageLayer = document.getElementById(BACKGROUND_IMAGE_LAYER_ID);
+
+  if (!(imageLayer instanceof HTMLImageElement)) {
+    imageLayer?.remove();
+    imageLayer = document.createElement('img');
+    imageLayer.id = BACKGROUND_IMAGE_LAYER_ID;
+    imageLayer.className = 'git-reflow-background-image-layer';
+    imageLayer.alt = '';
+    imageLayer.decoding = 'async';
+    imageLayer.draggable = false;
+    imageLayer.setAttribute('aria-hidden', 'true');
+  }
+
+  const layerStyle = getBackgroundImageLayerStyle(
+    getText(appearance.backgroundImagePosition, 'right top'),
+    getText(appearance.backgroundImageSize, '360px auto'),
+  );
+
+  host.classList.add('git-reflow-background-host');
+  document.body.classList.add('git-reflow-has-background-image');
+  imageLayer.src = imageUrl;
+  imageLayer.style.setProperty('left', layerStyle.left, 'important');
+  imageLayer.style.setProperty('top', layerStyle.top, 'important');
+  imageLayer.style.setProperty('width', layerStyle.width, 'important');
+
+  if (imageLayer.parentElement !== host) {
+    host.prepend(imageLayer);
+  }
+}
+
 function getArray(value) {
   return Array.isArray(value) ? value : [];
 }
@@ -691,6 +793,10 @@ function applyAppearance(element, appearance) {
     element.style.setProperty('--git-reflow-block-link-color', appearance.linkColor);
   }
 
+  if (typeof appearance.mutedTextColor === 'string') {
+    element.style.setProperty('--git-reflow-block-muted-text-color', appearance.mutedTextColor);
+  }
+
   if (Number.isFinite(marginY)) {
     element.style.marginTop = `${Math.max(0, Math.min(48, marginY))}px`;
     element.style.marginBottom = `${Math.max(0, Math.min(48, marginY))}px`;
@@ -751,6 +857,7 @@ function clearAppearance(element) {
   element.style.removeProperty('--git-reflow-block-inner-background');
   element.style.removeProperty('--git-reflow-block-text-color');
   element.style.removeProperty('--git-reflow-block-link-color');
+  element.style.removeProperty('--git-reflow-block-muted-text-color');
   element.style.removeProperty('--git-reflow-block-padding');
   element.style.removeProperty('--git-reflow-block-gap');
   element.style.removeProperty('--git-reflow-block-font-family');
@@ -1144,6 +1251,9 @@ function applyPageAppearance(appearance) {
         );
       }
     });
+    applyBackgroundImageLayer(appearance);
+  } else {
+    removeBackgroundImageLayer();
   }
 
   if (typeof appearance.leftSidebarBackgroundColor === 'string') {
@@ -1163,6 +1273,7 @@ function applyPageAppearance(appearance) {
 }
 
 function clearPageAppearance() {
+  removeBackgroundImageLayer();
   document.documentElement.style.removeProperty('--git-reflow-page-background');
   document.documentElement.style.removeProperty('--git-reflow-page-background-image');
   document.documentElement.style.removeProperty('--git-reflow-page-background-position');
@@ -1467,9 +1578,9 @@ function createRepoList(repositories = []) {
 
   repositories.forEach((repo) => {
     const item = document.createElement('a');
-    item.href = `/${encodeURIComponent(getText(repo.name, 'repository')).replace('%2F', '/')}`;
+    item.href = getText(repo.href) || `/${encodeURIComponent(getText(repo.name, 'repository')).replace('%2F', '/')}`;
     item.className = 'git-reflow-block-row';
-    item.textContent = getText(repo.name, 'Repository');
+    item.append(createTextElement('strong', getText(repo.name, 'Repository')));
 
     const meta = getText(repo.visibility || repo.language || repo.reason || repo.stars);
     if (meta) {
@@ -1556,6 +1667,131 @@ function getOrCreateGeneratedBlock(block) {
   }
 
   return createGeneratedBlock(block);
+}
+
+function shouldRenderGeneratedBlock(block) {
+  const props = isObject(block?.props) ? block.props : {};
+
+  return block?.type === 'recent-repos' && getArray(props.repositories).length > 0;
+}
+
+function getRepositoryNameFromHref(href) {
+  try {
+    const url = new URL(href, window.location.origin);
+    const parts = url.pathname.split('/').filter(Boolean);
+
+    return parts.length >= 2 ? `${parts[0]}/${parts[1]}` : '';
+  } catch {
+    return '';
+  }
+}
+
+function getNativeRecentReposBlock(block, element) {
+  if (block?.type !== 'recent-repos' || !(element instanceof HTMLElement)) {
+    return block;
+  }
+
+  const repositories = [];
+  const seen = new Set();
+
+  element.querySelectorAll('a[href]').forEach((link) => {
+    if (!(link instanceof HTMLAnchorElement)) {
+      return;
+    }
+
+    const hrefName = getRepositoryNameFromHref(link.href);
+    if (!hrefName || seen.has(hrefName)) {
+      return;
+    }
+
+    const label = link.textContent?.replace(/\s+/g, ' ').trim();
+    const displayName = label && !['New', 'Show more'].includes(label) ? label : hrefName;
+
+    repositories.push({ name: displayName, href: `/${hrefName}` });
+    seen.add(hrefName);
+  });
+
+  if (repositories.length === 0) {
+    return block;
+  }
+
+  const props = isObject(block.props) ? block.props : {};
+  const input = element.querySelector('input[type="text"], input[type="search"], input');
+  const searchPlaceholder =
+    input instanceof HTMLInputElement
+      ? getText(input.getAttribute('placeholder'), getText(props.searchPlaceholder, 'Find a repository...'))
+      : getText(props.searchPlaceholder, 'Find a repository...');
+
+  return {
+    ...block,
+    props: {
+      ...props,
+      searchPlaceholder,
+      repositories,
+    },
+  };
+}
+
+function hideNativeRecentRepoBlocks(excludedElement) {
+  const sidebarRoot = queryFirst(githubHomeSelectors.leftSidebarContent);
+
+  if (!(sidebarRoot instanceof HTMLElement)) {
+    return;
+  }
+
+  const roots = new Set();
+  const addNativeRoot = (candidate) => {
+    if (!(candidate instanceof HTMLElement)) {
+      return;
+    }
+
+    const generatedAncestor = candidate.closest(`.${GENERATED_BLOCK_CLASS}`);
+    if (generatedAncestor || candidate === excludedElement || candidate.contains(excludedElement)) {
+      return;
+    }
+
+    const root = findRegionBlockRoot(candidate, sidebarRoot);
+    if (!(root instanceof HTMLElement) || root === sidebarRoot || root.classList.contains(GENERATED_BLOCK_CLASS)) {
+      return;
+    }
+
+    if (root === excludedElement || root.contains(excludedElement)) {
+      return;
+    }
+
+    roots.add(root);
+  };
+
+  sidebarRoot
+    .querySelectorAll('.js-repos-container, [data-filterable-for]')
+    .forEach(addNativeRoot);
+
+  sidebarRoot
+    .querySelectorAll('h1, h2, h3, h4, strong, span, div')
+    .forEach((candidate) => {
+      const content = candidate.textContent?.replace(/\s+/g, ' ').trim() ?? '';
+
+      if (content.includes('Top Repositories') || content.includes('Top repositories')) {
+        addNativeRoot(candidate);
+      }
+    });
+
+  Array.from(sidebarRoot.children).forEach((child) => {
+    if (!(child instanceof HTMLElement) || child.classList.contains(GENERATED_BLOCK_CLASS)) {
+      return;
+    }
+
+    const content = child.textContent?.replace(/\s+/g, ' ').trim() ?? '';
+    const hasRepoLink = Array.from(child.querySelectorAll('a[href]')).some(
+      (link) => link instanceof HTMLAnchorElement && Boolean(getRepositoryNameFromHref(link.href)),
+    );
+
+    if (hasRepoLink && content.includes('Top Repositories')) {
+      roots.add(child);
+    }
+  });
+
+  roots.forEach((root) => root.classList.add(HIDDEN_CLASS));
 }
 
 function applyTopbarProps(block) {
@@ -1690,6 +1926,21 @@ function applyTemplateBlocks(template, generation) {
 
     regionBlocks.forEach((block, index) => {
       let element = findBlockElement(block);
+      const useGeneratedBlock = shouldRenderGeneratedBlock(block);
+
+      if (useGeneratedBlock) {
+        const generatedBlock = getNativeRecentReposBlock(block, element);
+
+        if (element instanceof HTMLElement && !element.classList.contains(GENERATED_BLOCK_CLASS)) {
+          element.classList.add(HIDDEN_CLASS);
+        }
+
+        if (block.visible !== false && block.type !== 'top-nav' && container) {
+          element = getOrCreateGeneratedBlock(generatedBlock);
+          container.append(element);
+          hideNativeRecentRepoBlocks(element);
+        }
+      }
 
       if (!(element instanceof HTMLElement) && block.visible !== false && block.type !== 'top-nav' && container) {
         element = getOrCreateGeneratedBlock(block);
@@ -2695,6 +2946,7 @@ function resetAppliedStyles() {
   templateRenderGeneration += 1;
   customLeftSidebarWidthPx = null;
   clearStoredLeftSidebarWidth();
+  removeBackgroundImageLayer();
   document.body.classList.remove(LAYOUT_CLASS);
   document.body.classList.remove('git-reflow-feed-two-column');
   document.documentElement.style.removeProperty('--feed-sidebar');
@@ -2702,6 +2954,10 @@ function resetAppliedStyles() {
   document.documentElement.style.removeProperty('--git-reflow-main-column-width');
   document.documentElement.style.removeProperty('--git-reflow-right-sidebar-width');
   document.documentElement.style.removeProperty('--git-reflow-page-background');
+  document.documentElement.style.removeProperty('--git-reflow-page-background-image');
+  document.documentElement.style.removeProperty('--git-reflow-page-background-position');
+  document.documentElement.style.removeProperty('--git-reflow-page-background-size');
+  document.documentElement.style.removeProperty('--git-reflow-page-background-repeat');
   document.documentElement.style.removeProperty('--git-reflow-left-sidebar-background');
   removeLeftSidebarResizer();
   document.querySelectorAll(`.${GENERATED_BLOCK_CLASS}`).forEach((element) => element.remove());

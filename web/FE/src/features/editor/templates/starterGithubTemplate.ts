@@ -9,6 +9,9 @@ interface StarterTheme {
   description: string;
   pageBackgroundColor: string;
   leftSidebarBackgroundColor: string;
+  textColor: string;
+  linkColor: string;
+  mutedTextColor: string;
   colors: {
     topbar: string;
     panel: string;
@@ -25,6 +28,9 @@ const starterThemes: StarterTheme[] = [
     description: 'A soft blue GitHub Home preset with dark panels, compact spacing, and readable content groups.',
     pageBackgroundColor: '#0b1120',
     leftSidebarBackgroundColor: '#0f172a',
+    textColor: '#e5edf7',
+    linkColor: '#f8fbff',
+    mutedTextColor: '#a9b8cf',
     colors: {
       topbar: '#101827',
       panel: '#172033',
@@ -39,6 +45,9 @@ const starterThemes: StarterTheme[] = [
     description: 'A soft green GitHub Home preset with calm panels, compact spacing, and readable content groups.',
     pageBackgroundColor: '#0d1b16',
     leftSidebarBackgroundColor: '#10261f',
+    textColor: '#e4f7ec',
+    linkColor: '#f7fffb',
+    mutedTextColor: '#a8c8b8',
     colors: {
       topbar: '#10231c',
       panel: '#183329',
@@ -53,6 +62,9 @@ const starterThemes: StarterTheme[] = [
     description: 'A soft red GitHub Home preset with warm panels, compact spacing, and readable content groups.',
     pageBackgroundColor: '#1f1113',
     leftSidebarBackgroundColor: '#2a171a',
+    textColor: '#ffe7eb',
+    linkColor: '#fff8f9',
+    mutedTextColor: '#e0aeb8',
     colors: {
       topbar: '#2a171a',
       panel: '#3a2024',
@@ -72,6 +84,8 @@ function createBlockAppearances(theme: StarterTheme): Partial<Record<TemplateBlo
       padding: 12,
       elementGap: 10,
       fontSize: 13,
+      textColor: theme.textColor,
+      linkColor: theme.linkColor,
     },
     'profile-summary': {
       backgroundColor: theme.colors.panel,
@@ -80,6 +94,8 @@ function createBlockAppearances(theme: StarterTheme): Partial<Record<TemplateBlo
       padding: 14,
       marginY: 8,
       fontSize: 14,
+      textColor: theme.textColor,
+      linkColor: theme.linkColor,
     },
     'recent-repos': {
       backgroundColor: theme.colors.panel,
@@ -88,6 +104,9 @@ function createBlockAppearances(theme: StarterTheme): Partial<Record<TemplateBlo
       padding: 16,
       elementGap: 10,
       fontSize: 14,
+      textColor: theme.textColor,
+      linkColor: theme.linkColor,
+      mutedTextColor: theme.mutedTextColor,
     },
     'copilot-prompt': {
       backgroundColor: theme.colors.panelSoft,
@@ -97,6 +116,8 @@ function createBlockAppearances(theme: StarterTheme): Partial<Record<TemplateBlo
       marginY: 10,
       elementGap: 12,
       fontSize: 15,
+      textColor: theme.textColor,
+      linkColor: theme.linkColor,
     },
     'activity-feed': {
       backgroundColor: theme.colors.mainPanel,
@@ -106,6 +127,8 @@ function createBlockAppearances(theme: StarterTheme): Partial<Record<TemplateBlo
       marginY: 10,
       elementGap: 14,
       fontSize: 14,
+      textColor: theme.textColor,
+      linkColor: theme.linkColor,
     },
     'repo-updates': {
       backgroundColor: theme.colors.panel,
@@ -114,6 +137,8 @@ function createBlockAppearances(theme: StarterTheme): Partial<Record<TemplateBlo
       padding: 16,
       marginY: 10,
       elementGap: 12,
+      textColor: theme.textColor,
+      linkColor: theme.linkColor,
     },
     'trending-repos': {
       backgroundColor: theme.colors.panel,
@@ -123,6 +148,9 @@ function createBlockAppearances(theme: StarterTheme): Partial<Record<TemplateBlo
       marginY: 8,
       elementGap: 12,
       fontSize: 13,
+      textColor: theme.textColor,
+      linkColor: theme.linkColor,
+      mutedTextColor: theme.mutedTextColor,
     },
   };
 }

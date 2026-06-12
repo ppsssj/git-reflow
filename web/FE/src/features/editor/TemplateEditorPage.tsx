@@ -1,4 +1,4 @@
-import type { CSSProperties, FormEvent, WheelEvent } from 'react';
+import type { CSSProperties, FormEvent, PointerEvent, WheelEvent } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AppTopNav } from '../../components/layout/AppTopNav';
@@ -16,6 +16,7 @@ import type {
   TemplateRecord,
 } from '../../types/template';
 import { TemplateEditPanel } from './TemplateEditPanel';
+import type { QuickThemeId } from './TemplateEditPanel';
 import { TemplateLayoutCanvas } from './TemplateLayoutCanvas';
 import { defaultGithubTemplate } from './templates/defaultGithubTemplate';
 import {
@@ -43,8 +44,12 @@ const regionLabels: Record<TemplateRegion, string> = {
 const MIN_CANVAS_ZOOM = 0.5;
 const MAX_CANVAS_ZOOM = 2;
 const CANVAS_ZOOM_STEP = 0.1;
-const STYLE_MENU_WIDTH = 260;
+const STYLE_MENU_WIDTH = 328;
 const STYLE_MENU_VISIBLE_GUTTER = 12;
+const BACKGROUND_EDITOR_FRAME_WIDTH = 1120;
+const BACKGROUND_EDITOR_FRAME_HEIGHT = 760;
+const BACKGROUND_IMAGE_MAX_SOURCE_EDGE = 1800;
+const BACKGROUND_IMAGE_MAX_INLINE_LENGTH = 850_000;
 const DEFAULT_COLUMN_LAYOUT: TemplateColumnLayout = {
   left: 320,
   main: 900,
@@ -554,6 +559,107 @@ export function TemplateEditorPage() {
     }));
   };
 
+  const handleApplyQuickTheme = (themeId: QuickThemeId) => {
+    if (isNetworkPreview) {
+      return;
+    }
+
+    const themes: Record<QuickThemeId, {
+      page: Record<string, unknown>;
+      topbar: Record<string, unknown>;
+      panel: Record<string, unknown>;
+      panelSoft: Record<string, unknown>;
+      main: Record<string, unknown>;
+    }> = {
+      'github-light': {
+        page: {
+          backgroundColor: '#f6f8fa',
+          leftSidebarBackgroundColor: '#ffffff',
+          backgroundImageUrl: '',
+          backgroundImageName: '',
+        },
+        topbar: {
+          backgroundColor: '#24292f',
+          innerBackgroundColor: '#32383f',
+          textColor: '#f0f6fc',
+          linkColor: '#ffffff',
+          borderRadius: 0,
+          padding: 12,
+          elementGap: 10,
+          fontSize: 13,
+        },
+        panel: {
+          backgroundColor: '#ffffff',
+          innerBackgroundColor: '#f6f8fa',
+          textColor: '#24292f',
+          linkColor: '#0969da',
+          mutedTextColor: '#57606a',
+          borderRadius: 8,
+          padding: 12,
+          elementGap: 8,
+          fontSize: 14,
+        },
+        panelSoft: {
+          backgroundColor: '#ffffff',
+          innerBackgroundColor: '#f6f8fa',
+          textColor: '#24292f',
+          linkColor: '#0969da',
+          mutedTextColor: '#57606a',
+          borderRadius: 10,
+          padding: 14,
+          elementGap: 10,
+          fontSize: 14,
+        },
+        main: {
+          backgroundColor: '#f6f8fa',
+          innerBackgroundColor: '#ffffff',
+          textColor: '#24292f',
+          linkColor: '#0969da',
+          mutedTextColor: '#57606a',
+          borderRadius: 10,
+          padding: 14,
+          elementGap: 12,
+          fontSize: 14,
+        },
+      },
+      'polished-blue': {
+        page: { backgroundColor: '#0b1120', leftSidebarBackgroundColor: '#0f172a', backgroundImageUrl: '', backgroundImageName: '' },
+        topbar: { backgroundColor: '#101827', innerBackgroundColor: '#172033', textColor: '#e5edf7', linkColor: '#f8fbff', borderRadius: 0, padding: 12, elementGap: 10, fontSize: 13 },
+        panel: { backgroundColor: '#172033', innerBackgroundColor: '#22304a', textColor: '#e5edf7', linkColor: '#f8fbff', mutedTextColor: '#a9b8cf', borderRadius: 14, padding: 16, elementGap: 10, fontSize: 14 },
+        panelSoft: { backgroundColor: '#22304a', innerBackgroundColor: '#101827', textColor: '#e5edf7', linkColor: '#f8fbff', mutedTextColor: '#a9b8cf', borderRadius: 18, padding: 18, elementGap: 12, fontSize: 15 },
+        main: { backgroundColor: '#111827', innerBackgroundColor: '#1f2937', textColor: '#e5edf7', linkColor: '#f8fbff', mutedTextColor: '#a9b8cf', borderRadius: 16, padding: 16, elementGap: 14, fontSize: 14 },
+      },
+      'polished-green': {
+        page: { backgroundColor: '#0d1b16', leftSidebarBackgroundColor: '#10261f', backgroundImageUrl: '', backgroundImageName: '' },
+        topbar: { backgroundColor: '#10231c', innerBackgroundColor: '#183329', textColor: '#e4f7ec', linkColor: '#f7fffb', borderRadius: 0, padding: 12, elementGap: 10, fontSize: 13 },
+        panel: { backgroundColor: '#183329', innerBackgroundColor: '#25483b', textColor: '#e4f7ec', linkColor: '#f7fffb', mutedTextColor: '#a8c8b8', borderRadius: 14, padding: 16, elementGap: 10, fontSize: 14 },
+        panelSoft: { backgroundColor: '#25483b', innerBackgroundColor: '#10231c', textColor: '#e4f7ec', linkColor: '#f7fffb', mutedTextColor: '#a8c8b8', borderRadius: 18, padding: 18, elementGap: 12, fontSize: 15 },
+        main: { backgroundColor: '#142820', innerBackgroundColor: '#203c31', textColor: '#e4f7ec', linkColor: '#f7fffb', mutedTextColor: '#a8c8b8', borderRadius: 16, padding: 16, elementGap: 14, fontSize: 14 },
+      },
+      'polished-red': {
+        page: { backgroundColor: '#1f1113', leftSidebarBackgroundColor: '#2a171a', backgroundImageUrl: '', backgroundImageName: '' },
+        topbar: { backgroundColor: '#2a171a', innerBackgroundColor: '#3a2024', textColor: '#ffe7eb', linkColor: '#fff8f9', borderRadius: 0, padding: 12, elementGap: 10, fontSize: 13 },
+        panel: { backgroundColor: '#3a2024', innerBackgroundColor: '#553239', textColor: '#ffe7eb', linkColor: '#fff8f9', mutedTextColor: '#e0aeb8', borderRadius: 14, padding: 16, elementGap: 10, fontSize: 14 },
+        panelSoft: { backgroundColor: '#553239', innerBackgroundColor: '#2a171a', textColor: '#ffe7eb', linkColor: '#fff8f9', mutedTextColor: '#e0aeb8', borderRadius: 18, padding: 18, elementGap: 12, fontSize: 15 },
+        main: { backgroundColor: '#2c181c', innerBackgroundColor: '#44272d', textColor: '#ffe7eb', linkColor: '#fff8f9', mutedTextColor: '#e0aeb8', borderRadius: 16, padding: 16, elementGap: 14, fontSize: 14 },
+      },
+    };
+    const theme = themes[themeId];
+
+    setPageAppearance((current) => ({ ...current, ...theme.page }));
+    updateBlockTypeProps('top-nav', { appearance: theme.topbar });
+    updateBlockTypeProps('profile-summary', { appearance: theme.panel });
+    updateBlockTypeProps('recent-repos', { appearance: theme.panel });
+    updateBlockTypeProps('copilot-prompt', { appearance: theme.panelSoft });
+    updateBlockTypeProps('activity-feed', { appearance: theme.main });
+    updateBlockTypeProps('repo-updates', { appearance: theme.panel });
+    updateBlockTypeProps('pinned-repos', { appearance: theme.panel });
+    updateBlockTypeProps('issue-pr-updates', { appearance: theme.panel });
+    updateBlockTypeProps('trending-repos', { appearance: theme.panel });
+    updateBlockTypeProps('recommended-repos', { appearance: theme.panel });
+    setSyncStatus('Applied quick theme');
+  };
+
   return (
     <div className="editor-page template-builder-page">
       <AppTopNav
@@ -636,6 +742,18 @@ export function TemplateEditorPage() {
 
         <section
           className="template-builder-canvas-shell"
+          onClick={(event) => {
+            if (
+              event.target instanceof Element &&
+              event.target.closest('.template-screen-frame, .block-style-menu, .template-canvas-controls')
+            ) {
+              return;
+            }
+
+            setSelectedBlockId('');
+            setBlockStyleMenu(null);
+            setPageStyleMenu(null);
+          }}
           onWheel={handleCanvasWheel}
           ref={canvasShellRef}
         >
@@ -754,6 +872,7 @@ export function TemplateEditorPage() {
             onSelectVariation={setSelectedVariationId}
             onUpdateBlock={updateBlock}
             onUpdateBlockProps={updateBlockProps}
+            onApplyQuickTheme={handleApplyQuickTheme}
             onToggleLeftSidebarResize={() => setLeftSidebarResizeEnabled((enabled) => !enabled)}
             onToggleBlock={toggleBlockVisibility}
             selectedBlockId={selectedBlockId}
@@ -1030,6 +1149,159 @@ function BlockStyleMenuControls({
   );
 }
 
+type BackgroundEditorDragMode = 'move' | 'resize';
+
+interface BackgroundEditorDragState {
+  mode: BackgroundEditorDragMode;
+  pointerId: number;
+  startPoint: { x: number; y: number };
+  startOrigin: { x: number; y: number };
+  startWidth: number;
+}
+
+function clampNumber(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function getFramePoint(event: PointerEvent<HTMLElement>, stageElement: HTMLDivElement | null) {
+  if (!stageElement) {
+    return { x: 0, y: 0 };
+  }
+
+  const rect = stageElement.getBoundingClientRect();
+
+  return {
+    x: ((event.clientX - rect.left) / rect.width) * BACKGROUND_EDITOR_FRAME_WIDTH,
+    y: ((event.clientY - rect.top) / rect.height) * BACKGROUND_EDITOR_FRAME_HEIGHT,
+  };
+}
+
+function getImageSizeWidth(backgroundImageSize: string) {
+  const match = backgroundImageSize.match(/^(\d+)px\s+auto$/);
+
+  return match ? Number(match[1]) : 360;
+}
+
+function getImageOriginFromPosition(position: string, imageWidth: number, imageHeight: number) {
+  const pixelMatch = position.match(/^(-?\d+(?:\.\d+)?)px\s+(-?\d+(?:\.\d+)?)px$/);
+
+  if (pixelMatch) {
+    return {
+      x: Number(pixelMatch[1]),
+      y: Number(pixelMatch[2]),
+    };
+  }
+
+  const percentMatch = position.match(/^(-?\d+(?:\.\d+)?)%\s+(-?\d+(?:\.\d+)?)%$/);
+
+  if (percentMatch) {
+    return {
+      x: ((BACKGROUND_EDITOR_FRAME_WIDTH - imageWidth) * Number(percentMatch[1])) / 100,
+      y: ((BACKGROUND_EDITOR_FRAME_HEIGHT - imageHeight) * Number(percentMatch[2])) / 100,
+    };
+  }
+
+  const tokens = position.split(/\s+/);
+  const horizontal = tokens.find((token) => ['left', 'center', 'right'].includes(token)) ?? 'right';
+  const vertical = tokens.find((token) => ['top', 'center', 'bottom'].includes(token)) ?? 'top';
+  const x =
+    horizontal === 'left'
+      ? 0
+      : horizontal === 'center'
+        ? (BACKGROUND_EDITOR_FRAME_WIDTH - imageWidth) / 2
+        : BACKGROUND_EDITOR_FRAME_WIDTH - imageWidth;
+  const y =
+    vertical === 'top'
+      ? 0
+      : vertical === 'center'
+        ? (BACKGROUND_EDITOR_FRAME_HEIGHT - imageHeight) / 2
+        : BACKGROUND_EDITOR_FRAME_HEIGHT - imageHeight;
+
+  return { x, y };
+}
+
+function isSupportedImageFile(file: File) {
+  if (file.type.startsWith('image/')) {
+    return true;
+  }
+
+  return /\.(avif|gif|jpe?g|png|svg|webp)$/i.test(file.name);
+}
+
+function readFileAsDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        resolve(reader.result);
+        return;
+      }
+
+      reject(new Error('Image file could not be read.'));
+    };
+    reader.onerror = () => reject(new Error('Image file could not be read.'));
+    reader.readAsDataURL(file);
+  });
+}
+
+function readImageMetrics(imageUrl: string) {
+  return new Promise<{ naturalWidth: number; naturalHeight: number; image: HTMLImageElement }>((resolve, reject) => {
+    const image = new Image();
+
+    image.onload = () => resolve({ naturalWidth: image.naturalWidth, naturalHeight: image.naturalHeight, image });
+    image.onerror = () => reject(new Error('Image file could not be loaded.'));
+    image.src = imageUrl;
+  });
+}
+
+async function optimizeBackgroundImageFile(file: File) {
+  const originalDataUrl = await readFileAsDataUrl(file);
+  const metrics = await readImageMetrics(originalDataUrl).catch(() => null);
+
+  if (!metrics || /\.svg$/i.test(file.name) || file.type === 'image/svg+xml') {
+    return {
+      dataUrl: originalDataUrl,
+      naturalWidth: metrics?.naturalWidth,
+      naturalHeight: metrics?.naturalHeight,
+    };
+  }
+
+  const maxEdge = Math.max(metrics.naturalWidth, metrics.naturalHeight);
+  const shouldOptimize = originalDataUrl.length > BACKGROUND_IMAGE_MAX_INLINE_LENGTH || maxEdge > BACKGROUND_IMAGE_MAX_SOURCE_EDGE;
+
+  if (!shouldOptimize) {
+    return {
+      dataUrl: originalDataUrl,
+      naturalWidth: metrics.naturalWidth,
+      naturalHeight: metrics.naturalHeight,
+    };
+  }
+
+  const scale = Math.min(1, BACKGROUND_IMAGE_MAX_SOURCE_EDGE / maxEdge);
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(metrics.naturalWidth * scale));
+  canvas.height = Math.max(1, Math.round(metrics.naturalHeight * scale));
+  const context = canvas.getContext('2d');
+
+  if (!context) {
+    return {
+      dataUrl: originalDataUrl,
+      naturalWidth: metrics.naturalWidth,
+      naturalHeight: metrics.naturalHeight,
+    };
+  }
+
+  context.drawImage(metrics.image, 0, 0, canvas.width, canvas.height);
+  const optimizedDataUrl = canvas.toDataURL('image/webp', 0.86);
+
+  return {
+    dataUrl: optimizedDataUrl.length < originalDataUrl.length ? optimizedDataUrl : originalDataUrl,
+    naturalWidth: canvas.width,
+    naturalHeight: canvas.height,
+  };
+}
+
 function PageStyleMenuControls({
   pageAppearance,
   onChange,
@@ -1037,6 +1309,10 @@ function PageStyleMenuControls({
   pageAppearance: Record<string, unknown>;
   onChange: (appearance: Record<string, unknown>) => void;
 }) {
+  const editorStageRef = useRef<HTMLDivElement | null>(null);
+  const editorDragRef = useRef<BackgroundEditorDragState | null>(null);
+  const [imageEditorOpen, setImageEditorOpen] = useState(false);
+  const [editorImageAspect, setEditorImageAspect] = useState(1.52);
   const pageBackgroundColor =
     typeof pageAppearance.backgroundColor === 'string' ? pageAppearance.backgroundColor : '#f6f8fa';
   const leftSidebarBackgroundColor =
@@ -1051,10 +1327,99 @@ function PageStyleMenuControls({
       : 'right top';
   const backgroundImageSize =
     typeof pageAppearance.backgroundImageSize === 'string' ? pageAppearance.backgroundImageSize : '360px auto';
-  const backgroundImageRepeat =
-    typeof pageAppearance.backgroundImageRepeat === 'string' ? pageAppearance.backgroundImageRepeat : 'no-repeat';
+  const backgroundImageName =
+    typeof pageAppearance.backgroundImageName === 'string' ? pageAppearance.backgroundImageName : '';
+  const customImageWidth = getImageSizeWidth(backgroundImageSize);
+  const editorImageWidth = clampNumber(customImageWidth, 80, 1400);
+  const editorImageHeight = editorImageAspect > 0 ? editorImageWidth / editorImageAspect : editorImageWidth * 0.66;
+  const editorImageOrigin = getImageOriginFromPosition(backgroundImagePosition, editorImageWidth, editorImageHeight);
+  const uploadLabel = backgroundImageName || (backgroundImageUrl ? 'Background image loaded' : 'Choose image file');
+  const updateImageEditorValues = (origin: { x: number; y: number }, width = editorImageWidth) => {
+    onChange({
+      backgroundImagePosition: `${Math.round(origin.x)}px ${Math.round(origin.y)}px`,
+      backgroundImageSize: `${Math.round(width)}px auto`,
+      backgroundImageRepeat: 'no-repeat',
+    });
+  };
+  const beginImageEditDrag = (event: PointerEvent<HTMLElement>, mode: BackgroundEditorDragMode) => {
+    if (!backgroundImageUrl) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    editorStageRef.current?.setPointerCapture(event.pointerId);
+    editorDragRef.current = {
+      mode,
+      pointerId: event.pointerId,
+      startPoint: getFramePoint(event, editorStageRef.current),
+      startOrigin: editorImageOrigin,
+      startWidth: editorImageWidth,
+    };
+  };
+  const handleImageEditPointerMove = (event: PointerEvent<HTMLDivElement>) => {
+    const dragState = editorDragRef.current;
+
+    if (!dragState || dragState.pointerId !== event.pointerId) {
+      return;
+    }
+
+    event.preventDefault();
+    const nextPoint = getFramePoint(event, editorStageRef.current);
+    const deltaX = nextPoint.x - dragState.startPoint.x;
+    const deltaY = nextPoint.y - dragState.startPoint.y;
+
+    if (dragState.mode === 'resize') {
+      updateImageEditorValues(dragState.startOrigin, clampNumber(dragState.startWidth + deltaX, 80, 1400));
+      return;
+    }
+
+    updateImageEditorValues({
+      x: dragState.startOrigin.x + deltaX,
+      y: dragState.startOrigin.y + deltaY,
+    });
+  };
+  const endImageEditDrag = (event: PointerEvent<HTMLDivElement>) => {
+    if (editorDragRef.current?.pointerId === event.pointerId) {
+      editorDragRef.current = null;
+    }
+  };
+  const applyLoadedBackgroundImage = (imageUrl: string, imageName: string, naturalWidth?: number, naturalHeight?: number) => {
+    const imageAspect =
+      naturalWidth && naturalHeight && naturalWidth > 0 && naturalHeight > 0 ? naturalWidth / naturalHeight : editorImageAspect;
+    const initialWidth = clampNumber(
+      naturalWidth ? Math.min(naturalWidth, BACKGROUND_EDITOR_FRAME_WIDTH * 0.48) : 420,
+      260,
+      620,
+    );
+    const initialHeight = imageAspect > 0 ? initialWidth / imageAspect : initialWidth * 0.66;
+
+    setEditorImageAspect(imageAspect);
+    onChange({
+      backgroundImageUrl: imageUrl,
+      backgroundImageName: imageName,
+      backgroundImagePosition: `${Math.round((BACKGROUND_EDITOR_FRAME_WIDTH - initialWidth) / 2)}px ${Math.round((BACKGROUND_EDITOR_FRAME_HEIGHT - initialHeight) / 2)}px`,
+      backgroundImageSize: `${Math.round(initialWidth)}px auto`,
+      backgroundImageRepeat: 'no-repeat',
+    });
+    setImageEditorOpen(true);
+  };
+  const handleImageFileChange = (file?: File) => {
+    if (!file || !isSupportedImageFile(file)) {
+      return;
+    }
+
+    void optimizeBackgroundImageFile(file)
+      .then(({ dataUrl, naturalWidth, naturalHeight }) => {
+        applyLoadedBackgroundImage(dataUrl, file.name, naturalWidth, naturalHeight);
+      })
+      .catch(() => {
+        setImageEditorOpen(false);
+      });
+  };
 
   return (
+    <>
     <div className="block-style-menu__controls block-style-menu__controls--page">
       <label>
         <span>Page bg</span>
@@ -1072,73 +1437,134 @@ function PageStyleMenuControls({
           onChange={(event) => onChange({ leftSidebarBackgroundColor: event.target.value })}
         />
       </label>
-      <label className="block-style-menu__wide-control">
-        <span>Image URL</span>
-        <input
-          placeholder="https://.../character.png"
-          type="url"
-          value={backgroundImageUrl}
-          onChange={(event) => onChange({ backgroundImageUrl: event.target.value })}
-        />
-      </label>
-      <label>
-        <span>Image position</span>
-        <select
-          value={backgroundImagePosition}
-          onChange={(event) => onChange({ backgroundImagePosition: event.target.value })}
-        >
-          <option value="left top">Left top</option>
-          <option value="center top">Center top</option>
-          <option value="right top">Right top</option>
-          <option value="left center">Left center</option>
-          <option value="center center">Center</option>
-          <option value="right center">Right center</option>
-          <option value="left bottom">Left bottom</option>
-          <option value="center bottom">Center bottom</option>
-          <option value="right bottom">Right bottom</option>
-        </select>
-      </label>
-      <label>
-        <span>Image size</span>
-        <select
-          value={backgroundImageSize}
-          onChange={(event) => onChange({ backgroundImageSize: event.target.value })}
-        >
-          <option value="auto">Original</option>
-          <option value="cover">Cover</option>
-          <option value="contain">Contain</option>
-          <option value="240px auto">Small character</option>
-          <option value="360px auto">Medium character</option>
-          <option value="520px auto">Large character</option>
-          <option value="100% auto">Full width</option>
-        </select>
-      </label>
-      <label>
-        <span>Image repeat</span>
-        <select
-          value={backgroundImageRepeat}
-          onChange={(event) => onChange({ backgroundImageRepeat: event.target.value })}
-        >
-          <option value="no-repeat">No repeat</option>
-          <option value="repeat">Tile</option>
-          <option value="repeat-x">Repeat X</option>
-          <option value="repeat-y">Repeat Y</option>
-        </select>
-      </label>
+
+      <div className="background-image-upload">
+        <span>Image</span>
+        <label>
+          <input
+            accept="image/*"
+            type="file"
+            onChange={(event) => {
+              handleImageFileChange(event.target.files?.[0]);
+              event.currentTarget.value = '';
+            }}
+          />
+          <strong>{uploadLabel}</strong>
+          <em>PNG, JPG, GIF, SVG</em>
+        </label>
+        {backgroundImageUrl ? (
+          <div className="background-image-upload__preview">
+            <img alt="" src={backgroundImageUrl} />
+          </div>
+        ) : null}
+      </div>
+
+      <button
+        className="background-image-upload__edit background-image-upload__edit--primary"
+        disabled={!backgroundImageUrl}
+        type="button"
+        onClick={() => setImageEditorOpen(true)}
+      >
+        Edit image in frame
+      </button>
+
       <button
         className="block-style-menu__secondary-action"
         type="button"
-        onClick={() =>
+        onClick={() => {
+          setImageEditorOpen(false);
           onChange({
             backgroundImageUrl: '',
+            backgroundImageName: '',
             backgroundImagePosition: 'right top',
             backgroundImageSize: '360px auto',
             backgroundImageRepeat: 'no-repeat',
-          })
-        }
+          });
+        }}
       >
         Clear image
       </button>
     </div>
+    {imageEditorOpen && backgroundImageUrl ? (
+      <div
+        className="background-image-editor-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Background image editor"
+        onClick={() => setImageEditorOpen(false)}
+      >
+        <div className="background-image-editor-modal__panel" onClick={(event) => event.stopPropagation()}>
+          <header className="background-image-editor-modal__header">
+            <div>
+              <span>Background image</span>
+              <strong>{backgroundImageName || 'Image preview'}</strong>
+            </div>
+            <button type="button" aria-label="Close background image editor" onClick={() => setImageEditorOpen(false)}>
+              <Icon name="close" />
+            </button>
+          </header>
+          <div
+            className="background-image-editor-stage"
+            ref={editorStageRef}
+            onPointerMove={handleImageEditPointerMove}
+            onPointerUp={endImageEditDrag}
+            onPointerCancel={endImageEditDrag}
+            style={{ backgroundColor: pageBackgroundColor }}
+          >
+            <div className="background-image-editor-stage__columns" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+            </div>
+            <div
+              className="background-image-editor-stage__image-frame"
+              style={{
+                left: `${(editorImageOrigin.x / BACKGROUND_EDITOR_FRAME_WIDTH) * 100}%`,
+                top: `${(editorImageOrigin.y / BACKGROUND_EDITOR_FRAME_HEIGHT) * 100}%`,
+                width: `${(editorImageWidth / BACKGROUND_EDITOR_FRAME_WIDTH) * 100}%`,
+              }}
+              onPointerDown={(event) => beginImageEditDrag(event, 'move')}
+            >
+              <img
+                alt=""
+                draggable={false}
+                src={backgroundImageUrl}
+                onLoad={(event) => {
+                  const { naturalHeight, naturalWidth } = event.currentTarget;
+
+                  if (naturalWidth > 0 && naturalHeight > 0) {
+                    setEditorImageAspect(naturalWidth / naturalHeight);
+                  }
+                }}
+              />
+              <button
+                aria-label="Resize background image"
+                className="background-image-editor-stage__resize"
+                type="button"
+                onPointerDown={(event) => beginImageEditDrag(event, 'resize')}
+              />
+            </div>
+          </div>
+          <div className="background-image-editor-modal__footer">
+            <label>
+              <span>Size</span>
+              <input
+                max={1400}
+                min={80}
+                step={10}
+                type="range"
+                value={editorImageWidth}
+                onChange={(event) => updateImageEditorValues(editorImageOrigin, Number(event.target.value))}
+              />
+              <em>{Math.round(editorImageWidth)}px</em>
+            </label>
+            <button type="button" onClick={() => setImageEditorOpen(false)}>
+              Done
+            </button>
+          </div>
+        </div>
+      </div>
+    ) : null}
+    </>
   );
 }

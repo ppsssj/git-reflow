@@ -37,6 +37,8 @@ const regionShortLabels: Record<TemplateRegion, string> = {
 };
 
 const editorRegions: TemplateRegion[] = ['topbar', 'left-sidebar', 'main-feed', 'right-sidebar'];
+const BACKGROUND_IMAGE_FRAME_WIDTH = 1120;
+const BACKGROUND_IMAGE_FRAME_HEIGHT = 760;
 
 function getPageAppearanceString(pageAppearance: Record<string, unknown> | undefined, key: string) {
   const value = pageAppearance?.[key];
@@ -49,6 +51,20 @@ function getCssImageUrl(value: string | undefined) {
   }
 
   return `url("${value.replace(/"/g, '\\"')}")`;
+}
+
+function getBackgroundImageLayerStyle(position: string | undefined, size: string | undefined): CSSProperties {
+  const widthMatch = size?.match(/^(\d+)px\s+auto$/);
+  const width = widthMatch ? Number(widthMatch[1]) : 420;
+  const pixelPositionMatch = position?.match(/^(-?\d+(?:\.\d+)?)px\s+(-?\d+(?:\.\d+)?)px$/);
+  const x = pixelPositionMatch ? Number(pixelPositionMatch[1]) : (BACKGROUND_IMAGE_FRAME_WIDTH - width) / 2;
+  const y = pixelPositionMatch ? Number(pixelPositionMatch[2]) : 120;
+
+  return {
+    left: `${(x / BACKGROUND_IMAGE_FRAME_WIDTH) * 100}%`,
+    top: `${(y / BACKGROUND_IMAGE_FRAME_HEIGHT) * 100}%`,
+    width: `${(width / BACKGROUND_IMAGE_FRAME_WIDTH) * 100}%`,
+  };
 }
 
 function RenderBlock({
@@ -84,7 +100,10 @@ function RenderBlock({
   }
 
   return (
-    <div className={['github-block-frame', isSelected ? 'is-selected' : ''].filter(Boolean).join(' ')}>
+    <div
+      className={['github-block-frame', isSelected ? 'is-selected' : ''].filter(Boolean).join(' ')}
+      onClick={(event) => event.stopPropagation()}
+    >
       {!readOnly ? (
         <div className="github-block-toolbar" aria-label={`${block.title} quick actions`}>
           <button aria-label="Move block up" type="button" onClick={(event) => {
@@ -206,10 +225,12 @@ export function TemplateLayoutCanvas({
 }: TemplateLayoutCanvasProps) {
   const pageBackground = getPageAppearanceString(pageAppearance, 'backgroundColor');
   const leftSidebarBackground = getPageAppearanceString(pageAppearance, 'leftSidebarBackgroundColor');
-  const pageBackgroundImage = getCssImageUrl(getPageAppearanceString(pageAppearance, 'backgroundImageUrl'));
+  const pageBackgroundImageUrl = getPageAppearanceString(pageAppearance, 'backgroundImageUrl');
+  const pageBackgroundImage = getCssImageUrl(pageBackgroundImageUrl);
   const pageBackgroundPosition = getPageAppearanceString(pageAppearance, 'backgroundImagePosition');
   const pageBackgroundSize = getPageAppearanceString(pageAppearance, 'backgroundImageSize');
   const pageBackgroundRepeat = getPageAppearanceString(pageAppearance, 'backgroundImageRepeat');
+  const backgroundImageLayerStyle = getBackgroundImageLayerStyle(pageBackgroundPosition, pageBackgroundSize);
 
   const [insertOpen, setInsertOpen] = useState(false);
   const [insertRegion, setInsertRegion] = useState<TemplateRegion>('main-feed');
@@ -239,7 +260,16 @@ export function TemplateLayoutCanvas({
         className={[
           'github-home-preview',
           `github-home-preview--${variationId}`,
+          pageBackgroundImage ? 'has-background-image' : '',
         ].join(' ')}
+        onClick={(event) => {
+          if (event.target instanceof Element && event.target.closest('.github-block-frame, .github-insert-panel')) {
+            return;
+          }
+
+          onSelectBlock('');
+          setInsertOpen(false);
+        }}
         onContextMenu={(event) => {
           if (event.target instanceof Element && event.target.closest('.github-block')) {
             return;
@@ -263,6 +293,16 @@ export function TemplateLayoutCanvas({
           } as CSSProperties
         }
       >
+        {pageBackgroundImageUrl ? (
+          <img
+            alt=""
+            aria-hidden="true"
+            className="github-home-preview__background-image"
+            draggable={false}
+            src={pageBackgroundImageUrl}
+            style={backgroundImageLayerStyle}
+          />
+        ) : null}
         {!readOnly && hiddenBlocks.length > 0 ? (
           <div className="github-insert-panel">
             <button

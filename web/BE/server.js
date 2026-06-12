@@ -20,7 +20,7 @@ import {
 } from '../../packages/shared/src/templateSchema.js';
 
 const PORT = Number(process.env.PORT ?? 8787);
-const MAX_BODY_BYTES = 1024 * 1024;
+const MAX_BODY_BYTES = 8 * 1024 * 1024;
 const MAX_NAME_LENGTH = 120;
 const MAX_USAGE_NAME_LENGTH = 180;
 const SESSION_TTL_MS = Number(process.env.SESSION_TTL_MS ?? 7 * 24 * 60 * 60 * 1000);
