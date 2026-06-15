@@ -92,11 +92,40 @@ function getStringArrayProp(block: TemplateBlock, key: string) {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
 }
 
+function getObjectArrayProp(block: TemplateBlock, key: string) {
+  const value = block.props[key];
+
+  return Array.isArray(value)
+    ? value.filter((item): item is Record<string, unknown> => item !== null && typeof item === 'object' && !Array.isArray(item))
+    : [];
+}
+
 function parseCsv(value: string) {
   return value
     .split(',')
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function formatObjectRows(items: Array<Record<string, unknown>>, keys: string[]) {
+  return items
+    .map((item) => keys.map((key) => (typeof item[key] === 'string' || typeof item[key] === 'number' ? String(item[key]) : '')).join(' | '))
+    .join('\n');
+}
+
+function parseObjectRows(value: string, keys: string[]) {
+  return value
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const parts = line.split('|').map((part) => part.trim());
+
+      return keys.reduce<Record<string, string>>((item, key, index) => {
+        item[key] = parts[index] ?? '';
+        return item;
+      }, {});
+    });
 }
 
 function clampItemLimit(value: string, fallback: number) {
@@ -281,7 +310,7 @@ function BlockInspector({ block, readOnly = false, onUpdateBlock, onUpdateBlockP
         </>
       ) : null}
 
-      {['recent-repos', 'pinned-repos', 'activity-feed', 'repo-updates', 'issue-pr-updates', 'trending-repos', 'recommended-repos'].includes(block.type) ? (
+      {['recent-repos', 'pinned-repos', 'activity-feed', 'repo-updates', 'issue-pr-updates', 'trending-repos', 'recommended-repos', 'repository-file-list'].includes(block.type) ? (
         <label>
           <span>Visible items</span>
           <input
@@ -305,6 +334,130 @@ function BlockInspector({ block, readOnly = false, onUpdateBlock, onUpdateBlockP
             onChange={(event) => updateProps({ searchPlaceholder: event.target.value })}
           />
         </label>
+      ) : null}
+
+      {block.type === 'repository-header' ? (
+        <>
+          <label>
+            <span>Owner example</span>
+            <input
+              disabled={readOnly}
+              type="text"
+              value={getStringProp(block, 'owner', 'template-owner')}
+              onChange={(event) => updateProps({ owner: event.target.value })}
+            />
+          </label>
+          <label>
+            <span>Repository example</span>
+            <input
+              disabled={readOnly}
+              type="text"
+              value={getStringProp(block, 'repository', 'sample-readme-project')}
+              onChange={(event) => updateProps({ repository: event.target.value })}
+            />
+          </label>
+          <label>
+            <span>Visibility</span>
+            <input
+              disabled={readOnly}
+              type="text"
+              value={getStringProp(block, 'visibility', 'Public')}
+              onChange={(event) => updateProps({ visibility: event.target.value })}
+            />
+          </label>
+        </>
+      ) : null}
+
+      {block.type === 'repository-file-list' ? (
+        <>
+          <label>
+            <span>Branch</span>
+            <input
+              disabled={readOnly}
+              type="text"
+              value={getStringProp(block, 'branch', 'main')}
+              onChange={(event) => updateProps({ branch: event.target.value })}
+            />
+          </label>
+          <label>
+            <span>Latest commit message</span>
+            <input
+              disabled={readOnly}
+              type="text"
+              value={getStringProp(block, 'commitMessage', 'Update README')}
+              onChange={(event) => updateProps({ commitMessage: event.target.value })}
+            />
+          </label>
+          <label>
+            <span>Files: name | type | message</span>
+            <textarea
+              disabled={readOnly}
+              value={formatObjectRows(getObjectArrayProp(block, 'files'), ['name', 'type', 'message'])}
+              onChange={(event) => updateProps({ files: parseObjectRows(event.target.value, ['name', 'type', 'message']) })}
+            />
+          </label>
+        </>
+      ) : null}
+
+      {block.type === 'repository-readme' ? (
+        <>
+          <label>
+            <span>README title</span>
+            <input
+              disabled={readOnly}
+              type="text"
+              value={getStringProp(block, 'title', 'sample-readme-project')}
+              onChange={(event) => updateProps({ title: event.target.value })}
+            />
+          </label>
+          <label>
+            <span>Badges</span>
+            <input
+              disabled={readOnly}
+              type="text"
+              value={getStringArrayProp(block, 'badges').join(', ')}
+              onChange={(event) => updateProps({ badges: parseCsv(event.target.value) })}
+            />
+          </label>
+          <label>
+            <span>README sections: heading | body</span>
+            <textarea
+              disabled={readOnly}
+              value={formatObjectRows(getObjectArrayProp(block, 'sections'), ['heading', 'body'])}
+              onChange={(event) => updateProps({ sections: parseObjectRows(event.target.value, ['heading', 'body']) })}
+            />
+          </label>
+        </>
+      ) : null}
+
+      {block.type === 'repository-about-sidebar' ? (
+        <>
+          <label>
+            <span>Description</span>
+            <textarea
+              disabled={readOnly}
+              value={getStringProp(block, 'description', 'Short repository description goes here.')}
+              onChange={(event) => updateProps({ description: event.target.value })}
+            />
+          </label>
+          <label>
+            <span>Links</span>
+            <input
+              disabled={readOnly}
+              type="text"
+              value={getStringArrayProp(block, 'links').join(', ')}
+              onChange={(event) => updateProps({ links: parseCsv(event.target.value) })}
+            />
+          </label>
+          <label>
+            <span>Languages: name | percent | color</span>
+            <textarea
+              disabled={readOnly}
+              value={formatObjectRows(getObjectArrayProp(block, 'languages'), ['name', 'percent', 'color'])}
+              onChange={(event) => updateProps({ languages: parseObjectRows(event.target.value, ['name', 'percent', 'color']) })}
+            />
+          </label>
+        </>
       ) : null}
     </div>
   );

@@ -1,7 +1,8 @@
 import { useCallback, useMemo, useReducer } from 'react';
-import type { TemplateBlock, TemplateLayout, TemplateRegion } from '../../types/template';
+import type { TemplateBlock, TemplateLayout, TemplateRegion, TemplateScreen } from '../../types/template';
 
 type TemplateLayoutAction =
+  | { type: 'add-screen'; screen: TemplateScreen; blocks?: TemplateBlock[] }
   | { type: 'toggle-block'; blockId: string }
   | { type: 'update-block'; blockId: string; updates: Partial<TemplateBlock> }
   | { type: 'update-block-props'; blockId: string; props: Record<string, unknown> }
@@ -64,6 +65,24 @@ function moveBlock(layout: TemplateLayout, blockId: string, direction: 'up' | 'd
 
 function templateLayoutReducer(layout: TemplateLayout, action: TemplateLayoutAction): TemplateLayout {
   switch (action.type) {
+    case 'add-screen':
+      if (layout.screens.some((screen) => screen.id === action.screen.id)) {
+        return {
+          ...layout,
+          activeScreenId: action.screen.id,
+        };
+      }
+
+      return {
+        ...layout,
+        source: 'user',
+        activeScreenId: action.screen.id,
+        screens: [...layout.screens, action.screen],
+        blocks: [
+          ...layout.blocks,
+          ...(action.blocks ?? []).filter((block) => !layout.blocks.some((item) => item.id === block.id)),
+        ],
+      };
     case 'toggle-block':
       return {
         ...layout,
@@ -161,6 +180,10 @@ export function useTemplateLayout(defaultLayout: TemplateLayout) {
   );
 
   const serializedLayout = useMemo(() => JSON.stringify(layout, null, 2), [layout]);
+  const addScreen = useCallback(
+    (screen: TemplateScreen, blocks?: TemplateBlock[]) => dispatch({ type: 'add-screen', screen, blocks }),
+    [],
+  );
   const setActiveScreen = useCallback((screenId: string) => dispatch({ type: 'set-active-screen', screenId }), []);
   const replaceLayout = useCallback((nextLayout: TemplateLayout) => dispatch({ type: 'replace', layout: nextLayout }), []);
   const toggleBlockVisibility = useCallback((blockId: string) => dispatch({ type: 'toggle-block', blockId }), []);
@@ -192,6 +215,7 @@ export function useTemplateLayout(defaultLayout: TemplateLayout) {
     activeScreen,
     blocksByRegion,
     serializedLayout,
+    addScreen,
     setActiveScreen,
     replaceLayout,
     toggleBlockVisibility,

@@ -41,6 +41,38 @@ interface RepoUpdate {
   status: string;
 }
 
+interface RepositoryTab {
+  label: string;
+  active?: boolean;
+}
+
+interface RepositoryAction {
+  label: string;
+  count?: string;
+}
+
+interface RepositoryFile {
+  name: string;
+  type: 'directory' | 'file';
+  message: string;
+}
+
+interface ReadmeSection {
+  heading: string;
+  body: string;
+}
+
+interface Contributor {
+  name: string;
+  initial: string;
+}
+
+interface RepositoryLanguage {
+  name: string;
+  percent: number;
+  color: string;
+}
+
 function getAppearanceStyle(block: TemplateBlock) {
   const appearance = block.props.appearance;
 
@@ -571,6 +603,211 @@ function RecommendedReposBlock({ block, selected, onSelect, onOpenContextMenu }:
   );
 }
 
+function RepositoryHeaderBlock({ block, selected, onSelect, onOpenContextMenu }: TemplateBlockComponentProps) {
+  const props = block.props as {
+    owner?: string;
+    repository?: string;
+    visibility?: string;
+    tabs?: RepositoryTab[];
+    actions?: RepositoryAction[];
+  };
+  const tabs = props.tabs ?? [];
+  const actions = props.actions ?? [];
+
+  return (
+    <BlockFrame block={block} selected={selected} onSelect={onSelect} onOpenContextMenu={onOpenContextMenu}>
+      <div className="repository-header">
+        <div className="repository-header__title-row">
+          <div className="repository-header__title">
+            <Icon name="folder" />
+            <a href="#owner">{props.owner ?? 'owner'}</a>
+            <span>/</span>
+            <strong>{props.repository ?? 'repository'}</strong>
+            <em>{props.visibility ?? 'Public'}</em>
+          </div>
+          <div className="repository-header__actions">
+            {actions.map((action) => (
+              <button key={action.label} type="button">
+                {action.label}
+                {action.count ? <strong>{action.count}</strong> : null}
+              </button>
+            ))}
+          </div>
+        </div>
+        <nav className="repository-tabs" aria-label="Repository">
+          {tabs.map((tab) => (
+            <a className={tab.active ? 'is-active' : ''} href={`#${tab.label.toLowerCase().replace(/\s+/g, '-')}`} key={tab.label}>
+              <Icon
+                name={
+                  tab.label === 'Code'
+                    ? 'code'
+                    : tab.label === 'Issues'
+                      ? 'radio_button_unchecked'
+                      : tab.label === 'Pull requests'
+                        ? 'merge_type'
+                        : tab.label === 'Actions'
+                          ? 'play_circle'
+                          : tab.label === 'Security'
+                            ? 'shield'
+                            : 'bar_chart'
+                }
+              />
+              {tab.label}
+            </a>
+          ))}
+        </nav>
+      </div>
+    </BlockFrame>
+  );
+}
+
+function RepositoryFileListBlock({ block, selected, onSelect, onOpenContextMenu }: TemplateBlockComponentProps) {
+  const props = block.props as {
+    branch?: string;
+    commitAuthor?: string;
+    commitMessage?: string;
+    commitTime?: string;
+    files?: RepositoryFile[];
+  };
+  const files = props.files ?? [];
+  const itemLimit = getItemLimit(block.props.itemLimit, files.length);
+
+  return (
+    <BlockFrame block={block} selected={selected} onSelect={onSelect} onOpenContextMenu={onOpenContextMenu}>
+      <div className="repository-files">
+        <div className="repository-files__toolbar">
+          <button type="button">
+            <Icon name="account_tree" />
+            {props.branch ?? 'main'}
+            <Icon name="keyboard_arrow_down" />
+          </button>
+          <div>
+            <button type="button">Go to file</button>
+            <button type="button">Add file</button>
+            <button className="is-primary" type="button">Code</button>
+          </div>
+        </div>
+        <div className="repository-files__commit">
+          <span className="compact-list__avatar">{props.commitAuthor?.slice(0, 1).toUpperCase() ?? 'P'}</span>
+          <strong>{props.commitAuthor ?? 'ppsssj'}</strong>
+          <span>{props.commitMessage ?? 'Latest commit'}</span>
+          <time>{props.commitTime ?? 'now'}</time>
+        </div>
+        <div className="repository-file-table" aria-labelledby="folders-and-files">
+          {files.slice(0, itemLimit).map((file) => (
+            <div className="repository-file-row" key={file.name}>
+              <span>
+                <Icon name={file.type === 'directory' ? 'folder' : 'description'} />
+                <strong>{file.name}</strong>
+              </span>
+              <em>{file.message}</em>
+            </div>
+          ))}
+        </div>
+      </div>
+    </BlockFrame>
+  );
+}
+
+function RepositoryReadmeBlock({ block, selected, onSelect, onOpenContextMenu }: TemplateBlockComponentProps) {
+  const props = block.props as { title?: string; badges?: string[]; sections?: ReadmeSection[] };
+  const sections = props.sections ?? [];
+
+  return (
+    <BlockFrame block={block} selected={selected} onSelect={onSelect} onOpenContextMenu={onOpenContextMenu}>
+      <article className="repository-readme">
+        <div className="repository-readme__header">
+          <Icon name="description" />
+          <strong>README.md</strong>
+        </div>
+        <div className="repository-readme__body markdown-body">
+          <h1>{props.title ?? 'Repository README'}</h1>
+          <div className="repository-readme__badges">
+            {(props.badges ?? []).map((badge) => (
+              <span key={badge}>{badge}</span>
+            ))}
+          </div>
+          {sections.map((section) => (
+            <section key={section.heading}>
+              <h2>{section.heading}</h2>
+              <p>{section.body}</p>
+            </section>
+          ))}
+        </div>
+      </article>
+    </BlockFrame>
+  );
+}
+
+function RepositoryAboutSidebarBlock({ block, selected, onSelect, onOpenContextMenu }: TemplateBlockComponentProps) {
+  const props = block.props as {
+    description?: string;
+    links?: string[];
+    releases?: string;
+    packages?: string;
+    contributors?: Contributor[];
+    languages?: RepositoryLanguage[];
+  };
+  const contributors = props.contributors ?? [];
+  const languages = props.languages ?? [];
+
+  return (
+    <BlockFrame block={block} selected={selected} onSelect={onSelect} onOpenContextMenu={onOpenContextMenu}>
+      <aside className="repository-about">
+        <section>
+          <h2>About</h2>
+          <p>{props.description}</p>
+          <div className="repository-about__links">
+            {(props.links ?? []).map((link) => (
+              <a href={`#${link.toLowerCase().replace(/\s+/g, '-')}`} key={link}>
+                <Icon name={link === 'Readme' ? 'description' : 'link'} />
+                {link}
+              </a>
+            ))}
+          </div>
+        </section>
+        <section>
+          <h2>Releases</h2>
+          <p>{props.releases}</p>
+        </section>
+        <section>
+          <h2>Packages</h2>
+          <p>{props.packages}</p>
+        </section>
+        <section>
+          <h2>Contributors</h2>
+          <div className="repository-about__contributors">
+            {contributors.map((contributor) => (
+              <span title={contributor.name} key={contributor.name}>{contributor.initial}</span>
+            ))}
+          </div>
+        </section>
+        <section>
+          <h2>Languages</h2>
+          <div className="repository-language-bar">
+            {languages.map((language) => (
+              <span
+                aria-label={`${language.name} ${language.percent}%`}
+                key={language.name}
+                style={{ background: language.color, width: `${language.percent}%` }}
+              />
+            ))}
+          </div>
+          <div className="repository-language-list">
+            {languages.map((language) => (
+              <span key={language.name}>
+                <i style={{ background: language.color }} />
+                {language.name}
+                <em>{language.percent}%</em>
+              </span>
+            ))}
+          </div>
+        </section>
+      </aside>
+    </BlockFrame>
+  );
+}
+
 export const githubBlockRegistry: Record<TemplateBlockType, (props: TemplateBlockComponentProps) => JSX.Element> = {
   'top-nav': TopNavBlock,
   'profile-summary': ProfileSummaryBlock,
@@ -582,4 +819,8 @@ export const githubBlockRegistry: Record<TemplateBlockType, (props: TemplateBloc
   'issue-pr-updates': IssuePrUpdatesBlock,
   'trending-repos': TrendingReposBlock,
   'recommended-repos': RecommendedReposBlock,
+  'repository-header': RepositoryHeaderBlock,
+  'repository-file-list': RepositoryFileListBlock,
+  'repository-readme': RepositoryReadmeBlock,
+  'repository-about-sidebar': RepositoryAboutSidebarBlock,
 };

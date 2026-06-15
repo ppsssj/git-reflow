@@ -11,6 +11,10 @@ export const TEMPLATE_BLOCK_TYPES = [
   'issue-pr-updates',
   'trending-repos',
   'recommended-repos',
+  'repository-header',
+  'repository-file-list',
+  'repository-readme',
+  'repository-about-sidebar',
 ];
 
 export const DEFAULT_COLUMN_LAYOUT = {

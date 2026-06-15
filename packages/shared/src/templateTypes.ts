@@ -73,7 +73,11 @@ export type TemplateBlockType =
   | 'repo-updates'
   | 'issue-pr-updates'
   | 'trending-repos'
-  | 'recommended-repos';
+  | 'recommended-repos'
+  | 'repository-header'
+  | 'repository-file-list'
+  | 'repository-readme'
+  | 'repository-about-sidebar';
 
 export interface TemplateBlock<TProps extends Record<string, unknown> = Record<string, unknown>> {
   id: string;

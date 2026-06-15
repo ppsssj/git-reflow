@@ -1,5 +1,6 @@
 import type { ExtensionTemplatePayload, TemplateBlock, TemplateRecord } from '../../../types/template';
 import { defaultGithubTemplate } from './defaultGithubTemplate';
+import { repositoryReadmeBlocks, repositoryReadmeScreen } from './repositoryReadmeTemplate';
 
 const now = '2026-05-11T00:00:00.000Z';
 
@@ -49,11 +50,11 @@ const starterThemes: StarterTheme[] = [
     linkColor: '#f7fffb',
     mutedTextColor: '#a8c8b8',
     colors: {
-      topbar: '#10231c',
-      panel: '#183329',
-      panelSoft: '#25483b',
-      mainPanel: '#142820',
-      mainInner: '#203c31',
+      topbar: '#0b1f18',
+      panel: '#123326',
+      panelSoft: '#1e4a38',
+      mainPanel: '#0f2a20',
+      mainInner: '#183f30',
     },
   },
   {
@@ -152,6 +153,45 @@ function createBlockAppearances(theme: StarterTheme): Partial<Record<TemplateBlo
       linkColor: theme.linkColor,
       mutedTextColor: theme.mutedTextColor,
     },
+    'repository-header': {
+      backgroundColor: theme.colors.topbar,
+      innerBackgroundColor: theme.colors.panel,
+      borderRadius: 0,
+      padding: 16,
+      textColor: theme.textColor,
+      linkColor: theme.linkColor,
+      mutedTextColor: theme.mutedTextColor,
+    },
+    'repository-file-list': {
+      backgroundColor: theme.colors.panel,
+      innerBackgroundColor: theme.colors.panelSoft,
+      borderRadius: 12,
+      padding: 14,
+      elementGap: 10,
+      textColor: theme.textColor,
+      linkColor: theme.linkColor,
+      mutedTextColor: theme.mutedTextColor,
+    },
+    'repository-readme': {
+      backgroundColor: theme.colors.panel,
+      innerBackgroundColor: theme.colors.mainInner,
+      borderRadius: 12,
+      padding: 0,
+      elementGap: 14,
+      textColor: theme.textColor,
+      linkColor: theme.linkColor,
+      mutedTextColor: theme.mutedTextColor,
+    },
+    'repository-about-sidebar': {
+      backgroundColor: theme.colors.panel,
+      innerBackgroundColor: theme.colors.panelSoft,
+      borderRadius: 12,
+      padding: 16,
+      elementGap: 10,
+      textColor: theme.textColor,
+      linkColor: theme.linkColor,
+      mutedTextColor: theme.mutedTextColor,
+    },
   };
 }
 
@@ -179,17 +219,28 @@ function createStarterGithubTemplate(theme: StarterTheme): ExtensionTemplatePayl
       ...defaultGithubTemplate.metadata,
       updatedAt: now,
     },
-    blocks: defaultGithubTemplate.blocks.map((block) => ({
-      ...block,
-      visible: visibleByDefault.has(block.id),
-      props: {
-        ...block.props,
-        ...(block.type === 'recent-repos' ? { itemLimit: 5 } : {}),
-        ...(block.type === 'activity-feed' ? { itemLimit: 3 } : {}),
-        ...(block.type === 'trending-repos' ? { itemLimit: 4 } : {}),
-        ...(blockAppearances[block.type] ? { appearance: blockAppearances[block.type] } : {}),
-      },
-    })),
+    screens: [...defaultGithubTemplate.screens, repositoryReadmeScreen],
+    blocks: [
+      ...defaultGithubTemplate.blocks.map((block) => ({
+        ...block,
+        visible: visibleByDefault.has(block.id),
+        props: {
+          ...block.props,
+          ...(block.type === 'recent-repos' ? { itemLimit: 5 } : {}),
+          ...(block.type === 'activity-feed' ? { itemLimit: 3 } : {}),
+          ...(block.type === 'trending-repos' ? { itemLimit: 4 } : {}),
+          ...(blockAppearances[block.type] ? { appearance: blockAppearances[block.type] } : {}),
+        },
+      })),
+      ...repositoryReadmeBlocks.map((block) => ({
+        ...block,
+        visible: true,
+        props: {
+          ...block.props,
+          ...(blockAppearances[block.type] ? { appearance: blockAppearances[block.type] } : {}),
+        },
+      })),
+    ],
     provider: 'github',
     columnLayout: {
       left: 300,
@@ -219,8 +270,8 @@ function createStarterGithubTemplateRecord(template: ExtensionTemplatePayload): 
     owner: 'git-reflow',
     highlights: [
       'Styled GitHub Home preset',
+      'Includes Repository README page',
       'Editable colors, spacing, radius, and typography',
-      'Use as a starting point for saved templates',
     ],
     sections: template.blocks
       .filter((block) => block.visible)

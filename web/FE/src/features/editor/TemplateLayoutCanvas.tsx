@@ -231,6 +231,7 @@ export function TemplateLayoutCanvas({
   const pageBackgroundSize = getPageAppearanceString(pageAppearance, 'backgroundImageSize');
   const pageBackgroundRepeat = getPageAppearanceString(pageAppearance, 'backgroundImageRepeat');
   const backgroundImageLayerStyle = getBackgroundImageLayerStyle(pageBackgroundPosition, pageBackgroundSize);
+  const isRepositoryReadmeScreen = screen?.id === 'github-repository-readme';
 
   const [insertOpen, setInsertOpen] = useState(false);
   const [insertRegion, setInsertRegion] = useState<TemplateRegion>('main-feed');
@@ -260,6 +261,7 @@ export function TemplateLayoutCanvas({
         className={[
           'github-home-preview',
           `github-home-preview--${variationId}`,
+          isRepositoryReadmeScreen ? 'github-home-preview--repository-readme' : '',
           pageBackgroundImage ? 'has-background-image' : '',
         ].join(' ')}
         onClick={(event) => {

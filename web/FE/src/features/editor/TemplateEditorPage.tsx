@@ -11,6 +11,7 @@ import type {
   TemplateColumnLayout,
   TemplateLayout,
   TemplateRegion,
+  TemplateScreen,
   TemplateVariation,
   TemplateVariationId,
   TemplateRecord,
@@ -19,6 +20,7 @@ import { TemplateEditPanel } from './TemplateEditPanel';
 import type { QuickThemeId } from './TemplateEditPanel';
 import { TemplateLayoutCanvas } from './TemplateLayoutCanvas';
 import { defaultGithubTemplate } from './templates/defaultGithubTemplate';
+import { repositoryReadmeBlocks, repositoryReadmeScreen } from './templates/repositoryReadmeTemplate';
 import {
   getStarterGithubTemplate,
   getStarterGithubTemplateRecord,
@@ -68,6 +70,13 @@ const githubSafeVariations: TemplateVariation[] = [
     title: 'Two-column feed',
     description: 'Split feed cards into two scannable columns.',
     githubConstraint: 'Feed only',
+  },
+];
+
+const addableScreenPresets: Array<{ screen: TemplateScreen; blocks: TemplateBlock[] }> = [
+  {
+    screen: repositoryReadmeScreen,
+    blocks: repositoryReadmeBlocks,
   },
 ];
 
@@ -195,6 +204,7 @@ export function TemplateEditorPage() {
   const {
     layout,
     activeScreen,
+    addScreen,
     blocksByRegion,
     setActiveScreen,
     toggleBlockVisibility,
@@ -397,6 +407,14 @@ export function TemplateEditorPage() {
   const openImportDialog = () => {
     setImportTemplateName(`${layout.name} Imported`);
     setImportDialogOpen(true);
+  };
+
+  const handleAddScreen = (screen: TemplateScreen, blocks: TemplateBlock[]) => {
+    addScreen(screen, blocks);
+    setSelectedBlockId('');
+    setBlockStyleMenu(null);
+    setPageStyleMenu(null);
+    setSyncStatus(layout.screens.some((item) => item.id === screen.id) ? 'Opened existing page' : 'Added page');
   };
 
   const handleImportNetworkTemplate = async (event?: FormEvent<HTMLFormElement>) => {
@@ -770,6 +788,25 @@ export function TemplateEditorPage() {
                 </button>
               ))}
             </div>
+            {!isStarterPresetPreview ? (
+              <div className="screen-add-list" aria-label="Add template page">
+                {addableScreenPresets.map(({ screen, blocks }) => {
+                  const exists = layout.screens.some((item) => item.id === screen.id);
+
+                  return (
+                    <button
+                      className={exists ? 'is-added' : ''}
+                      key={screen.id}
+                      type="button"
+                      onClick={() => handleAddScreen(screen, blocks)}
+                    >
+                      <Icon name={exists ? 'check_circle' : 'add_circle'} />
+                      <span>{exists ? `Open ${screen.name}` : `Add ${screen.name}`}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : null}
           </section>
 
           <section className="template-builder-rail__section">

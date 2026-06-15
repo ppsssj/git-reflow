@@ -11,6 +11,8 @@ const HIDDEN_CLASS = 'git-reflow-template-hidden';
 const ORIGINAL_TEXT_ATTR = 'data-git-reflow-original-text';
 const ORIGINAL_PLACEHOLDER_ATTR = 'data-git-reflow-original-placeholder';
 const BACKGROUND_IMAGE_LAYER_ID = 'git-reflow-background-image-layer';
+const REPOSITORY_PAGE_HOST_ID = 'git-reflow-repository-page-host';
+const REPOSITORY_THEME_STYLE_ID = 'git-reflow-repository-theme-style';
 const BACKGROUND_IMAGE_FRAME_WIDTH = 1120;
 const BACKGROUND_IMAGE_FRAME_HEIGHT = 760;
 const LEFT_WIDTH_STORAGE_KEY = 'gitReflowLeftSidebarWidthPx';
@@ -71,11 +73,11 @@ const STARTER_TEMPLATE_THEMES = [
     linkColor: '#f7fffb',
     mutedTextColor: '#a8c8b8',
     colors: {
-      topbar: '#10231c',
-      panel: '#183329',
-      panelSoft: '#25483b',
-      mainPanel: '#142820',
-      mainInner: '#203c31',
+      topbar: '#0b1f18',
+      panel: '#123326',
+      panelSoft: '#1e4a38',
+      mainPanel: '#0f2a20',
+      mainInner: '#183f30',
     },
   },
   {
@@ -225,6 +227,114 @@ const STARTER_TEMPLATE_BLOCK_DEFINITIONS = [
     },
   },
 ];
+const STARTER_REPOSITORY_README_SCREEN = {
+  id: 'github-repository-readme',
+  name: 'Repository README',
+  providerRoute: 'github.com/:owner/:repo',
+  description: 'Repository landing page with file list, README, and metadata sidebar.',
+};
+const STARTER_REPOSITORY_README_BLOCKS = [
+  {
+    id: 'repo-header',
+    type: 'repository-header',
+    title: 'Repository Header',
+    region: 'topbar',
+    screenId: STARTER_REPOSITORY_README_SCREEN.id,
+    visible: true,
+    extensionSlot: 'github.repository.header',
+    props: {
+      owner: 'template-owner',
+      repository: 'sample-readme-project',
+      visibility: 'Public',
+      tabs: [
+        { label: 'Code', active: true },
+        { label: 'Issues' },
+        { label: 'Pull requests' },
+        { label: 'Actions' },
+        { label: 'Projects' },
+        { label: 'Security' },
+        { label: 'Insights' },
+      ],
+      actions: [
+        { label: 'Notifications' },
+        { label: 'Fork', count: '0' },
+        { label: 'Star', count: '0' },
+      ],
+    },
+  },
+  {
+    id: 'repo-files',
+    type: 'repository-file-list',
+    title: 'Files',
+    region: 'main-feed',
+    screenId: STARTER_REPOSITORY_README_SCREEN.id,
+    visible: true,
+    extensionSlot: 'github.repository.files',
+    props: {
+      branch: 'main',
+      commitAuthor: 'sample-user',
+      commitMessage: 'Update README and project description',
+      commitTime: 'now',
+      files: [
+        { name: 'docs', type: 'directory', message: 'Add project documentation examples' },
+        { name: 'src', type: 'directory', message: 'Organize application source files' },
+        { name: 'tests', type: 'directory', message: 'Add sample coverage for core flows' },
+        { name: 'package.json', type: 'file', message: 'Define project scripts and dependencies' },
+        { name: 'README.md', type: 'file', message: 'Update README and usage notes' },
+      ],
+    },
+  },
+  {
+    id: 'repo-readme',
+    type: 'repository-readme',
+    title: 'README',
+    region: 'main-feed',
+    screenId: STARTER_REPOSITORY_README_SCREEN.id,
+    visible: true,
+    extensionSlot: 'github.repository.readme',
+    props: {
+      title: 'sample-readme-project',
+      badges: ['Example', 'README', 'Documentation'],
+      sections: [
+        {
+          heading: 'Overview',
+          body: 'Use this area as the main project description. Explain what the repository does, who it is for, and the problem it solves.',
+        },
+        {
+          heading: 'Getting started',
+          body: 'Add setup steps, required tools, environment variables, and the first command someone should run after cloning the repository.',
+        },
+        {
+          heading: 'Usage',
+          body: 'Show the most common workflow with concise examples. This section can become installation notes, screenshots, or API examples.',
+        },
+      ],
+    },
+  },
+  {
+    id: 'repo-about',
+    type: 'repository-about-sidebar',
+    title: 'About',
+    region: 'right-sidebar',
+    screenId: STARTER_REPOSITORY_README_SCREEN.id,
+    visible: true,
+    extensionSlot: 'github.repository.sidebar.about',
+    props: {
+      description: 'Short repository description goes here. Keep it clear enough to explain the project from the sidebar.',
+      links: ['Readme', 'Activity', 'Custom properties'],
+      releases: 'No releases published',
+      packages: 'No packages published',
+      contributors: [
+        { name: 'sample-user', initial: 's' },
+      ],
+      languages: [
+        { name: 'TypeScript', percent: 46, color: '#3178c6' },
+        { name: 'CSS', percent: 32, color: '#663399' },
+        { name: 'JavaScript', percent: 22, color: '#f1e05a' },
+      ],
+    },
+  },
+];
 
 const githubHomeSelectors = {
   dashboardRoot: ['.feed-background', 'feed-container', '#dashboard'],
@@ -249,15 +359,54 @@ const githubHomeSelectors = {
   ],
 };
 
+const githubRepositorySelectors = {
+  repositoryRoot: [
+    '#repo-content-turbo-frame',
+    '#repo-content-pjax-container',
+    'react-app[app-name="code-view"]',
+  ],
+  repositoryHeader: ['#repository-container-header', '#repo-title-component'],
+  repositoryNav: ['nav[aria-label="Repository"]'],
+  repositoryMain: [
+    '#repo-content-turbo-frame',
+    '#repo-content-pjax-container',
+    'react-app[app-name="code-view"]',
+  ],
+  fileList: [
+    'table[aria-labelledby="folders-and-files"]',
+    '[aria-labelledby="folders-and-files"]',
+    '[data-testid="file-and-directory-list"]',
+    '[class*="react-directory"]',
+  ],
+  readme: [
+    'article.markdown-body.entry-content',
+    'article.markdown-body',
+    '[class*="DirectoryRichtextContent"] article',
+  ],
+  sidebar: [
+    '.BorderGrid',
+    '.hide-sm.hide-md .BorderGrid',
+    'aside[aria-label*="Repository"]',
+    '[data-testid="repository-sidebar"]',
+  ],
+};
+
 const regionContainers = {
-  topbar: githubHomeSelectors.topbar,
+  topbar: [...githubHomeSelectors.topbar, ...githubRepositorySelectors.repositoryHeader],
   'left-sidebar': githubHomeSelectors.leftSidebarContent,
-  'main-feed': githubHomeSelectors.mainContent,
-  'right-sidebar': [...githubHomeSelectors.rightSidebar, ...githubHomeSelectors.rightColumn],
+  'main-feed': [...githubHomeSelectors.mainContent, ...githubRepositorySelectors.repositoryMain],
+  'right-sidebar': [...githubHomeSelectors.rightSidebar, ...githubHomeSelectors.rightColumn, ...githubRepositorySelectors.sidebar],
 };
 
 const blockSelectorRegistry = {
   'top-nav': githubHomeSelectors.topbar,
+  'repository-header': [
+    ...githubRepositorySelectors.repositoryHeader,
+    ...githubRepositorySelectors.repositoryNav,
+  ],
+  'repository-file-list': githubRepositorySelectors.fileList,
+  'repository-readme': githubRepositorySelectors.readme,
+  'repository-about-sidebar': githubRepositorySelectors.sidebar,
   'profile-summary': ['.dashboard-sidebar > div:first-child', '.feed-left-sidebar .dashboard-sidebar > *:first-child'],
   'recent-repos': [
     '.dashboard-sidebar .js-repos-container',
@@ -294,6 +443,10 @@ const blockTextMatchers = {
   'issue-pr-updates': ['Issues', 'Pull requests'],
   'trending-repos': ['Latest changes', 'Latest from our changelog', 'Changelog'],
   'recommended-repos': ['Explore repositories', 'Recommended'],
+  'repository-header': ['Code', 'Issues', 'Pull requests', 'Actions'],
+  'repository-file-list': ['README.md', 'Go to file', 'Code'],
+  'repository-readme': ['README', 'README.md'],
+  'repository-about-sidebar': ['About', 'Releases', 'Packages', 'Languages'],
 };
 
 const topbarActionLabels = ['Copilot', 'Create', 'Issues', 'Pull requests', 'Repositories', 'Inbox'];
@@ -326,9 +479,49 @@ let templateSearchQuery = '';
 let templateSortMode = 'updated';
 let templateApplyRequestId = 0;
 let templateRenderGeneration = 0;
+let controllerDataLoaded = false;
+let templateMutationObserver = null;
+let templateMutationReapplyTimer = 0;
+let templateMutationReapplying = false;
 
 function isGitHubDashboard() {
   return queryFirst(githubHomeSelectors.dashboardRoot) !== null;
+}
+
+function isGitHubRepositoryRoute() {
+  const pathParts = window.location.pathname.split('/').filter(Boolean);
+
+  return pathParts.length === 2;
+}
+
+function isGitHubRepositoryReadme() {
+  return isGitHubRepositoryRoute() && (
+    queryFirst(githubRepositorySelectors.repositoryRoot) !== null ||
+    queryFirst(githubRepositorySelectors.repositoryHeader) !== null ||
+    queryFirst(githubRepositorySelectors.readme) !== null
+  );
+}
+
+function isSupportedGitHubPage() {
+  return isGitHubDashboard() || isGitHubRepositoryRoute();
+}
+
+function getCurrentGitHubScreenId(template) {
+  const screens = Array.isArray(template?.screens) ? template.screens : [];
+
+  if (isGitHubRepositoryRoute()) {
+    return screens.find((screen) => screen.id === 'github-repository-readme')?.id ?? 'github-repository-readme';
+  }
+
+  if (isGitHubDashboard()) {
+    return screens.find((screen) => screen.id === 'github-home')?.id ?? 'github-home';
+  }
+
+  return template?.activeScreenId ?? screens[0]?.id ?? '';
+}
+
+function getTemplateObserverRoot() {
+  return document.body;
 }
 
 function queryFirst(selectors, root = document) {
@@ -473,6 +666,45 @@ function createStarterBlockAppearances(theme) {
       linkColor: theme.linkColor,
       mutedTextColor: theme.mutedTextColor,
     },
+    'repository-header': {
+      backgroundColor: theme.colors.topbar,
+      innerBackgroundColor: theme.colors.panel,
+      borderRadius: 0,
+      padding: 16,
+      textColor: theme.textColor,
+      linkColor: theme.linkColor,
+      mutedTextColor: theme.mutedTextColor,
+    },
+    'repository-file-list': {
+      backgroundColor: theme.colors.panel,
+      innerBackgroundColor: theme.colors.panelSoft,
+      borderRadius: 12,
+      padding: 14,
+      elementGap: 10,
+      textColor: theme.textColor,
+      linkColor: theme.linkColor,
+      mutedTextColor: theme.mutedTextColor,
+    },
+    'repository-readme': {
+      backgroundColor: theme.colors.panel,
+      innerBackgroundColor: theme.colors.mainInner,
+      borderRadius: 12,
+      padding: 0,
+      elementGap: 14,
+      textColor: theme.textColor,
+      linkColor: theme.linkColor,
+      mutedTextColor: theme.mutedTextColor,
+    },
+    'repository-about-sidebar': {
+      backgroundColor: theme.colors.panel,
+      innerBackgroundColor: theme.colors.panelSoft,
+      borderRadius: 12,
+      padding: 16,
+      elementGap: 10,
+      textColor: theme.textColor,
+      linkColor: theme.linkColor,
+      mutedTextColor: theme.mutedTextColor,
+    },
   };
 }
 
@@ -493,6 +725,7 @@ function createStarterTemplate(theme) {
         providerRoute: 'github.com/',
         description: 'Logged-in GitHub dashboard home screen.',
       },
+      STARTER_REPOSITORY_README_SCREEN,
     ],
     regions: ['topbar', 'left-sidebar', 'main-feed', 'right-sidebar'],
     metadata: {
@@ -500,15 +733,24 @@ function createStarterTemplate(theme) {
       browserMappingKey: 'github.dashboard.reference',
       updatedAt: STARTER_TEMPLATE_UPDATED_AT,
     },
-    blocks: STARTER_TEMPLATE_BLOCK_DEFINITIONS.map((block) => ({
-      ...block,
-      screenId: 'github-home',
-      visible: STARTER_TEMPLATE_VISIBLE_BLOCKS.has(block.id),
-      props: {
-        ...block.props,
-        ...(blockAppearances[block.type] ? { appearance: blockAppearances[block.type] } : {}),
-      },
-    })),
+    blocks: [
+      ...STARTER_TEMPLATE_BLOCK_DEFINITIONS.map((block) => ({
+        ...block,
+        screenId: 'github-home',
+        visible: STARTER_TEMPLATE_VISIBLE_BLOCKS.has(block.id),
+        props: {
+          ...block.props,
+          ...(blockAppearances[block.type] ? { appearance: blockAppearances[block.type] } : {}),
+        },
+      })),
+      ...STARTER_REPOSITORY_README_BLOCKS.map((block) => ({
+        ...block,
+        props: {
+          ...block.props,
+          ...(blockAppearances[block.type] ? { appearance: blockAppearances[block.type] } : {}),
+        },
+      })),
+    ],
     provider: 'github',
     columnLayout: {
       left: 300,
@@ -1300,6 +1542,14 @@ function getAppearanceTargets(block, element) {
     return [];
   }
 
+  if (block.type === 'repository-header') {
+    return [
+      queryFirst(githubRepositorySelectors.repositoryHeader),
+      queryFirst(githubRepositorySelectors.repositoryNav),
+      element,
+    ].filter((target, index, targets) => target instanceof HTMLElement && targets.indexOf(target) === index);
+  }
+
   if (block.type === 'top-nav') {
     const topbar = queryFirst(githubHomeSelectors.topbar);
     return topbar instanceof HTMLElement ? [topbar] : [element];
@@ -1430,6 +1680,10 @@ function getNativeBlockRegion(block) {
     'issue-pr-updates': 'right-sidebar',
     'trending-repos': 'right-sidebar',
     'recommended-repos': 'right-sidebar',
+    'repository-header': 'topbar',
+    'repository-file-list': 'main-feed',
+    'repository-readme': 'main-feed',
+    'repository-about-sidebar': 'right-sidebar',
   };
 
   return defaultRegions[block.type] ?? block.region;
@@ -1517,7 +1771,16 @@ function findBlockElement(block) {
 }
 
 function getRegionContainer(region) {
-  const container = queryFirst(regionContainers[region] ?? []);
+  const repositoryRegionContainers = {
+    topbar: githubRepositorySelectors.repositoryHeader,
+    'left-sidebar': [],
+    'main-feed': githubRepositorySelectors.repositoryMain,
+    'right-sidebar': githubRepositorySelectors.sidebar,
+  };
+  const selectors = isGitHubRepositoryRoute()
+    ? [...(repositoryRegionContainers[region] ?? []), ...(regionContainers[region] ?? [])]
+    : (regionContainers[region] ?? []);
+  const container = queryFirst(selectors);
   return container instanceof HTMLElement ? container : null;
 }
 
@@ -1593,6 +1856,536 @@ function createRepoList(repositories = []) {
   return list;
 }
 
+function createRepositoryFileList(props, itemLimit) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'git-reflow-repository-files';
+
+  const toolbar = document.createElement('div');
+  toolbar.className = 'git-reflow-repository-files__toolbar';
+  toolbar.append(createTextElement('strong', getText(props.branch, 'main')));
+  toolbar.append(createTextElement('span', 'Code'));
+  wrapper.append(toolbar);
+
+  const commit = document.createElement('div');
+  commit.className = 'git-reflow-repository-files__commit';
+  commit.append(createTextElement('strong', getText(props.commitAuthor, 'sample-user')));
+  commit.append(createTextElement('span', getText(props.commitMessage, 'Update README')));
+  commit.append(createTextElement('time', getText(props.commitTime, 'now')));
+  wrapper.append(commit);
+
+  const rows = document.createElement('div');
+  rows.className = 'git-reflow-repository-file-list';
+  getArray(props.files).slice(0, itemLimit).forEach((file) => {
+    const row = document.createElement('div');
+    row.className = 'git-reflow-repository-file-row';
+    row.dataset.fileType = getText(file.type, 'file');
+    row.append(createTextElement('strong', getText(file.name, 'README.md')));
+    row.append(createTextElement('span', getText(file.message, 'Update file')));
+    rows.append(row);
+  });
+  wrapper.append(rows);
+
+  return wrapper;
+}
+
+function createRepositoryHeaderSurface(props) {
+  const header = document.createElement('section');
+  header.className = 'git-reflow-repository-header-surface';
+
+  const titleRow = document.createElement('div');
+  titleRow.className = 'git-reflow-repository-header-surface__title-row';
+
+  const title = document.createElement('div');
+  title.className = 'git-reflow-repository-header-surface__title';
+  title.append(createTextElement('strong', getText(props.owner, 'template-owner')));
+  title.append(createTextElement('span', '/'));
+  title.append(createTextElement('strong', getText(props.repository, 'sample-readme-project')));
+  title.append(createTextElement('em', getText(props.visibility, 'Public')));
+  titleRow.append(title);
+
+  const actions = document.createElement('div');
+  actions.className = 'git-reflow-repository-header-surface__actions';
+  getArray(props.actions).slice(0, 4).forEach((action) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = `${getText(action.label, 'Action')}${getText(action.count) ? ` ${getText(action.count)}` : ''}`;
+    actions.append(button);
+  });
+  titleRow.append(actions);
+  header.append(titleRow);
+
+  const tabs = document.createElement('nav');
+  tabs.className = 'git-reflow-repository-header-surface__tabs';
+  tabs.setAttribute('aria-label', 'Repository template navigation');
+  getArray(props.tabs).forEach((tab) => {
+    const link = document.createElement('a');
+    link.href = `#${encodeURIComponent(getText(tab.label, 'tab').toLowerCase().replace(/\s+/g, '-'))}`;
+    link.textContent = getText(tab.label, 'Tab');
+    link.classList.toggle('is-active', Boolean(tab.active));
+    tabs.append(link);
+  });
+  header.append(tabs);
+
+  return header;
+}
+
+function createRepositoryReadme(props) {
+  const article = document.createElement('article');
+  article.className = 'git-reflow-repository-readme markdown-body';
+
+  const header = document.createElement('div');
+  header.className = 'git-reflow-repository-readme__header';
+  header.append(createTextElement('strong', 'README.md'));
+  article.append(header);
+
+  const body = document.createElement('div');
+  body.className = 'git-reflow-repository-readme__body';
+  body.append(createTextElement('h1', getText(props.title, 'sample-readme-project')));
+
+  const badges = getArray(props.badges);
+  if (badges.length) {
+    const badgeList = document.createElement('div');
+    badgeList.className = 'git-reflow-chip-list';
+    badges.slice(0, 8).forEach((badge) => badgeList.append(createTextElement('span', getText(badge))));
+    body.append(badgeList);
+  }
+
+  getArray(props.sections).forEach((section) => {
+    const sectionElement = document.createElement('section');
+    sectionElement.append(createTextElement('h2', getText(section.heading, 'Section')));
+    sectionElement.append(createTextElement('p', getText(section.body, 'Add README content here.')));
+    body.append(sectionElement);
+  });
+
+  article.append(body);
+  return article;
+}
+
+function createRepositoryAboutSidebar(props) {
+  const sidebar = document.createElement('aside');
+  sidebar.className = 'git-reflow-repository-about';
+
+  const about = document.createElement('section');
+  about.append(createTextElement('h2', 'About'));
+  about.append(createTextElement('p', getText(props.description, 'Short repository description goes here.')));
+
+  const links = getArray(props.links);
+  if (links.length) {
+    const linkList = document.createElement('div');
+    linkList.className = 'git-reflow-repository-about__links';
+    links.slice(0, 6).forEach((link) => {
+      const anchor = document.createElement('a');
+      anchor.href = `#${encodeURIComponent(getText(link).toLowerCase().replace(/\s+/g, '-'))}`;
+      anchor.textContent = getText(link);
+      linkList.append(anchor);
+    });
+    about.append(linkList);
+  }
+  sidebar.append(about);
+
+  [
+    ['Releases', getText(props.releases, 'No releases published')],
+    ['Packages', getText(props.packages, 'No packages published')],
+  ].forEach(([heading, body]) => {
+    const section = document.createElement('section');
+    section.append(createTextElement('h2', heading));
+    section.append(createTextElement('p', body));
+    sidebar.append(section);
+  });
+
+  const contributors = getArray(props.contributors);
+  if (contributors.length) {
+    const section = document.createElement('section');
+    section.append(createTextElement('h2', 'Contributors'));
+    const list = document.createElement('div');
+    list.className = 'git-reflow-repository-contributors';
+    contributors.slice(0, 8).forEach((contributor) => {
+      const item = createTextElement('span', getText(contributor.initial, getText(contributor.name, 'u').slice(0, 1)));
+      item.title = getText(contributor.name, 'sample-user');
+      list.append(item);
+    });
+    section.append(list);
+    sidebar.append(section);
+  }
+
+  const languages = getArray(props.languages);
+  if (languages.length) {
+    const section = document.createElement('section');
+    section.append(createTextElement('h2', 'Languages'));
+    const bar = document.createElement('div');
+    bar.className = 'git-reflow-repository-language-bar';
+    languages.forEach((language) => {
+      const segment = document.createElement('span');
+      segment.style.width = `${Math.max(0, Math.min(100, Number(language.percent) || 0))}%`;
+      segment.style.background = getText(language.color, '#0969da');
+      bar.append(segment);
+    });
+    section.append(bar);
+
+    const list = document.createElement('div');
+    list.className = 'git-reflow-repository-language-list';
+    languages.forEach((language) => {
+      const row = createTextElement('span', `${getText(language.name, 'Language')} ${Number(language.percent) || 0}%`);
+      list.append(row);
+    });
+    section.append(list);
+    sidebar.append(section);
+  }
+
+  return sidebar;
+}
+
+function getRepositoryPageHost() {
+  const existing = document.getElementById(REPOSITORY_PAGE_HOST_ID);
+  if (existing instanceof HTMLElement) {
+    return existing;
+  }
+
+  const repoRoot = queryFirst(githubRepositorySelectors.repositoryRoot);
+  const headerRoot = queryFirst(githubRepositorySelectors.repositoryHeader);
+  const anchor = repoRoot ?? headerRoot ?? queryFirst(['main#js-repo-pjax-container', 'main#main-content', '.application-main']);
+  const host = document.createElement('div');
+  host.id = REPOSITORY_PAGE_HOST_ID;
+  host.className = 'git-reflow-repository-page-host';
+
+  if (anchor?.parentElement) {
+    anchor.parentElement.insertBefore(host, anchor);
+  } else {
+    document.body.append(host);
+  }
+
+  return host;
+}
+
+function hideNativeRepositoryPage() {
+  [
+    ...githubRepositorySelectors.repositoryRoot,
+    ...githubRepositorySelectors.repositoryHeader,
+  ].forEach((selector) => {
+    document.querySelectorAll(selector).forEach((element) => {
+      if (element instanceof HTMLElement && !element.closest(`#${REPOSITORY_PAGE_HOST_ID}`)) {
+        element.classList.add(HIDDEN_CLASS);
+      }
+    });
+  });
+}
+
+function renderRepositoryPageTemplate(blocks, generation) {
+  const host = getRepositoryPageHost();
+  const headerBlock = blocks.find((block) => block.type === 'repository-header');
+  const fileBlock = blocks.find((block) => block.type === 'repository-file-list');
+  const readmeBlock = blocks.find((block) => block.type === 'repository-readme');
+  const aboutBlock = blocks.find((block) => block.type === 'repository-about-sidebar');
+
+  if (!(host instanceof HTMLElement) || !headerBlock || (!fileBlock && !readmeBlock && !aboutBlock)) {
+    return false;
+  }
+
+  hideNativeRepositoryPage();
+  host.replaceChildren();
+
+  const headerProps = isObject(headerBlock.props) ? headerBlock.props : {};
+  const header = createRepositoryHeaderSurface(headerProps);
+  header.dataset.gitReflowBlockId = headerBlock.id;
+  header.dataset.gitReflowBlockType = headerBlock.type;
+  applyAppearance(header, headerProps.appearance);
+  applyInnerAppearance(header, headerProps.appearance);
+  applyTypographyAppearance(header, headerProps.appearance);
+  host.append(header);
+
+  const body = document.createElement('div');
+  body.className = 'git-reflow-repository-page-host__body';
+  const main = document.createElement('main');
+  const sidebar = document.createElement('aside');
+
+  [fileBlock, readmeBlock].filter(Boolean).forEach((block, index) => {
+    const element = createGeneratedBlock(block);
+    element.style.order = String(index);
+    applyBlockProps(block, element, generation);
+    main.append(element);
+  });
+
+  if (aboutBlock) {
+    const element = createGeneratedBlock(aboutBlock);
+    applyBlockProps(aboutBlock, element, generation);
+    sidebar.append(element);
+  }
+
+  body.append(main, sidebar);
+  host.append(body);
+  return true;
+}
+
+function cleanupRepositoryGeneratedReplacements() {
+  document.getElementById(REPOSITORY_PAGE_HOST_ID)?.remove();
+  document
+    .querySelectorAll(
+      [
+        `.${GENERATED_BLOCK_CLASS}[data-git-reflow-block-type="repository-file-list"]`,
+        `.${GENERATED_BLOCK_CLASS}[data-git-reflow-block-type="repository-readme"]`,
+        `.${GENERATED_BLOCK_CLASS}[data-git-reflow-block-type="repository-about-sidebar"]`,
+      ].join(', '),
+    )
+    .forEach((element) => element.remove());
+}
+
+function restoreRememberedTextOverrides() {
+  document.querySelectorAll(`[${ORIGINAL_TEXT_ATTR}]`).forEach((element) => {
+    element.textContent = element.getAttribute(ORIGINAL_TEXT_ATTR) ?? '';
+    element.removeAttribute(ORIGINAL_TEXT_ATTR);
+  });
+}
+
+function removeRepositoryThemeStyle() {
+  document.getElementById(REPOSITORY_THEME_STYLE_ID)?.remove();
+}
+
+function getBlockAppearance(blocks, blockType) {
+  const appearance = blocks.find((block) => block.type === blockType)?.props?.appearance;
+
+  return isObject(appearance) ? appearance : {};
+}
+
+function sanitizeCssToken(value, fallback) {
+  const text = getText(value, fallback);
+
+  return /^[#(),.%\w\s-]+$/.test(text) ? text : fallback;
+}
+
+function getRepositoryThemeCss(blocks, pageAppearance) {
+  const header = getBlockAppearance(blocks, 'repository-header');
+  const files = getBlockAppearance(blocks, 'repository-file-list');
+  const readme = getBlockAppearance(blocks, 'repository-readme');
+  const about = getBlockAppearance(blocks, 'repository-about-sidebar');
+  const pageBackground = sanitizeCssToken(pageAppearance?.backgroundColor, '#0b1120');
+  const headerBackground = sanitizeCssToken(header.backgroundColor, '#0d1117');
+  const headerInner = sanitizeCssToken(header.innerBackgroundColor, '#161b22');
+  const headerText = sanitizeCssToken(header.textColor, '#f0f6fc');
+  const headerLink = sanitizeCssToken(header.linkColor, '#58a6ff');
+  const headerMuted = sanitizeCssToken(header.mutedTextColor, '#8b949e');
+  const fileBackground = sanitizeCssToken(files.backgroundColor, '#161b22');
+  const fileInner = sanitizeCssToken(files.innerBackgroundColor, '#0d1117');
+  const fileText = sanitizeCssToken(files.textColor, '#f0f6fc');
+  const fileLink = sanitizeCssToken(files.linkColor, '#58a6ff');
+  const fileMuted = sanitizeCssToken(files.mutedTextColor, '#8b949e');
+  const readmeBackground = sanitizeCssToken(readme.backgroundColor, '#161b22');
+  const readmeInner = sanitizeCssToken(readme.innerBackgroundColor, '#0d1117');
+  const readmeText = sanitizeCssToken(readme.textColor, '#f0f6fc');
+  const readmeLink = sanitizeCssToken(readme.linkColor, '#58a6ff');
+  const readmeMuted = sanitizeCssToken(readme.mutedTextColor, '#8b949e');
+  const aboutBackground = sanitizeCssToken(about.backgroundColor, '#161b22');
+  const aboutInner = sanitizeCssToken(about.innerBackgroundColor, '#0d1117');
+  const aboutText = sanitizeCssToken(about.textColor, '#f0f6fc');
+  const aboutLink = sanitizeCssToken(about.linkColor, '#58a6ff');
+  const aboutMuted = sanitizeCssToken(about.mutedTextColor, '#8b949e');
+
+  return `
+body.git-reflow-template-active {
+  background: ${pageBackground} !important;
+}
+body.git-reflow-template-active :is(.application-main, main#main-content, #js-repo-pjax-container, #repo-content-pjax-container, #repo-content-turbo-frame, react-app[app-name="code-view"], [class*="PageLayout-PageLayoutContent"], [class*="PageLayout-ContentWrapper"], [class*="PageLayout-Content"], [class*="PageLayout-PaneWrapper"]) {
+  background: ${pageBackground} !important;
+}
+body.git-reflow-template-active :is(#repo-content-pjax-container, #repo-content-turbo-frame, react-app[app-name="code-view"], [class*="PageLayout-PageLayoutContent"], [class*="PageLayout-ContentWrapper"]) {
+  --bgColor-default: ${fileBackground} !important;
+  --bgColor-muted: ${fileInner} !important;
+  --bgColor-inset: ${pageBackground} !important;
+  --bgColor-neutral-muted: color-mix(in srgb, ${fileMuted} 18%, transparent) !important;
+  --color-canvas-default: ${fileBackground} !important;
+  --color-canvas-subtle: ${fileInner} !important;
+  --color-canvas-inset: ${pageBackground} !important;
+  --color-fg-default: ${fileText} !important;
+  --color-fg-muted: ${fileMuted} !important;
+  --color-accent-fg: ${fileLink} !important;
+  --color-border-default: color-mix(in srgb, ${fileMuted} 38%, transparent) !important;
+  --color-border-muted: color-mix(in srgb, ${fileMuted} 24%, transparent) !important;
+  --color-btn-bg: ${fileInner} !important;
+  --color-btn-border: color-mix(in srgb, ${fileMuted} 42%, transparent) !important;
+  --color-btn-text: ${fileText} !important;
+  --fgColor-default: ${fileText} !important;
+  --fgColor-muted: ${fileMuted} !important;
+  --fgColor-accent: ${fileLink} !important;
+  --borderColor-default: color-mix(in srgb, ${fileMuted} 38%, transparent) !important;
+  --borderColor-muted: color-mix(in srgb, ${fileMuted} 24%, transparent) !important;
+  --control-bgColor-rest: ${fileInner} !important;
+  --control-borderColor-rest: color-mix(in srgb, ${fileMuted} 42%, transparent) !important;
+  --control-fgColor-rest: ${fileText} !important;
+  --button-default-bgColor-rest: ${fileInner} !important;
+  --button-default-borderColor-rest: color-mix(in srgb, ${fileMuted} 42%, transparent) !important;
+  --button-default-fgColor-rest: ${fileText} !important;
+  --button-primary-bgColor-rest: color-mix(in srgb, ${fileLink} 50%, ${fileBackground}) !important;
+  --button-primary-fgColor-rest: ${fileText} !important;
+}
+body.git-reflow-template-active :is(.AppHeader, .AppHeader-globalBar, .js-global-bar, [class*="AppHeader"], #repository-container-header, #repo-title-component, nav[aria-label="Repository"], #repository-container-header .UnderlineNav, #repository-container-header [class*="Underline"]) {
+  --bgColor-default: ${headerBackground} !important;
+  --bgColor-muted: ${headerInner} !important;
+  --bgColor-inset: ${headerBackground} !important;
+  --color-canvas-default: ${headerBackground} !important;
+  --color-canvas-subtle: ${headerInner} !important;
+  --color-canvas-inset: ${headerBackground} !important;
+  --color-fg-default: ${headerText} !important;
+  --color-fg-muted: ${headerMuted} !important;
+  --color-accent-fg: ${headerLink} !important;
+  --color-border-default: color-mix(in srgb, ${headerMuted} 34%, transparent) !important;
+  --color-border-muted: color-mix(in srgb, ${headerMuted} 22%, transparent) !important;
+  --color-btn-bg: ${headerInner} !important;
+  --color-btn-border: color-mix(in srgb, ${headerMuted} 38%, transparent) !important;
+  --color-btn-text: ${headerText} !important;
+  --fgColor-default: ${headerText} !important;
+  --fgColor-muted: ${headerMuted} !important;
+  --fgColor-accent: ${headerLink} !important;
+  --borderColor-default: color-mix(in srgb, ${headerMuted} 34%, transparent) !important;
+  --borderColor-muted: color-mix(in srgb, ${headerMuted} 22%, transparent) !important;
+  background: ${headerBackground} !important;
+  color: ${headerText} !important;
+  border-color: color-mix(in srgb, ${headerMuted} 34%, transparent) !important;
+}
+body.git-reflow-template-active :is(.AppHeader, .AppHeader-globalBar, .js-global-bar, [class*="AppHeader"], #repository-container-header, #repo-title-component, nav[aria-label="Repository"], #repository-container-header .UnderlineNav, #repository-container-header [class*="Underline"]) :is(a, span, strong, em, button, svg) {
+  color: ${headerText} !important;
+  fill: currentColor !important;
+}
+body.git-reflow-template-active :is(.AppHeader, .AppHeader-globalBar, .js-global-bar, [class*="AppHeader"], #repository-container-header, #repo-title-component, nav[aria-label="Repository"], #repository-container-header .UnderlineNav, #repository-container-header [class*="Underline"]) :is(a, [role="link"], [aria-current="page"]) {
+  color: ${headerLink} !important;
+}
+body.git-reflow-template-active :is(.AppHeader, .AppHeader-globalBar, .js-global-bar, [class*="AppHeader"], #repository-container-header, #repo-title-component, nav[aria-label="Repository"], #repository-container-header .UnderlineNav, #repository-container-header [class*="Underline"]) :is(button, input, textarea, .Label, [class*="Button"], [class*="TextInput"]) {
+  background: ${headerInner} !important;
+  border-color: color-mix(in srgb, ${headerMuted} 38%, transparent) !important;
+  color: ${headerText} !important;
+}
+body.git-reflow-template-active :is([class*="OverviewContent-module__Box_1"], [class*="OverviewContent-module__Box_2"], [class*="OverviewContent-module__Box_6"], [class*="OverviewContent-module__Box_7"], [class*="OverviewContent-module__Box_8"], [class*="OverviewContent-module__Box_9"], [class*="OverviewContent-module__Box_10"], [class*="OverviewContent-module__FileResultsList"], [class*="FileResultsList"], .overview-ref-selector, .TextInput-wrapper, [class*="TextInputWrapper"]) {
+  background: transparent !important;
+  color: ${fileText} !important;
+  border-color: color-mix(in srgb, ${fileMuted} 32%, transparent) !important;
+}
+body.git-reflow-template-active :is([class*="OverviewContent-module__Box_1"], [class*="OverviewContent-module__Box_2"], [class*="OverviewContent-module__Box_6"], [class*="OverviewContent-module__Box_7"], [class*="OverviewContent-module__Box_8"], [class*="OverviewContent-module__Box_9"], [class*="OverviewContent-module__Box_10"], [class*="OverviewContent-module__FileResultsList"], [class*="FileResultsList"]) :is(button, input, textarea, [class*="Button"], [class*="TextInput"]) {
+  background: ${fileInner} !important;
+  border-color: color-mix(in srgb, ${fileMuted} 40%, transparent) !important;
+  color: ${fileText} !important;
+}
+body.git-reflow-template-active :is([class*="OverviewContent-module__Box_11"], table[aria-labelledby="folders-and-files"], .Table-module__Box__HZKiQ, [data-testid="file-and-directory-list"]) {
+  --bgColor-default: ${fileBackground} !important;
+  --bgColor-muted: ${fileInner} !important;
+  --bgColor-inset: ${fileInner} !important;
+  --color-canvas-default: ${fileBackground} !important;
+  --color-canvas-subtle: ${fileInner} !important;
+  --color-canvas-inset: ${fileInner} !important;
+  --color-fg-default: ${fileText} !important;
+  --color-fg-muted: ${fileMuted} !important;
+  --color-accent-fg: ${fileLink} !important;
+  --color-border-default: color-mix(in srgb, ${fileMuted} 38%, transparent) !important;
+  --color-border-muted: color-mix(in srgb, ${fileMuted} 24%, transparent) !important;
+  --fgColor-default: ${fileText} !important;
+  --fgColor-muted: ${fileMuted} !important;
+  --fgColor-accent: ${fileLink} !important;
+  --borderColor-default: color-mix(in srgb, ${fileMuted} 38%, transparent) !important;
+  --borderColor-muted: color-mix(in srgb, ${fileMuted} 24%, transparent) !important;
+  background: ${fileBackground} !important;
+  border-color: color-mix(in srgb, ${fileMuted} 38%, transparent) !important;
+  color: ${fileText} !important;
+}
+body.git-reflow-template-active :is(table[aria-labelledby="folders-and-files"], .Table-module__Box__HZKiQ, [class*="DirectoryContent"], [class*="LatestCommit"], [class*="CommitAttribution"], .react-directory-row, .react-directory-row td, .react-directory-filename-column, .react-directory-filename-cell, .react-directory-truncate, .react-directory-commit-message, .react-directory-commit-age) {
+  background: ${fileBackground} !important;
+  border-color: color-mix(in srgb, ${fileMuted} 28%, transparent) !important;
+  color: ${fileText} !important;
+}
+body.git-reflow-template-active :is(table[aria-labelledby="folders-and-files"], .Table-module__Box__HZKiQ, [class*="DirectoryContent"], [class*="LatestCommit"], .react-directory-row) :is(thead, tbody, tr, th, td, [class*="Box"], [class*="Row"]) {
+  background: ${fileBackground} !important;
+  border-color: color-mix(in srgb, ${fileMuted} 28%, transparent) !important;
+  color: ${fileText} !important;
+}
+body.git-reflow-template-active :is(table[aria-labelledby="folders-and-files"], .Table-module__Box__HZKiQ, [class*="DirectoryContent"], [class*="LatestCommit"], .react-directory-row) :is(.bgColor-muted, [class*="OverviewHeaderRow"], [data-testid="latest-commit"]) {
+  background: ${fileInner} !important;
+  border-color: color-mix(in srgb, ${fileMuted} 34%, transparent) !important;
+}
+body.git-reflow-template-active :is(table[aria-labelledby="folders-and-files"], .Table-module__Box__HZKiQ, [class*="DirectoryContent"], [class*="LatestCommit"], .react-directory-row) :is(a, [role="link"], .Link--primary, .Link--secondary) {
+  color: ${fileLink} !important;
+}
+body.git-reflow-template-active :is(table[aria-labelledby="folders-and-files"], .Table-module__Box__HZKiQ, [class*="DirectoryContent"], [class*="LatestCommit"], .react-directory-row) :is(span, time, relative-time, small, .fgColor-muted, .color-fg-muted) {
+  color: ${fileMuted} !important;
+}
+body.git-reflow-template-active :is([class*="OverviewRepoFiles-module__Box"], [class*="OverviewRepoFiles-module__UnderlineNav"], [class*="DirectoryRichtextContent-module__SharedMarkdownContent"], article.markdown-body, article.markdown-body.entry-content) {
+  --bgColor-default: ${readmeBackground} !important;
+  --bgColor-muted: ${readmeInner} !important;
+  --bgColor-inset: ${readmeInner} !important;
+  --color-canvas-default: ${readmeBackground} !important;
+  --color-canvas-subtle: ${readmeInner} !important;
+  --color-canvas-inset: ${readmeInner} !important;
+  --color-fg-default: ${readmeText} !important;
+  --color-fg-muted: ${readmeMuted} !important;
+  --color-accent-fg: ${readmeLink} !important;
+  --color-border-default: color-mix(in srgb, ${readmeMuted} 34%, transparent) !important;
+  --color-border-muted: color-mix(in srgb, ${readmeMuted} 22%, transparent) !important;
+  --fgColor-default: ${readmeText} !important;
+  --fgColor-muted: ${readmeMuted} !important;
+  --fgColor-accent: ${readmeLink} !important;
+  --borderColor-default: color-mix(in srgb, ${readmeMuted} 34%, transparent) !important;
+  --borderColor-muted: color-mix(in srgb, ${readmeMuted} 22%, transparent) !important;
+  background: ${readmeBackground} !important;
+  border-color: color-mix(in srgb, ${readmeMuted} 34%, transparent) !important;
+  color: ${readmeText} !important;
+}
+body.git-reflow-template-active :is([class*="OverviewRepoFiles-module__UnderlineNav"], [class*="OverviewRepoFiles-module__Box_3"]) {
+  background: ${readmeInner} !important;
+  border-color: color-mix(in srgb, ${readmeMuted} 30%, transparent) !important;
+}
+body.git-reflow-template-active :is([class*="DirectoryRichtextContent-module__SharedMarkdownContent"], article.markdown-body, article.markdown-body.entry-content) :is(h1, h2, h3, h4, h5, h6, p, li, span, strong, em, table, td, th) {
+  color: ${readmeText} !important;
+  border-color: color-mix(in srgb, ${readmeMuted} 28%, transparent) !important;
+}
+body.git-reflow-template-active :is([class*="DirectoryRichtextContent-module__SharedMarkdownContent"], article.markdown-body, article.markdown-body.entry-content) :is(a, [role="link"]) {
+  color: ${readmeLink} !important;
+}
+body.git-reflow-template-active :is([class*="DirectoryRichtextContent-module__SharedMarkdownContent"], article.markdown-body, article.markdown-body.entry-content) :is(pre, code, blockquote, table, tr, td, th) {
+  background: ${readmeInner} !important;
+}
+body.git-reflow-template-active :is([class*="PageLayout-Pane"], [class*="PageLayout-PaneWrapper"], .Layout-sidebar, .Layout-sidebar .Box, aside[aria-label*="Repository"], [data-testid="repository-sidebar"], .hide-sm.hide-md, .BorderGrid, .BorderGrid-row, .BorderGrid-cell) {
+  --bgColor-default: ${aboutBackground} !important;
+  --bgColor-muted: ${aboutInner} !important;
+  --bgColor-inset: ${aboutInner} !important;
+  --color-canvas-default: ${aboutBackground} !important;
+  --color-canvas-subtle: ${aboutInner} !important;
+  --color-canvas-inset: ${aboutInner} !important;
+  --color-fg-default: ${aboutText} !important;
+  --color-fg-muted: ${aboutMuted} !important;
+  --color-accent-fg: ${aboutLink} !important;
+  --color-border-default: color-mix(in srgb, ${aboutMuted} 34%, transparent) !important;
+  --color-border-muted: color-mix(in srgb, ${aboutMuted} 22%, transparent) !important;
+  --fgColor-default: ${aboutText} !important;
+  --fgColor-muted: ${aboutMuted} !important;
+  --fgColor-accent: ${aboutLink} !important;
+  --borderColor-default: color-mix(in srgb, ${aboutMuted} 34%, transparent) !important;
+  --borderColor-muted: color-mix(in srgb, ${aboutMuted} 22%, transparent) !important;
+  background: ${aboutBackground} !important;
+  border-color: color-mix(in srgb, ${aboutMuted} 30%, transparent) !important;
+  color: ${aboutText} !important;
+}
+body.git-reflow-template-active :is(.BorderGrid, .BorderGrid-row, .BorderGrid-cell, [class*="SidebarAbout-module"], [class*="SidebarLanguages-module"], [class*="PageLayout-Pane"]) :is(h1, h2, h3, h4, p, span, strong, li, svg) {
+  color: ${aboutText} !important;
+  fill: currentColor !important;
+}
+body.git-reflow-template-active :is(.BorderGrid, .BorderGrid-row, .BorderGrid-cell, [class*="SidebarAbout-module"], [class*="SidebarLanguages-module"], [class*="PageLayout-Pane"]) :is(a, [role="link"], .Link--primary, .Link--secondary) {
+  color: ${aboutLink} !important;
+}
+body.git-reflow-template-active :is(.BorderGrid, .BorderGrid-row, .BorderGrid-cell, [class*="SidebarAbout-module"], [class*="SidebarLanguages-module"], [class*="PageLayout-Pane"]) :is(.Label, [class*="Label"], button, [class*="Button"]) {
+  background: ${aboutInner} !important;
+  border-color: color-mix(in srgb, ${aboutMuted} 34%, transparent) !important;
+  color: ${aboutLink} !important;
+}
+`;
+}
+
+function applyRepositoryThemeStyle(blocks, pageAppearance) {
+  let style = document.getElementById(REPOSITORY_THEME_STYLE_ID);
+
+  if (!(style instanceof HTMLStyleElement)) {
+    style = document.createElement('style');
+    style.id = REPOSITORY_THEME_STYLE_ID;
+    document.head.append(style);
+  }
+
+  style.textContent = getRepositoryThemeCss(blocks, isObject(pageAppearance) ? pageAppearance : {});
+}
+
 function createGeneratedBlock(block) {
   const props = isObject(block.props) ? block.props : {};
   const itemLimit = getItemLimit(props.itemLimit, 8);
@@ -1608,6 +2401,12 @@ function createGeneratedBlock(block) {
 
   if (block.type === 'recent-repos' || block.type === 'pinned-repos' || block.type === 'recommended-repos') {
     wrapper.append(createRepoList(getArray(props.repositories).slice(0, itemLimit)));
+  } else if (block.type === 'repository-file-list') {
+    wrapper.replaceChildren(createRepositoryFileList(props, itemLimit));
+  } else if (block.type === 'repository-readme') {
+    wrapper.replaceChildren(createRepositoryReadme(props));
+  } else if (block.type === 'repository-about-sidebar') {
+    wrapper.replaceChildren(createRepositoryAboutSidebar(props));
   } else if (block.type === 'activity-feed') {
     const list = document.createElement('div');
     list.className = 'git-reflow-block-list';
@@ -1794,6 +2593,38 @@ function hideNativeRecentRepoBlocks(excludedElement) {
   roots.forEach((root) => root.classList.add(HIDDEN_CLASS));
 }
 
+function hideNativeGeneratedBlockTarget(block, excludedElement) {
+  if (!['repository-file-list', 'repository-readme', 'repository-about-sidebar'].includes(block?.type)) {
+    return;
+  }
+
+  const selectors = blockSelectorRegistry[block.type] ?? [];
+
+  selectors.forEach((selector) => {
+    document.querySelectorAll(selector).forEach((candidate) => {
+      if (!(candidate instanceof HTMLElement)) {
+        return;
+      }
+
+      const generatedAncestor = candidate.closest(`.${GENERATED_BLOCK_CLASS}`);
+      if (generatedAncestor || candidate === excludedElement || candidate.contains(excludedElement)) {
+        return;
+      }
+
+      const root = getBlockRootFromMatchedElement(block, candidate, findContainingRegionRoot(candidate) ?? document);
+      if (!(root instanceof HTMLElement) || root.classList.contains(GENERATED_BLOCK_CLASS)) {
+        return;
+      }
+
+      if (root === excludedElement || root.contains(excludedElement)) {
+        return;
+      }
+
+      root.classList.add(HIDDEN_CLASS);
+    });
+  });
+}
+
 function applyTopbarProps(block) {
   const props = isObject(block.props) ? block.props : {};
   const contextElement = queryFirst(githubHomeSelectors.topbarContext);
@@ -1837,6 +2668,55 @@ function applyTopbarProps(block) {
             element.classList.toggle(HIDDEN_CLASS, !actions.includes(label));
           }
         });
+    });
+  }
+}
+
+function applyRepositoryHeaderProps(block, element) {
+  const props = isObject(block.props) ? block.props : {};
+  const header = element instanceof HTMLElement ? element : queryFirst(githubRepositorySelectors.repositoryHeader);
+
+  if (!(header instanceof HTMLElement)) {
+    return;
+  }
+
+  const owner = getText(props.owner);
+  const repository = getText(props.repository);
+  const visibility = getText(props.visibility);
+  const links = [...header.querySelectorAll('a[href]')].filter((link) => link instanceof HTMLAnchorElement);
+  const repoLinks = links.filter((link) => {
+    const parts = new URL(link.href, window.location.origin).pathname.split('/').filter(Boolean);
+    return parts.length <= 2;
+  });
+
+  if (owner && repoLinks[0] instanceof HTMLElement) {
+    setTextIfPossible(repoLinks[0], owner);
+  }
+
+  if (repository && repoLinks[1] instanceof HTMLElement) {
+    setTextIfPossible(repoLinks[1], repository);
+  }
+
+  if (visibility) {
+    const visibilityTarget = [...header.querySelectorAll('span, strong, em')].find((target) => {
+      const text = target.textContent?.trim();
+      return text === 'Public' || text === 'Private' || text === 'Internal';
+    });
+
+    if (visibilityTarget instanceof HTMLElement) {
+      setTextIfPossible(visibilityTarget, visibility);
+    }
+  }
+
+  const tabs = getArray(props.tabs).map((tab) => getText(tab.label));
+  if (tabs.length) {
+    header.querySelectorAll('nav[aria-label="Repository"] a, a.UnderlineNav-item').forEach((tabLink) => {
+      if (!(tabLink instanceof HTMLElement)) {
+        return;
+      }
+
+      const text = tabLink.textContent?.replace(/\d+/g, '').replace(/\s+/g, ' ').trim() ?? '';
+      tabLink.classList.toggle(HIDDEN_CLASS, !tabs.some((tab) => text.includes(tab)));
     });
   }
 }
@@ -1885,13 +2765,46 @@ function applyBlockProps(block, element, generation) {
 }
 
 function applyTemplateBlocks(template, generation) {
+  if (
+    isGitHubRepositoryRoute() &&
+    queryFirst(githubRepositorySelectors.repositoryRoot) === null &&
+    queryFirst(githubRepositorySelectors.repositoryHeader) === null
+  ) {
+    return;
+  }
+
+  const currentScreenId = getCurrentGitHubScreenId(template);
+  const blocks = Array.isArray(template.blocks)
+    ? template.blocks.filter((block) => !block.screenId || block.screenId === currentScreenId)
+    : [];
+
+  if (isGitHubRepositoryRoute()) {
+    cleanupRepositoryGeneratedReplacements();
+    restoreRememberedTextOverrides();
+    document.querySelectorAll(`.${HIDDEN_CLASS}`).forEach((element) => {
+      element.classList.remove(HIDDEN_CLASS);
+    });
+    document.querySelectorAll(`.${APPEARANCE_CLASS}`).forEach(clearAppearance);
+    document.querySelectorAll(`.${BLOCK_CLASS}:not(.${GENERATED_BLOCK_CLASS})`).forEach((element) => {
+      element.classList.remove(BLOCK_CLASS, HIDDEN_CLASS);
+      element.style.removeProperty('order');
+      clearAppearance(element);
+      delete element.dataset.gitReflowBlockId;
+      delete element.dataset.gitReflowBlockType;
+      delete element.dataset.gitReflowRegion;
+      delete element.dataset.gitReflowNativeRegion;
+    });
+    applyRepositoryThemeStyle(blocks, template.pageAppearance);
+    return;
+  }
+
+  removeRepositoryThemeStyle();
   document.querySelectorAll(`.${HIDDEN_CLASS}`).forEach((element) => {
     element.classList.remove(HIDDEN_CLASS);
   });
   document.querySelectorAll(`.${APPEARANCE_CLASS}`).forEach(clearAppearance);
-  document.querySelectorAll(`.${GENERATED_BLOCK_CLASS}`).forEach((element) => element.remove());
   document.querySelectorAll('.git-reflow-topbar-links').forEach((element) => element.remove());
-  document.querySelectorAll(`.${BLOCK_CLASS}`).forEach((element) => {
+  document.querySelectorAll(`.${BLOCK_CLASS}:not(.${GENERATED_BLOCK_CLASS})`).forEach((element) => {
     element.classList.remove(BLOCK_CLASS, HIDDEN_CLASS);
     element.style.removeProperty('order');
     clearAppearance(element);
@@ -1903,8 +2816,6 @@ function applyTemplateBlocks(template, generation) {
   document.querySelectorAll('.git-reflow-region-container').forEach((element) => {
     element.classList.remove('git-reflow-region-container');
   });
-
-  const blocks = Array.isArray(template.blocks) ? template.blocks : [];
   const visibleByRegion = new Map();
 
   blocks.forEach((block) => {
@@ -1939,6 +2850,7 @@ function applyTemplateBlocks(template, generation) {
           element = getOrCreateGeneratedBlock(generatedBlock);
           container.append(element);
           hideNativeRecentRepoBlocks(element);
+          hideNativeGeneratedBlockTarget(block, element);
         }
       }
 
@@ -1949,6 +2861,11 @@ function applyTemplateBlocks(template, generation) {
 
       if (!(element instanceof HTMLElement)) {
         return;
+      }
+
+      if (useGeneratedBlock && element.classList.contains(GENERATED_BLOCK_CLASS)) {
+        hideNativeRecentRepoBlocks(element);
+        hideNativeGeneratedBlockTarget(block, element);
       }
 
       if (block.visible !== false) {
@@ -2052,7 +2969,11 @@ function recordTemplateUsage(token, template) {
 }
 
 function reapplyTemplateBlocksAfterGitHubHydration(template, generation) {
-  [350, 900, 1800, 3200].forEach((delay) => {
+  const delays = isGitHubRepositoryRoute()
+    ? [250, 700, 1200, 2200, 3600, 5500, 8000]
+    : [350, 900, 1800, 3200];
+
+  delays.forEach((delay) => {
     window.setTimeout(() => {
       if (generation !== templateRenderGeneration) {
         return;
@@ -2060,6 +2981,82 @@ function reapplyTemplateBlocksAfterGitHubHydration(template, generation) {
 
       applyTemplateBlocks(template, generation);
     }, delay);
+  });
+}
+
+function stopTemplateMutationObserver() {
+  if (templateMutationObserver) {
+    templateMutationObserver.disconnect();
+    templateMutationObserver = null;
+  }
+
+  if (templateMutationReapplyTimer) {
+    window.clearTimeout(templateMutationReapplyTimer);
+    templateMutationReapplyTimer = 0;
+  }
+}
+
+function startTemplateMutationObserver(template, generation) {
+  stopTemplateMutationObserver();
+
+  const root = getTemplateObserverRoot();
+  if (!(root instanceof HTMLElement)) {
+    return;
+  }
+
+  templateMutationObserver = new MutationObserver((mutations) => {
+    if (generation !== templateRenderGeneration || templateMutationReapplying) {
+      return;
+    }
+
+    const shouldReapply = mutations.some((mutation) => {
+      const targets = [
+        mutation.target,
+        ...mutation.addedNodes,
+        ...mutation.removedNodes,
+      ];
+
+      return targets.some((target) => {
+        if (!(target instanceof Element)) {
+          return false;
+        }
+
+        if (target.closest?.(`#${CONTROLLER_ID}`)) {
+          return false;
+        }
+
+        return (
+          target.matches?.('#repo-content-turbo-frame, #repo-content-pjax-container, article.markdown-body, .BorderGrid, [aria-labelledby="folders-and-files"]') ||
+          target.querySelector?.('article.markdown-body, .BorderGrid, [aria-labelledby="folders-and-files"], .git-reflow-generated-block')
+        );
+      });
+    });
+
+    if (!shouldReapply) {
+      return;
+    }
+
+    if (templateMutationReapplyTimer) {
+      window.clearTimeout(templateMutationReapplyTimer);
+    }
+
+    templateMutationReapplyTimer = window.setTimeout(() => {
+      if (generation !== templateRenderGeneration) {
+        return;
+      }
+
+      templateMutationReapplying = true;
+      applyTemplateBlocks(template, generation);
+      applyPageAppearance(template.pageAppearance);
+      window.setTimeout(() => {
+        templateMutationReapplying = false;
+      }, 80);
+    }, 120);
+  });
+
+  templateMutationObserver.observe(root, {
+    childList: true,
+    subtree: true,
   });
 }
 
@@ -2650,6 +3647,7 @@ function applyTemplate(template) {
   applyTemplateBlocks(latestTemplate, generation);
   reapplyTemplateBlocksAfterGitHubHydration(latestTemplate, generation);
   applyPageAppearance(latestTemplate.pageAppearance);
+  startTemplateMutationObserver(latestTemplate, generation);
   if (latestTemplate.leftSidebarResizeEnabled === false) {
     removeLeftSidebarResizer();
     setControllerHint('Preview applied. Left sidebar drag handle is disabled.');
@@ -2759,7 +3757,7 @@ async function refreshTemplateList() {
 }
 
 function createController() {
-  if (controllerCreated || document.getElementById(CONTROLLER_ID) || !isGitHubDashboard()) {
+  if (controllerCreated || document.getElementById(CONTROLLER_ID) || !isSupportedGitHubPage()) {
     return;
   }
 
@@ -2944,6 +3942,9 @@ function createController() {
 
 function resetAppliedStyles() {
   templateRenderGeneration += 1;
+  stopTemplateMutationObserver();
+  removeRepositoryThemeStyle();
+  cleanupRepositoryGeneratedReplacements();
   customLeftSidebarWidthPx = null;
   clearStoredLeftSidebarWidth();
   removeBackgroundImageLayer();
@@ -3012,21 +4013,35 @@ function resetAppliedStyles() {
   setStatus('Reset locally');
 }
 
+function loadControllerData() {
+  if (controllerDataLoaded || !document.getElementById(CONTROLLER_ID)) {
+    return;
+  }
+
+  controllerDataLoaded = true;
+  getStoredLeftSidebarWidth().then((storedWidth) => {
+    customLeftSidebarWidthPx = storedWidth ? clampWidth(storedWidth) : null;
+    refreshTemplateList();
+  });
+}
+
 function boot() {
   createController();
+  loadControllerData();
 
-  if (document.getElementById(CONTROLLER_ID)) {
-    getStoredLeftSidebarWidth().then((storedWidth) => {
-      customLeftSidebarWidthPx = storedWidth ? clampWidth(storedWidth) : null;
-      refreshTemplateList();
-    });
-  }
+  [500, 1500, 3000].forEach((delay) => {
+    window.setTimeout(() => {
+      createController();
+      loadControllerData();
+    }, delay);
+  });
 }
 
 boot();
 
 document.addEventListener('turbo:load', () => {
   controllerCreated = false;
+  controllerDataLoaded = false;
   boot();
 
   if (latestTemplate) {

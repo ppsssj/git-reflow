@@ -19,6 +19,12 @@
   box-shadow: 0 10px 30px rgba(31, 35, 40, 0.2);
   color: var(--fgColor-default, #1f2328);
   cursor: pointer;
+  opacity: 0.32;
+  transition:
+    opacity 140ms ease,
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    transform 140ms ease;
 }
 
 .git-reflow-brand-logo {
@@ -42,8 +48,13 @@
   border-radius: 999px;
 }
 
-.git-reflow-launcher:hover {
+.git-reflow-launcher:hover,
+.git-reflow-launcher:focus-visible,
+.git-reflow-controller.is-open .git-reflow-launcher {
   border-color: var(--fgColor-accent, #0969da);
+  box-shadow: 0 14px 36px rgba(31, 35, 40, 0.24);
+  opacity: 1;
+  transform: translateY(-1px);
 }
 
 .git-reflow-panel {
@@ -951,6 +962,232 @@ body.git-reflow-template-active .feed-right-column {
   border-radius: 999px;
   color: var(--fgColor-muted, #656d76);
   font-size: 11px;
+  font-weight: 600;
+}
+
+.git-reflow-generated-block[data-git-reflow-block-type="repository-file-list"],
+.git-reflow-generated-block[data-git-reflow-block-type="repository-readme"] {
+  padding: 0;
+  overflow: hidden;
+  background: var(--git-reflow-block-background, var(--bgColor-default, #ffffff));
+}
+
+.git-reflow-repository-files {
+  display: grid;
+  gap: 0;
+}
+
+.git-reflow-repository-files__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+}
+
+.git-reflow-repository-files__toolbar strong,
+.git-reflow-repository-files__toolbar span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid color-mix(in srgb, var(--git-reflow-block-muted-text-color, var(--fgColor-muted, #656d76)) 38%, transparent);
+  border-radius: 6px;
+  background: var(--git-reflow-block-inner-background, var(--button-default-bgColor-rest, #f6f8fa));
+  color: var(--git-reflow-block-text-color, var(--fgColor-default, #24292f));
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.git-reflow-repository-files__commit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid color-mix(in srgb, var(--git-reflow-block-muted-text-color, var(--fgColor-muted, #656d76)) 38%, transparent);
+  border-radius: 6px 6px 0 0;
+  background: var(--git-reflow-block-inner-background, var(--bgColor-muted, #f6f8fa));
+  color: var(--git-reflow-block-muted-text-color, var(--fgColor-muted, #656d76));
+}
+
+.git-reflow-repository-files__commit span {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.git-reflow-repository-file-list {
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--git-reflow-block-muted-text-color, var(--fgColor-muted, #656d76)) 38%, transparent);
+  border-top: 0;
+  border-radius: 0 0 6px 6px;
+}
+
+.git-reflow-repository-file-row {
+  display: grid;
+  grid-template-columns: minmax(160px, 0.42fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  min-height: 44px;
+  padding: 0 16px;
+  border-top: 1px solid color-mix(in srgb, var(--git-reflow-block-muted-text-color, var(--fgColor-muted, #656d76)) 28%, transparent);
+}
+
+.git-reflow-repository-file-row:first-child {
+  border-top: 0;
+}
+
+.git-reflow-repository-file-row strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--git-reflow-block-link-color, var(--fgColor-accent, #0969da));
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.git-reflow-repository-file-row strong::before {
+  content: "F";
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  border-radius: 4px;
+  background: var(--git-reflow-block-inner-background, var(--bgColor-muted, #f6f8fa));
+  color: var(--git-reflow-block-muted-text-color, var(--fgColor-muted, #656d76));
+  font-size: 12px;
+  line-height: 1;
+}
+
+.git-reflow-repository-file-row[data-file-type="directory"] strong::before {
+  content: "D";
+}
+
+.git-reflow-repository-file-row span {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--git-reflow-block-muted-text-color, var(--fgColor-muted, #656d76));
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.git-reflow-repository-readme__header {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 16px;
+  border-bottom: 1px solid color-mix(in srgb, var(--git-reflow-block-muted-text-color, var(--fgColor-muted, #656d76)) 28%, transparent);
+  background: var(--git-reflow-block-inner-background, var(--bgColor-muted, #f6f8fa));
+  color: var(--git-reflow-block-text-color, var(--fgColor-default, #24292f));
+}
+
+.git-reflow-repository-readme__body {
+  padding: 24px 32px 32px;
+  background: var(--git-reflow-block-background, var(--bgColor-default, #ffffff));
+}
+
+.git-reflow-repository-readme h1 {
+  margin: 0 0 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid color-mix(in srgb, var(--git-reflow-block-muted-text-color, var(--fgColor-muted, #656d76)) 28%, transparent);
+  color: var(--git-reflow-block-text-color, var(--fgColor-default, #24292f));
+  font-size: 32px;
+  line-height: 1.25;
+}
+
+.git-reflow-repository-readme h2 {
+  margin: 24px 0 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid color-mix(in srgb, var(--git-reflow-block-muted-text-color, var(--fgColor-muted, #656d76)) 28%, transparent);
+  color: var(--git-reflow-block-text-color, var(--fgColor-default, #24292f));
+  font-size: 24px;
+}
+
+.git-reflow-repository-readme p {
+  color: var(--git-reflow-block-text-color, var(--fgColor-default, #24292f));
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.git-reflow-generated-block[data-git-reflow-block-type="repository-about-sidebar"] {
+  padding: var(--git-reflow-block-padding, 16px);
+  border: 1px solid color-mix(in srgb, var(--git-reflow-block-muted-text-color, var(--fgColor-muted, #656d76)) 28%, transparent);
+  background: var(--git-reflow-block-background, transparent);
+}
+
+.git-reflow-repository-about {
+  display: grid;
+}
+
+.git-reflow-repository-about section {
+  display: grid;
+  gap: 8px;
+  padding: 16px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--git-reflow-block-muted-text-color, var(--fgColor-muted, #656d76)) 28%, transparent);
+}
+
+.git-reflow-repository-about section:first-child {
+  padding-top: 0;
+}
+
+.git-reflow-repository-about h2 {
+  margin: 0;
+  color: var(--git-reflow-block-text-color, var(--fgColor-default, #24292f));
+  font-size: 16px;
+}
+
+.git-reflow-repository-about p {
+  color: var(--git-reflow-block-muted-text-color, var(--fgColor-muted, #656d76));
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.git-reflow-repository-about__links,
+.git-reflow-repository-language-list {
+  display: grid;
+  gap: 6px;
+}
+
+.git-reflow-repository-about__links a {
+  color: var(--git-reflow-block-link-color, var(--fgColor-accent, #0969da));
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.git-reflow-repository-contributors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.git-reflow-repository-contributors span {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #57606a, #afb8c1);
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.git-reflow-repository-language-bar {
+  display: flex;
+  overflow: hidden;
+  height: 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--git-reflow-block-muted-text-color, var(--fgColor-muted, #656d76)) 30%, transparent);
+}
+
+.git-reflow-repository-language-list span {
+  color: var(--git-reflow-block-text-color, var(--fgColor-default, #24292f));
+  font-size: 12px;
   font-weight: 600;
 }
 
