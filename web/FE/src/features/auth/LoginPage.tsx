@@ -129,7 +129,7 @@ export function LoginPage() {
         <section className="login-panel">
           <div className="login-brand">
             <div className="login-brand__mark">
-              <Icon name="alt_route" />
+              <img src="/assets/git-reflow-cat-logo-small-icon.svg" alt="" />
             </div>
             <span>git-reflow</span>
           </div>

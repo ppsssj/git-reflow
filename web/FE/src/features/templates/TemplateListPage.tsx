@@ -506,6 +506,12 @@ export function TemplateListPage() {
     templateUsageById,
     sectionTemplates,
   ]);
+  const starterPresetTemplates = librarySection === 'my'
+    ? filteredTemplates.filter((template) => isStarterGithubTemplateId(template.id))
+    : [];
+  const savedWorkspaceTemplates = librarySection === 'my'
+    ? filteredTemplates.filter((template) => !isStarterGithubTemplateId(template.id))
+    : filteredTemplates;
   const recentUsage = templateUsage?.recent[0];
   const mostUsedTemplate = templateUsage ? getTopUsageTemplates(templateUsage.templates)[0] : undefined;
   const topUsageTemplates = templateUsage ? getTopUsageTemplates(templateUsage.templates) : [];
@@ -994,69 +1000,113 @@ export function TemplateListPage() {
             </span>
           </section>
 
-          <section className={viewMode === 'grid' ? 'template-grid' : 'template-list'}>
-            {filteredTemplates.map((template) => (
-              <TemplateCard
-                key={template.id}
-                canManage={
-                  librarySection !== 'discover' &&
-                  template.id !== DEFAULT_TEMPLATE_ID &&
-                  !isStarterGithubTemplateId(template.id) &&
-                  remoteTemplateIds.has(template.id)
-                }
-                canCopy={
-                  librarySection === 'discover' ||
-                  isStarterGithubTemplateId(template.id) ||
-                  remoteTemplateIds.has(template.id)
-                }
-                copyLabel={librarySection === 'discover' ? 'Import' : 'Copy'}
-                canPublish={
-                  librarySection !== 'discover' &&
-                  getSourceTemplateId(template) !== DEFAULT_TEMPLATE_ID &&
-                  !isStarterGithubTemplateId(getSourceTemplateId(template)) &&
-                  remoteTemplateIds.has(getSourceTemplateId(template))
-                }
-                isFavorite={favoriteTemplateIdSet.has(template.id)}
-                isPublished={publishedTemplateIdSet.has(getSourceTemplateId(template))}
-                template={template}
-                variant={viewMode}
-                onCopy={librarySection === 'discover' ? handleImportTemplate : handleCopyTemplate}
-                onDelete={handleDeleteTemplate}
-                onToggleFavorite={handleToggleFavoriteTemplate}
-                onTogglePublish={handleTogglePublishedTemplate}
-                openPath={getTemplateOpenPath(template)}
-                onOpen={handleOpenTemplate}
-                onRename={handleRenameTemplate}
-              />
-            ))}
+          {librarySection === 'my' && starterPresetTemplates.length > 0 ? (
+            <section className="template-library-section" aria-labelledby="starter-template-heading">
+              <div className="template-library-section__header">
+                <div>
+                  <h2 id="starter-template-heading">Starter Templates</h2>
+                  <p>Fixed default layouts you can open or copy into your workspace.</p>
+                </div>
+                <span>{starterPresetTemplates.length}</span>
+              </div>
 
-            {filteredTemplates.length === 0 ? (
-              <div className="template-empty-results">
-                <Icon name="search" />
-                <strong>{sectionCopy.empty}</strong>
-                <span>{sectionCopy.emptyHint}</span>
+              <div className={viewMode === 'grid' ? 'template-grid' : 'template-list'}>
+                {starterPresetTemplates.map((template) => (
+                  <TemplateCard
+                    key={template.id}
+                    canManage={false}
+                    canCopy
+                    copyLabel="Copy"
+                    canPublish={false}
+                    isFavorite={favoriteTemplateIdSet.has(template.id)}
+                    isPublished={false}
+                    template={template}
+                    variant={viewMode}
+                    onCopy={handleCopyTemplate}
+                    onToggleFavorite={handleToggleFavoriteTemplate}
+                    openPath={getTemplateOpenPath(template)}
+                    onOpen={handleOpenTemplate}
+                  />
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          <section className="template-library-section" aria-labelledby="workspace-template-heading">
+            {librarySection === 'my' ? (
+              <div className="template-library-section__header">
+                <div>
+                  <h2 id="workspace-template-heading">Workspace Templates</h2>
+                  <p>Your saved, editable templates and copied starter layouts.</p>
+                </div>
+                <span>{savedWorkspaceTemplates.length}</span>
               </div>
             ) : null}
 
-            {librarySection === 'my' ? (
-              <form className="template-add-card template-create-card" onSubmit={handleCreateTemplate}>
-                <div className="template-add-card__icon">
-                  <Icon name="add_circle" />
+            <div className={viewMode === 'grid' ? 'template-grid' : 'template-list'}>
+              {savedWorkspaceTemplates.map((template) => (
+                <TemplateCard
+                  key={template.id}
+                  canManage={
+                    librarySection !== 'discover' &&
+                    template.id !== DEFAULT_TEMPLATE_ID &&
+                    !isStarterGithubTemplateId(template.id) &&
+                    remoteTemplateIds.has(template.id)
+                  }
+                  canCopy={
+                    librarySection === 'discover' ||
+                    isStarterGithubTemplateId(template.id) ||
+                    remoteTemplateIds.has(template.id)
+                  }
+                  copyLabel={librarySection === 'discover' ? 'Import' : 'Copy'}
+                  canPublish={
+                    librarySection !== 'discover' &&
+                    getSourceTemplateId(template) !== DEFAULT_TEMPLATE_ID &&
+                    !isStarterGithubTemplateId(getSourceTemplateId(template)) &&
+                    remoteTemplateIds.has(getSourceTemplateId(template))
+                  }
+                  isFavorite={favoriteTemplateIdSet.has(template.id)}
+                  isPublished={publishedTemplateIdSet.has(getSourceTemplateId(template))}
+                  template={template}
+                  variant={viewMode}
+                  onCopy={librarySection === 'discover' ? handleImportTemplate : handleCopyTemplate}
+                  onDelete={handleDeleteTemplate}
+                  onToggleFavorite={handleToggleFavoriteTemplate}
+                  onTogglePublish={handleTogglePublishedTemplate}
+                  openPath={getTemplateOpenPath(template)}
+                  onOpen={handleOpenTemplate}
+                  onRename={handleRenameTemplate}
+                />
+              ))}
+
+              {savedWorkspaceTemplates.length === 0 ? (
+                <div className="template-empty-results">
+                  <Icon name="search" />
+                  <strong>{sectionCopy.empty}</strong>
+                  <span>{sectionCopy.emptyHint}</span>
                 </div>
-                <strong>New Template</strong>
-                <label>
-                  <span>Template title</span>
-                  <input
-                    placeholder="GitHub focus layout"
-                    type="text"
-                    value={newTemplateName}
-                    onChange={(event) => setNewTemplateName(event.target.value)}
-                  />
-                </label>
-                <button type="submit">Create</button>
-                {createStatus ? <em>{createStatus}</em> : null}
-              </form>
-            ) : null}
+              ) : null}
+
+              {librarySection === 'my' ? (
+                <form className="template-add-card template-create-card" onSubmit={handleCreateTemplate}>
+                  <div className="template-add-card__icon">
+                    <Icon name="add_circle" />
+                  </div>
+                  <strong>New Template</strong>
+                  <label>
+                    <span>Template title</span>
+                    <input
+                      placeholder="GitHub focus layout"
+                      type="text"
+                      value={newTemplateName}
+                      onChange={(event) => setNewTemplateName(event.target.value)}
+                    />
+                  </label>
+                  <button type="submit">Create</button>
+                  {createStatus ? <em>{createStatus}</em> : null}
+                </form>
+              ) : null}
+            </div>
           </section>
 
           {librarySection === 'my' || librarySection === 'usage' ? (

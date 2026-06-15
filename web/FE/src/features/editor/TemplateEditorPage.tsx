@@ -131,6 +131,36 @@ function createEditableFallbackTemplate(templateId: string, templateName: string
   };
 }
 
+function slugify(value: string) {
+  const slug = value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+  return slug || 'github-template';
+}
+
+function createStarterCopyTemplate(template: TemplateLayout & Partial<ExtensionTemplatePayload>): ExtensionTemplatePayload {
+  const now = new Date().toISOString();
+  const name = `${template.name} Copy`;
+
+  return {
+    ...template,
+    id: `${slugify(name)}-${Date.now().toString(36)}`,
+    name,
+    description: template.description || `Custom GitHub home layout based on ${template.name}.`,
+    source: 'user',
+    version: template.version || 1,
+    metadata: {
+      ...template.metadata,
+      updatedAt: now,
+    },
+    provider: 'github',
+    updatedAt: now,
+  } as ExtensionTemplatePayload;
+}
+
 function formatPublishedDate(value?: string) {
   if (!value) {
     return 'Recently published';
@@ -156,6 +186,8 @@ export function TemplateEditorPage() {
   const navigate = useNavigate();
   const { networkTemplateId, templateId } = useParams();
   const isNetworkPreview = Boolean(networkTemplateId);
+  const isStarterPresetPreview = Boolean(templateId && isStarterGithubTemplateId(templateId));
+  const isReadOnlyPreview = isNetworkPreview || isStarterPresetPreview;
   const templateRecord =
     templateId && isStarterGithubTemplateId(templateId)
       ? getStarterGithubTemplateRecord(templateId) ?? starterGithubTemplateRecord
@@ -403,6 +435,30 @@ export function TemplateEditorPage() {
       return;
     }
 
+    if (isStarterPresetPreview) {
+      setSyncStatus('Copying starter template...');
+
+      try {
+        const result = await apiPost<SaveTemplateResponse>(
+          '/api/templates/github-home',
+          createStarterCopyTemplate({
+            ...layout,
+            columnLayout,
+            leftSidebarResizeEnabled,
+            selectedVariationId,
+            pageAppearance,
+          }),
+        );
+
+        setSyncStatus('Copied to workspace');
+        navigate(`/templates/${result.template.id}`);
+      } catch {
+        setSyncStatus('Backend unavailable');
+      }
+
+      return;
+    }
+
     if (templateId === defaultGithubTemplate.id) {
       setSyncStatus('Create a named template before saving');
       return;
@@ -490,7 +546,7 @@ export function TemplateEditorPage() {
   };
 
   const handleOpenBlockStyleMenu = (blockId: string, x: number, y: number) => {
-    if (isNetworkPreview) {
+    if (isReadOnlyPreview) {
       return;
     }
 
@@ -502,7 +558,7 @@ export function TemplateEditorPage() {
   };
 
   const handleOpenPageStyleMenu = (x: number, y: number) => {
-    if (isNetworkPreview) {
+    if (isReadOnlyPreview) {
       return;
     }
 
@@ -534,7 +590,7 @@ export function TemplateEditorPage() {
   };
 
   const handleUpdateBlockAppearance = (block: TemplateBlock, appearance: Record<string, unknown>) => {
-    if (isNetworkPreview) {
+    if (isReadOnlyPreview) {
       return;
     }
 
@@ -549,7 +605,7 @@ export function TemplateEditorPage() {
   };
 
   const handleUpdatePageAppearance = (appearance: Record<string, unknown>) => {
-    if (isNetworkPreview) {
+    if (isReadOnlyPreview) {
       return;
     }
 
@@ -560,7 +616,7 @@ export function TemplateEditorPage() {
   };
 
   const handleApplyQuickTheme = (themeId: QuickThemeId) => {
-    if (isNetworkPreview) {
+    if (isReadOnlyPreview) {
       return;
     }
 
@@ -664,13 +720,18 @@ export function TemplateEditorPage() {
     <div className="editor-page template-builder-page">
       <AppTopNav
         active={isNetworkPreview ? 'network' : 'templates'}
-        actionLabel={isNetworkPreview ? 'Import Template' : 'Save Draft'}
+        actionLabel={isNetworkPreview ? 'Import Template' : isStarterPresetPreview ? 'Copy Template' : 'Save Draft'}
         actionStatus={syncStatus}
         searchPlaceholder="Search blocks..."
         onActionClick={handleSyncTemplate}
       />
 
-      <main className="template-builder-main">
+      <main
+        className={[
+          'template-builder-main',
+          isStarterPresetPreview ? 'template-builder-main--preview' : '',
+        ].join(' ').trim()}
+      >
         <aside className="template-builder-rail">
           <div className="template-builder-rail__workspace">
             <div className="template-builder-rail__icon">
@@ -734,7 +795,15 @@ export function TemplateEditorPage() {
           <section className="template-builder-rail__section">
             <p>State</p>
             <div className="layout-state-summary">
-              <span>{isNetworkPreview ? 'Read-only Network preview' : layout.source === 'user' ? 'Draft edited' : 'Default loaded'}</span>
+              <span>
+                {isNetworkPreview
+                  ? 'Read-only Network preview'
+                  : isStarterPresetPreview
+                    ? 'Read-only starter preset'
+                    : layout.source === 'user'
+                      ? 'Draft edited'
+                      : 'Default loaded'}
+              </span>
               <strong>{visibleCount} visible blocks</strong>
             </div>
           </section>
@@ -782,7 +851,7 @@ export function TemplateEditorPage() {
               onSelectBlock={setSelectedBlockId}
               onToggleBlock={toggleBlockVisibility}
               pageAppearance={pageAppearance}
-              readOnly={isNetworkPreview}
+              readOnly={isReadOnlyPreview}
               screen={activeScreen}
               selectedBlockId={selectedBlockId}
               variationId={selectedVariationId}
@@ -860,7 +929,7 @@ export function TemplateEditorPage() {
             onImport={openImportDialog}
             onToggleLike={handleToggleNetworkLike}
           />
-        ) : (
+        ) : isStarterPresetPreview ? null : (
           <TemplateEditPanel
             layout={layout}
             columnLayout={columnLayout}
@@ -875,6 +944,7 @@ export function TemplateEditorPage() {
             onApplyQuickTheme={handleApplyQuickTheme}
             onToggleLeftSidebarResize={() => setLeftSidebarResizeEnabled((enabled) => !enabled)}
             onToggleBlock={toggleBlockVisibility}
+            readOnly={isStarterPresetPreview}
             selectedBlockId={selectedBlockId}
             selectedVariationId={selectedVariationId}
             serializedLayout={serializedTemplateState}

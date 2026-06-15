@@ -1432,11 +1432,20 @@ img {
 .login-brand__mark {
   display: grid;
   place-items: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 4px;
-  background: var(--primary);
-  color: white;
+  width: 38px;
+  height: 38px;
+  overflow: hidden;
+  border: 1px solid rgba(191, 199, 212, 0.28);
+  border-radius: 11px;
+  background: linear-gradient(180deg, #ffffff 0%, #f3f7fb 100%);
+  box-shadow: 0 8px 18px rgba(26, 28, 28, 0.06);
+}
+
+.login-brand__mark img {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+  transform: scale(1.18);
 }
 
 .login-copy h1 {
@@ -2526,6 +2535,47 @@ img {
 .template-toolbar__count {
   justify-self: end;
   white-space: nowrap;
+}
+
+.template-library-section {
+  max-width: 1280px;
+  margin: 0 auto 26px;
+}
+
+.template-library-section__header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.template-library-section__header h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: 0.9375rem;
+  font-weight: 900;
+}
+
+.template-library-section__header p {
+  margin: 4px 0 0;
+  color: var(--text-soft);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.template-library-section__header > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--surface-low);
+  color: var(--text-soft);
+  font-size: 0.6875rem;
+  font-weight: 900;
 }
 
 .template-grid {
@@ -4148,6 +4198,10 @@ img {
   flex: 1;
   min-height: 0;
   background: #f6f8fa;
+}
+
+.template-builder-main--preview {
+  grid-template-columns: 220px minmax(0, 1fr);
 }
 
 .template-builder-rail,
@@ -6903,7 +6957,7 @@ img {
 
 .github-home-preview__body {
   position: relative;
-  z-index: 0;
+  z-index: 20;
   grid-template-columns:
     minmax(0, var(--github-preview-left-width))
     minmax(0, var(--github-preview-main-min-width))
@@ -6927,6 +6981,16 @@ img {
   position: relative;
   z-index: 1;
   gap: 0;
+}
+
+.github-home-region--topbar {
+  z-index: 10;
+}
+
+.github-home-region:has(.github-block-frame:hover),
+.github-home-region:has(.github-block-frame.is-selected),
+.github-home-region:has(.github-block-frame:focus-within) {
+  z-index: 80;
 }
 
 .github-home-region--left-sidebar {
@@ -6963,6 +7027,13 @@ img {
 
 .github-block-frame {
   position: relative;
+  z-index: 1;
+}
+
+.github-block-frame:hover,
+.github-block-frame.is-selected,
+.github-block-frame:focus-within {
+  z-index: 90;
 }
 
 .github-block-frame.is-selected::before {
@@ -6980,7 +7051,7 @@ img {
   position: absolute;
   top: -36px;
   left: 0;
-  z-index: 12;
+  z-index: 100;
   display: flex;
   align-items: center;
   gap: 2px;
@@ -7050,7 +7121,7 @@ img {
 .github-block-selection-handles {
   position: absolute;
   inset: -4px;
-  z-index: 13;
+  z-index: 101;
   pointer-events: none;
 }
 
@@ -7088,7 +7159,7 @@ img {
   position: absolute;
   top: 12px;
   left: 12px;
-  z-index: 20;
+  z-index: 110;
 }
 
 .github-insert-trigger {
