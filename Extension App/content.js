@@ -543,6 +543,8 @@ const blockSelectorRegistry = {
     '.dashboard-sidebar [data-filterable-for]',
   ],
   'copilot-prompt': [
+    'form[class*="ChatInput-module__chatForm"]',
+    '[class*="CopilotChatInputPartial-module__input"]',
     '.CopilotChatInputPartial-module__inputContainer__ULM7D',
     '[class*="CopilotChatInputPartial-module__inputContainer"]',
     '[class*="CopilotImmersiveEmbedded-module__CopilotChatContainer"]',
@@ -1346,6 +1348,46 @@ function applyInnerAppearance(element, appearance) {
     });
 }
 
+function applyCopilotPromptAppearance(element, appearance) {
+  if (!(element instanceof HTMLElement) || !isObject(appearance)) {
+    return;
+  }
+
+  const backgroundColor = typeof appearance.backgroundColor === 'string'
+    ? appearance.backgroundColor
+    : '';
+  const innerBackgroundColor = typeof appearance.innerBackgroundColor === 'string'
+    ? appearance.innerBackgroundColor
+    : backgroundColor;
+
+  if (!innerBackgroundColor) {
+    return;
+  }
+
+  const surfaces = [
+    element,
+    ...element.querySelectorAll([
+      'form[class*="ChatInput-module__chatForm"]',
+      '[class*="ChatInput-module__inputContainer"]',
+      '[class*="ChatInput-module__inputPreview"]',
+      '[class*="ChatInput-module__toolbar"]',
+      '[class*="ChatInput-module__mode"]',
+      '[class*="ChatInput-module__extra"]',
+      '[class*="ChatInput-module__actions"]',
+      '[class*="ChatInput-module__toolbarButtons"]',
+      '[class*="CopilotChatInputPartial-module__input"]',
+      '[class*="CopilotChatInputPartial-module__inputContainer"]',
+      '[class*="InlineAutocomplete-module__container"]',
+    ].join(', ')),
+  ].filter((target, index, list) => target instanceof HTMLElement && list.indexOf(target) === index);
+
+  surfaces.forEach((surface) => {
+    surface.classList.add(APPEARANCE_CLASS);
+    surface.style.setProperty('background', innerBackgroundColor, 'important');
+    surface.style.setProperty('background-color', innerBackgroundColor, 'important');
+  });
+}
+
 function isVisibleCardLikeElement(element) {
   if (!(element instanceof HTMLElement)) {
     return false;
@@ -1455,6 +1497,28 @@ function applyActivityFeedCardSurface(cardSurface, appearance) {
   }
 }
 
+function applyActivityFeedKnownSurfaces(root, appearance) {
+  if (!(root instanceof HTMLElement)) {
+    return;
+  }
+
+  root
+    .querySelectorAll([
+      'section[aria-label^="repository body"] > .color-bg-subtle',
+      'section[aria-label^="repository body"] > [data-view-component]',
+      'section[aria-label^="repository body"] .color-bg-subtle',
+      '.js-feed-item-component .color-bg-subtle.rounded-1',
+      '.js-feed-item-component [class*="color-bg-subtle"][class*="rounded"]',
+      '[data-testid*="feed-item"] .color-bg-subtle.rounded-1',
+      '[class*="FeedItem"] .color-bg-subtle.rounded-1',
+    ].join(', '))
+    .forEach((surface) => {
+      if (surface instanceof HTMLElement && isVisibleCardLikeElement(surface)) {
+        applyActivityFeedCardSurface(surface, appearance);
+      }
+    });
+}
+
 function applyActivityFeedCardAppearance(element, appearance) {
   if (!(element instanceof HTMLElement) || !isObject(appearance) || typeof appearance.innerBackgroundColor !== 'string') {
     return;
@@ -1500,10 +1564,12 @@ function applyActivityFeedCardAppearance(element, appearance) {
     root.querySelectorAll('.feed-item-content').forEach((cardSurface) => {
       applyActivityFeedCardSurface(cardSurface, appearance);
     });
+    applyActivityFeedKnownSurfaces(root, appearance);
   });
 
   const feedItemSelector = [
     '.js-feed-item-component',
+    'section[aria-label^="repository body"]',
     'article',
     '[class*="FeedItem"]',
     '[class*="feed-item"]',
@@ -3355,6 +3421,9 @@ function applyBlockProps(block, element, generation) {
     } else {
       applyInnerAppearance(target, props.appearance);
     }
+    if (block.type === 'copilot-prompt') {
+      applyCopilotPromptAppearance(target, props.appearance);
+    }
     applyTypographyAppearance(target, props.appearance);
     applyElementSpacing(target, props.appearance);
   });
@@ -3664,8 +3733,8 @@ function startTemplateMutationObserver(template, generation) {
         }
 
         return (
-          target.matches?.('#repo-content-turbo-frame, #repo-content-pjax-container, #user-profile-frame, article.markdown-body, .profile-readme, .js-pinned-items-reorder-container, .js-yearly-contributions, .contribution-activity, .BorderGrid, [aria-labelledby="folders-and-files"]') ||
-          target.querySelector?.('#user-profile-frame, article.markdown-body, .profile-readme, .js-pinned-items-reorder-container, .js-yearly-contributions, .contribution-activity, .BorderGrid, [aria-labelledby="folders-and-files"], .git-reflow-generated-block')
+          target.matches?.('#repo-content-turbo-frame, #repo-content-pjax-container, #conduit-feed-frame, #dashboard-feed-frame, #copilot-chat-textarea, #user-profile-frame, article.markdown-body, .profile-readme, .js-for-you-feed-items, form[class*="ChatInput-module__chatForm"], [class*="CopilotChatInputPartial-module__input"], .js-pinned-items-reorder-container, .js-yearly-contributions, .contribution-activity, .BorderGrid, [aria-labelledby="folders-and-files"], section[aria-label^="repository body"], .color-bg-subtle.rounded-1') ||
+          target.querySelector?.('#conduit-feed-frame, #dashboard-feed-frame, #copilot-chat-textarea, #user-profile-frame, article.markdown-body, .profile-readme, .js-for-you-feed-items, form[class*="ChatInput-module__chatForm"], [class*="CopilotChatInputPartial-module__input"], .js-pinned-items-reorder-container, .js-yearly-contributions, .contribution-activity, .BorderGrid, [aria-labelledby="folders-and-files"], section[aria-label^="repository body"], .color-bg-subtle.rounded-1, .git-reflow-generated-block')
         );
       });
     });
