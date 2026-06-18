@@ -7636,6 +7636,441 @@ img {
   box-shadow: none;
 }
 
+.github-home-preview--profile-overview {
+  --github-preview-page-background: #0d1117;
+  color: #f0f6fc;
+}
+
+.github-home-preview--profile-overview .github-home-region--topbar {
+  min-height: 56px;
+  border-bottom: 1px solid color-mix(in srgb, var(--github-block-muted-text-color, #8b949e) 28%, transparent);
+  background: #010409;
+}
+
+.github-home-preview--profile-overview .github-home-region--topbar .github-home-region__empty {
+  min-height: 56px;
+  border: 0;
+  border-radius: 0;
+  color: transparent;
+}
+
+.github-home-preview--profile-overview .github-home-region--topbar .github-home-region__empty::before {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  min-height: 48px;
+  padding: 0 24px;
+  color: var(--github-block-text-color, #f0f6fc);
+  font-size: 14px;
+  font-weight: 600;
+  content: "Overview    Repositories    Projects    Packages    Stars";
+}
+
+.github-home-preview--profile-overview .github-home-topnav {
+  grid-template-columns: auto auto minmax(280px, 1fr) minmax(0, auto) auto;
+  min-height: 56px;
+  padding: 12px 16px;
+  background: #010409;
+  color: #f0f6fc;
+  box-shadow: inset 0 -1px color-mix(in srgb, var(--github-block-muted-text-color, #8b949e) 28%, transparent);
+}
+
+.github-home-preview--profile-overview .github-home-topnav__context strong,
+.github-home-preview--profile-overview .github-home-topnav nav a,
+.github-home-preview--profile-overview .github-home-topnav__brand button,
+.github-home-preview--profile-overview .github-home-topnav__actions button {
+  color: #f0f6fc;
+}
+
+.github-home-preview--profile-overview .github-home-topnav__brand button,
+.github-home-preview--profile-overview .github-home-topnav__actions button,
+.github-home-preview--profile-overview .github-home-topnav__search,
+.github-home-preview--profile-overview .github-home-topnav__actions span {
+  border-color: color-mix(in srgb, var(--github-block-muted-text-color, #8b949e) 36%, transparent);
+}
+
+.github-home-preview--profile-overview .github-home-topnav__search {
+  background: #0d1117;
+}
+
+.github-home-preview--profile-overview .github-home-mark {
+  background: #f0f6fc;
+  color: #010409;
+}
+
+.github-home-preview--profile-overview .github-home-topnav nav {
+  gap: 18px;
+}
+
+.github-home-preview--profile-overview .github-home-topnav nav a:first-child {
+  position: relative;
+}
+
+.github-home-preview--profile-overview .github-home-topnav nav a:first-child::after {
+  position: absolute;
+  right: 0;
+  bottom: -19px;
+  left: 0;
+  height: 2px;
+  border-radius: 999px;
+  background: #fd8c73;
+  content: "";
+}
+
+.github-home-preview--profile-overview .github-home-preview__body {
+  grid-template-columns: minmax(230px, 296px) minmax(0, 1fr);
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 24px 32px 56px;
+  gap: 28px;
+  background: var(--github-preview-page-background, #0d1117);
+}
+
+.github-home-preview--profile-overview .github-home-region--left-sidebar,
+.github-home-preview--profile-overview .github-home-region--main-feed {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.github-home-preview--profile-overview .github-home-region--right-sidebar {
+  display: none;
+}
+
+.github-home-preview--profile-overview .github-home-region--left-sidebar .github-block,
+.github-home-preview--profile-overview .github-home-region--main-feed .github-block {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--github-block-text-color, #f0f6fc);
+  box-shadow: none;
+}
+
+.github-home-preview--profile-overview .github-home-region--main-feed {
+  gap: 16px;
+}
+
+.github-profile-card {
+  display: grid;
+  gap: 14px;
+  color: var(--github-block-text-color, #f0f6fc);
+}
+
+.github-profile-card__avatar {
+  display: grid;
+  width: 100%;
+  max-width: 296px;
+  aspect-ratio: 1;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--github-block-muted-text-color, #8b949e) 28%, transparent);
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--github-block-inner-background, #1e4a38), var(--github-block-background, #123326));
+  color: var(--github-block-text-color, #f0f6fc);
+  font-size: 72px;
+  font-weight: 800;
+}
+
+.github-profile-card__names {
+  display: grid;
+  gap: 2px;
+}
+
+.github-profile-card h1 {
+  margin: 0;
+  color: var(--github-block-text-color, #f0f6fc);
+  font-size: 24px;
+  line-height: 1.25;
+}
+
+.github-profile-card p {
+  margin: 0;
+  color: var(--github-block-muted-text-color, #8b949e);
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.github-profile-card button {
+  min-height: 32px;
+  border: 1px solid color-mix(in srgb, var(--github-block-muted-text-color, #8b949e) 38%, transparent);
+  border-radius: 6px;
+  background: var(--github-block-inner-background, #1e4a38);
+  color: var(--github-block-text-color, #f0f6fc);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.github-profile-card__stats,
+.github-profile-card__website {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  color: var(--github-block-muted-text-color, #8b949e);
+  font-size: 14px;
+}
+
+.github-profile-card__website {
+  color: var(--github-block-link-color, #58a6ff);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.github-profile-card__website .material-symbols-outlined {
+  width: 16px;
+  height: 16px;
+}
+
+.github-profile-card__achievements {
+  display: grid;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid color-mix(in srgb, var(--github-block-muted-text-color, #8b949e) 28%, transparent);
+}
+
+.github-profile-card__achievements h2,
+.github-profile-pinned h2,
+.github-profile-contributions h2 {
+  margin: 0;
+  color: var(--github-block-text-color, #f0f6fc);
+  font-size: 16px;
+}
+
+.github-profile-card__achievements div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.github-profile-card__achievements span {
+  display: grid;
+  place-items: center;
+  min-width: 40px;
+  min-height: 40px;
+  padding: 8px;
+  border-radius: 999px;
+  background: var(--github-block-inner-background, #1e4a38);
+  color: var(--github-block-link-color, #58a6ff);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.github-profile-readme {
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--github-block-muted-text-color, #8b949e) 34%, transparent);
+  border-radius: 6px;
+  background: var(--github-block-background, #0f2a20);
+  color: var(--github-block-text-color, #f0f6fc);
+}
+
+.github-profile-readme__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 16px;
+  border-bottom: 1px solid color-mix(in srgb, var(--github-block-muted-text-color, #8b949e) 28%, transparent);
+  background: var(--github-block-inner-background, #183f30);
+  color: var(--github-block-text-color, #f0f6fc);
+  font-size: 14px;
+}
+
+.github-profile-readme__body {
+  padding: 24px 32px 32px;
+}
+
+.github-profile-readme__body h1 {
+  margin: 0 0 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid color-mix(in srgb, var(--github-block-muted-text-color, #8b949e) 28%, transparent);
+  color: var(--github-block-text-color, #f0f6fc);
+  font-size: 26px;
+}
+
+.github-profile-readme__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.github-profile-readme__links span {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--github-block-inner-background, #183f30);
+  color: var(--github-block-link-color, #58a6ff);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.github-profile-readme__body p {
+  margin: 0;
+  color: var(--github-block-text-color, #f0f6fc);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.github-profile-pinned,
+.github-profile-contributions {
+  display: grid;
+  gap: 12px;
+  overflow: visible;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: var(--github-block-text-color, #f0f6fc);
+}
+
+.github-profile-pinned header,
+.github-profile-contributions header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.github-profile-pinned header button,
+.github-profile-contributions header button {
+  border: 0;
+  background: transparent;
+  color: var(--github-block-link-color, #58a6ff);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.github-profile-pinned__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.github-profile-pinned__item {
+  display: grid;
+  min-height: 120px;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--github-block-muted-text-color, #8b949e) 34%, transparent);
+  border-radius: 6px;
+  background: var(--github-block-background, #0f2a20);
+}
+
+.github-profile-pinned__item div,
+.github-profile-pinned__item footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.github-profile-pinned__item strong {
+  overflow: hidden;
+  color: var(--github-block-link-color, #58a6ff);
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.github-profile-pinned__item em {
+  padding: 1px 6px;
+  border: 1px solid color-mix(in srgb, var(--github-block-muted-text-color, #8b949e) 34%, transparent);
+  border-radius: 999px;
+  color: var(--github-block-muted-text-color, #8b949e);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.github-profile-pinned__item p {
+  margin: 10px 0 16px;
+  color: var(--github-block-muted-text-color, #8b949e);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.github-profile-pinned__item footer {
+  align-self: end;
+  color: var(--github-block-muted-text-color, #8b949e);
+  font-size: 12px;
+}
+
+.github-profile-contributions__calendar {
+  display: grid;
+  grid-template-columns: repeat(53, 1fr);
+  gap: 3px;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--github-block-muted-text-color, #8b949e) 28%, transparent);
+  border-radius: 6px;
+  background: var(--github-block-background, #0f2a20);
+}
+
+.github-profile-contributions__calendar span {
+  aspect-ratio: 1;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--github-block-muted-text-color, #8b949e) 22%, transparent);
+}
+
+.github-profile-contributions__calendar .is-level-1 {
+  background: color-mix(in srgb, var(--github-block-link-color, #58a6ff) 28%, var(--github-block-inner-background, #183f30));
+}
+
+.github-profile-contributions__calendar .is-level-2 {
+  background: color-mix(in srgb, var(--github-block-link-color, #58a6ff) 48%, var(--github-block-inner-background, #183f30));
+}
+
+.github-profile-contributions__calendar .is-level-3 {
+  background: color-mix(in srgb, var(--github-block-link-color, #58a6ff) 70%, var(--github-block-inner-background, #183f30));
+}
+
+.github-profile-contributions__calendar .is-level-4 {
+  background: var(--github-block-link-color, #58a6ff);
+}
+
+.github-profile-contributions__years {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.github-profile-contributions__years button {
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--github-block-muted-text-color, #8b949e);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.github-profile-contributions__years button.is-active {
+  background: var(--github-block-link-color, #58a6ff);
+  color: var(--github-preview-page-background, #0d1117);
+}
+
+.github-profile-contributions__activity {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.github-profile-contributions__activity li {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 10px;
+  border-top: 1px solid color-mix(in srgb, var(--github-block-muted-text-color, #8b949e) 22%, transparent);
+  color: var(--github-block-text-color, #f0f6fc);
+  font-size: 13px;
+}
+
+.github-profile-contributions__activity span {
+  color: var(--github-block-muted-text-color, #8b949e);
+}
+
 .repository-header {
   display: grid;
   gap: 16px;

@@ -13,6 +13,7 @@ const ORIGINAL_PLACEHOLDER_ATTR = 'data-git-reflow-original-placeholder';
 const BACKGROUND_IMAGE_LAYER_ID = 'git-reflow-background-image-layer';
 const REPOSITORY_PAGE_HOST_ID = 'git-reflow-repository-page-host';
 const REPOSITORY_THEME_STYLE_ID = 'git-reflow-repository-theme-style';
+const PROFILE_THEME_STYLE_ID = 'git-reflow-profile-theme-style';
 const BACKGROUND_IMAGE_FRAME_WIDTH = 1120;
 const BACKGROUND_IMAGE_FRAME_HEIGHT = 760;
 const LEFT_WIDTH_STORAGE_KEY = 'gitReflowLeftSidebarWidthPx';
@@ -335,6 +336,88 @@ const STARTER_REPOSITORY_README_BLOCKS = [
     },
   },
 ];
+const STARTER_PROFILE_OVERVIEW_SCREEN = {
+  id: 'github-profile-overview',
+  name: 'Profile Overview',
+  providerRoute: 'github.com/:user',
+  description: 'GitHub user profile page with profile card, README, pinned repositories, and contribution activity.',
+};
+const STARTER_PROFILE_OVERVIEW_BLOCKS = [
+  {
+    id: 'profile-global-nav',
+    type: 'top-nav',
+    title: 'GitHub Header',
+    region: 'topbar',
+    screenId: STARTER_PROFILE_OVERVIEW_SCREEN.id,
+    visible: true,
+    extensionSlot: 'github.profile.globalNav',
+    props: {
+      context: 'ppsssj',
+      searchPlaceholder: 'Type / to search',
+      links: ['Overview', 'Repositories', 'Projects', 'Packages', 'Stars'],
+      actions: ['Copilot', 'Create', 'Issues', 'Pull requests', 'Repositories'],
+    },
+  },
+  {
+    id: 'profile-sidebar',
+    type: 'profile-sidebar',
+    title: 'Profile Sidebar',
+    region: 'left-sidebar',
+    screenId: STARTER_PROFILE_OVERVIEW_SCREEN.id,
+    visible: true,
+    extensionSlot: 'github.profile.sidebar',
+    props: {
+      name: 'ptjdwls',
+      handle: 'ppsssj',
+      website: 'https://ppsssj.vercel.app/',
+      stats: ['0 followers', '0 following'],
+    },
+  },
+  {
+    id: 'profile-readme',
+    type: 'profile-readme',
+    title: 'Profile README',
+    region: 'main-feed',
+    screenId: STARTER_PROFILE_OVERVIEW_SCREEN.id,
+    visible: true,
+    extensionSlot: 'github.profile.readme',
+    props: {
+      repository: 'ppsssj',
+      heading: 'Portfolio',
+      links: ['Portfolio', 'Projects'],
+      summary: 'Personal overview README rendered on the GitHub profile.',
+    },
+  },
+  {
+    id: 'profile-pinned-repos',
+    type: 'profile-pinned-repos',
+    title: 'Pinned Repositories',
+    region: 'main-feed',
+    screenId: STARTER_PROFILE_OVERVIEW_SCREEN.id,
+    visible: true,
+    extensionSlot: 'github.profile.pinned',
+    props: {
+      repositories: [
+        { name: 'Cogic', language: 'TypeScript', stars: '0' },
+        { name: 'GraphMind-monorepo', language: 'TypeScript', stars: '0' },
+        { name: 'Git-Effects', language: 'JavaScript', stars: '0' },
+      ],
+    },
+  },
+  {
+    id: 'profile-contributions',
+    type: 'profile-contributions',
+    title: 'Contributions',
+    region: 'main-feed',
+    screenId: STARTER_PROFILE_OVERVIEW_SCREEN.id,
+    visible: true,
+    extensionSlot: 'github.profile.contributions',
+    props: {
+      summary: 'Contribution calendar and activity timeline',
+      years: ['2026', '2025', '2024'],
+    },
+  },
+];
 
 const githubHomeSelectors = {
   dashboardRoot: ['.feed-background', 'feed-container', '#dashboard'],
@@ -391,10 +474,53 @@ const githubRepositorySelectors = {
   ],
 };
 
+const githubProfileSelectors = {
+  profileRoot: [
+    'body.page-profile',
+    'meta[name="route-controller"][content="profiles"]',
+    '#user-profile-frame',
+    '.page-profile',
+  ],
+  profileLayout: [
+    'main#js-pjax-container',
+    'main#main-content',
+    '.application-main',
+    '#user-profile-frame',
+  ],
+  profileSidebar: [
+    '.js-profile-editable-area',
+    '.js-profile-editable-replace',
+    '.vcard-names-container',
+    '[data-test-selector="profile-website-url"]',
+  ],
+  profileNav: [
+    '.user-profile-nav',
+    '.user-profile-sticky-bar',
+    'nav[aria-label="User profile"]',
+    'nav[aria-label="Profile"]',
+  ],
+  profileReadme: [
+    '.profile-readme',
+    '.profile-readme .markdown-body',
+    '#user-profile-frame article.markdown-body',
+  ],
+  pinnedRepos: [
+    '.js-pinned-items-reorder-container',
+    '.js-pinned-items-reorder-list',
+    '.pinned-item-list-item-content',
+  ],
+  contributions: [
+    '.js-yearly-contributions',
+    '.js-calendar-graph',
+    '.ContributionCalendar',
+    '.contribution-activity',
+  ],
+};
+
 const regionContainers = {
-  topbar: [...githubHomeSelectors.topbar, ...githubRepositorySelectors.repositoryHeader],
-  'left-sidebar': githubHomeSelectors.leftSidebarContent,
-  'main-feed': [...githubHomeSelectors.mainContent, ...githubRepositorySelectors.repositoryMain],
+  topbar: [...githubHomeSelectors.topbar, ...githubRepositorySelectors.repositoryHeader, ...githubProfileSelectors.profileNav],
+  'left-sidebar': [...githubHomeSelectors.leftSidebarContent, ...githubProfileSelectors.profileSidebar],
+  'main-feed': [...githubHomeSelectors.mainContent, ...githubRepositorySelectors.repositoryMain, ...githubProfileSelectors.profileLayout],
   'right-sidebar': [...githubHomeSelectors.rightSidebar, ...githubHomeSelectors.rightColumn, ...githubRepositorySelectors.sidebar],
 };
 
@@ -407,6 +533,10 @@ const blockSelectorRegistry = {
   'repository-file-list': githubRepositorySelectors.fileList,
   'repository-readme': githubRepositorySelectors.readme,
   'repository-about-sidebar': githubRepositorySelectors.sidebar,
+  'profile-sidebar': githubProfileSelectors.profileSidebar,
+  'profile-readme': githubProfileSelectors.profileReadme,
+  'profile-pinned-repos': githubProfileSelectors.pinnedRepos,
+  'profile-contributions': githubProfileSelectors.contributions,
   'profile-summary': ['.dashboard-sidebar > div:first-child', '.feed-left-sidebar .dashboard-sidebar > *:first-child'],
   'recent-repos': [
     '.dashboard-sidebar .js-repos-container',
@@ -447,6 +577,10 @@ const blockTextMatchers = {
   'repository-file-list': ['README.md', 'Go to file', 'Code'],
   'repository-readme': ['README', 'README.md'],
   'repository-about-sidebar': ['About', 'Releases', 'Packages', 'Languages'],
+  'profile-sidebar': ['followers', 'following', 'Achievements'],
+  'profile-readme': ['README', 'Portfolio', 'Projects'],
+  'profile-pinned-repos': ['Pinned', 'Popular repositories'],
+  'profile-contributions': ['contributions', 'Contribution activity'],
 };
 
 const topbarActionLabels = ['Copilot', 'Create', 'Issues', 'Pull requests', 'Repositories', 'Inbox'];
@@ -494,6 +628,12 @@ function isGitHubRepositoryRoute() {
   return pathParts.length === 2;
 }
 
+function isGitHubProfileRoute() {
+  const pathParts = window.location.pathname.split('/').filter(Boolean);
+
+  return pathParts.length === 1 && queryFirst(githubProfileSelectors.profileRoot) !== null;
+}
+
 function isGitHubRepositoryReadme() {
   return isGitHubRepositoryRoute() && (
     queryFirst(githubRepositorySelectors.repositoryRoot) !== null ||
@@ -503,7 +643,7 @@ function isGitHubRepositoryReadme() {
 }
 
 function isSupportedGitHubPage() {
-  return isGitHubDashboard() || isGitHubRepositoryRoute();
+  return isGitHubDashboard() || isGitHubRepositoryRoute() || isGitHubProfileRoute();
 }
 
 function getCurrentGitHubScreenId(template) {
@@ -511,6 +651,10 @@ function getCurrentGitHubScreenId(template) {
 
   if (isGitHubRepositoryRoute()) {
     return screens.find((screen) => screen.id === 'github-repository-readme')?.id ?? 'github-repository-readme';
+  }
+
+  if (isGitHubProfileRoute()) {
+    return screens.find((screen) => screen.id === 'github-profile-overview')?.id ?? 'github-profile-overview';
   }
 
   if (isGitHubDashboard()) {
@@ -705,6 +849,50 @@ function createStarterBlockAppearances(theme) {
       linkColor: theme.linkColor,
       mutedTextColor: theme.mutedTextColor,
     },
+    'profile-sidebar': {
+      backgroundColor: theme.colors.panel,
+      innerBackgroundColor: theme.colors.panelSoft,
+      borderRadius: 14,
+      padding: 16,
+      elementGap: 10,
+      fontSize: 14,
+      textColor: theme.textColor,
+      linkColor: theme.linkColor,
+      mutedTextColor: theme.mutedTextColor,
+    },
+    'profile-readme': {
+      backgroundColor: theme.colors.mainPanel,
+      innerBackgroundColor: theme.colors.mainInner,
+      borderRadius: 12,
+      padding: 0,
+      elementGap: 14,
+      fontSize: 14,
+      textColor: theme.textColor,
+      linkColor: theme.linkColor,
+      mutedTextColor: theme.mutedTextColor,
+    },
+    'profile-pinned-repos': {
+      backgroundColor: theme.colors.panel,
+      innerBackgroundColor: theme.colors.panelSoft,
+      borderRadius: 12,
+      padding: 14,
+      elementGap: 12,
+      fontSize: 14,
+      textColor: theme.textColor,
+      linkColor: theme.linkColor,
+      mutedTextColor: theme.mutedTextColor,
+    },
+    'profile-contributions': {
+      backgroundColor: theme.colors.mainPanel,
+      innerBackgroundColor: theme.colors.mainInner,
+      borderRadius: 12,
+      padding: 16,
+      elementGap: 12,
+      fontSize: 14,
+      textColor: theme.textColor,
+      linkColor: theme.linkColor,
+      mutedTextColor: theme.mutedTextColor,
+    },
   };
 }
 
@@ -726,6 +914,7 @@ function createStarterTemplate(theme) {
         description: 'Logged-in GitHub dashboard home screen.',
       },
       STARTER_REPOSITORY_README_SCREEN,
+      STARTER_PROFILE_OVERVIEW_SCREEN,
     ],
     regions: ['topbar', 'left-sidebar', 'main-feed', 'right-sidebar'],
     metadata: {
@@ -744,6 +933,13 @@ function createStarterTemplate(theme) {
         },
       })),
       ...STARTER_REPOSITORY_README_BLOCKS.map((block) => ({
+        ...block,
+        props: {
+          ...block.props,
+          ...(blockAppearances[block.type] ? { appearance: blockAppearances[block.type] } : {}),
+        },
+      })),
+      ...STARTER_PROFILE_OVERVIEW_BLOCKS.map((block) => ({
         ...block,
         props: {
           ...block.props,
@@ -2140,6 +2336,10 @@ function removeRepositoryThemeStyle() {
   document.getElementById(REPOSITORY_THEME_STYLE_ID)?.remove();
 }
 
+function removeProfileThemeStyle() {
+  document.getElementById(PROFILE_THEME_STYLE_ID)?.remove();
+}
+
 function getBlockAppearance(blocks, blockType) {
   const appearance = blocks.find((block) => block.type === blockType)?.props?.appearance;
 
@@ -2561,6 +2761,246 @@ function applyRepositoryThemeStyle(blocks, pageAppearance) {
   style.textContent = getRepositoryThemeCss(blocks, isObject(pageAppearance) ? pageAppearance : {});
 }
 
+function getProfileThemeCss(blocks, pageAppearance) {
+  const topbar = getBlockAppearance(blocks, 'top-nav');
+  const sidebar = getBlockAppearance(blocks, 'profile-sidebar');
+  const readme = getBlockAppearance(blocks, 'profile-readme');
+  const pinned = getBlockAppearance(blocks, 'profile-pinned-repos');
+  const contributions = getBlockAppearance(blocks, 'profile-contributions');
+  const pageBackground = sanitizeCssToken(pageAppearance?.backgroundColor, '#0b1120');
+  const pagePanelBackground = `color-mix(in srgb, ${pageBackground} 82%, #ffffff 7%)`;
+  const pagePanelInner = `color-mix(in srgb, ${pageBackground} 72%, #ffffff 12%)`;
+  const headerBackground = sanitizeCssToken(topbar.backgroundColor, pageBackground);
+  const headerInner = sanitizeCssToken(topbar.innerBackgroundColor, pagePanelBackground);
+  const headerText = sanitizeCssToken(topbar.textColor, '#f0f6fc');
+  const headerLink = sanitizeCssToken(topbar.linkColor, '#58a6ff');
+  const headerMuted = sanitizeCssToken(topbar.mutedTextColor, '#8b949e');
+  const sidebarBackground = sanitizeCssToken(sidebar.backgroundColor, pagePanelBackground);
+  const sidebarInner = sanitizeCssToken(sidebar.innerBackgroundColor, pagePanelInner);
+  const sidebarText = sanitizeCssToken(sidebar.textColor, '#f0f6fc');
+  const sidebarLink = sanitizeCssToken(sidebar.linkColor, '#58a6ff');
+  const sidebarMuted = sanitizeCssToken(sidebar.mutedTextColor, '#8b949e');
+  const readmeBackground = sanitizeCssToken(readme.backgroundColor, pagePanelBackground);
+  const readmeInner = sanitizeCssToken(readme.innerBackgroundColor, pagePanelInner);
+  const readmeText = sanitizeCssToken(readme.textColor, '#f0f6fc');
+  const readmeLink = sanitizeCssToken(readme.linkColor, '#58a6ff');
+  const readmeMuted = sanitizeCssToken(readme.mutedTextColor, '#8b949e');
+  const pinnedBackground = sanitizeCssToken(pinned.backgroundColor, pagePanelBackground);
+  const pinnedInner = sanitizeCssToken(pinned.innerBackgroundColor, pagePanelInner);
+  const pinnedText = sanitizeCssToken(pinned.textColor, '#f0f6fc');
+  const pinnedLink = sanitizeCssToken(pinned.linkColor, '#58a6ff');
+  const pinnedMuted = sanitizeCssToken(pinned.mutedTextColor, '#8b949e');
+  const contributionBackground = sanitizeCssToken(contributions.backgroundColor, pagePanelBackground);
+  const contributionInner = sanitizeCssToken(contributions.innerBackgroundColor, pagePanelInner);
+  const contributionText = sanitizeCssToken(contributions.textColor, '#f0f6fc');
+  const contributionLink = sanitizeCssToken(contributions.linkColor, '#58a6ff');
+  const contributionMuted = sanitizeCssToken(contributions.mutedTextColor, '#8b949e');
+
+  return `
+body.git-reflow-template-active.page-profile,
+body.git-reflow-template-active:has(#user-profile-frame) {
+  background: ${pageBackground} !important;
+}
+body.git-reflow-template-active :is(.application-main, main#js-pjax-container, main#main-content, #user-profile-frame, [data-turbo-frame="user-profile-frame"]) {
+  --bgColor-default: ${readmeBackground} !important;
+  --bgColor-muted: ${readmeInner} !important;
+  --bgColor-inset: ${pageBackground} !important;
+  --color-canvas-default: ${readmeBackground} !important;
+  --color-canvas-subtle: ${readmeInner} !important;
+  --color-canvas-inset: ${pageBackground} !important;
+  --color-fg-default: ${readmeText} !important;
+  --color-fg-muted: ${readmeMuted} !important;
+  --color-accent-fg: ${readmeLink} !important;
+  --fgColor-default: ${readmeText} !important;
+  --fgColor-muted: ${readmeMuted} !important;
+  --fgColor-accent: ${readmeLink} !important;
+  --borderColor-default: color-mix(in srgb, ${readmeMuted} 38%, transparent) !important;
+  --borderColor-muted: color-mix(in srgb, ${readmeMuted} 24%, transparent) !important;
+  background: ${pageBackground} !important;
+  color: ${readmeText} !important;
+}
+body.git-reflow-template-active :is(
+  header[role="banner"],
+  header[aria-label="Global Navigation Menu"],
+  .GlobalNav,
+  [class*="GlobalNav"]
+) {
+  --bgColor-default: ${headerBackground} !important;
+  --bgColor-muted: ${headerInner} !important;
+  --color-fg-default: ${headerText} !important;
+  --color-fg-muted: ${headerMuted} !important;
+  --color-accent-fg: ${headerLink} !important;
+  --fgColor-default: ${headerText} !important;
+  --fgColor-muted: ${headerMuted} !important;
+  --fgColor-accent: ${headerLink} !important;
+  --control-bgColor-rest: ${headerInner} !important;
+  --control-borderColor-rest: color-mix(in srgb, ${headerMuted} 38%, transparent) !important;
+  background: ${headerBackground} !important;
+  background-color: ${headerBackground} !important;
+  color: ${headerText} !important;
+  border-color: color-mix(in srgb, ${headerMuted} 34%, transparent) !important;
+}
+body.git-reflow-template-active :is(
+  header[role="banner"],
+  header[aria-label="Global Navigation Menu"],
+  .GlobalNav,
+  [class*="GlobalNav"]
+) > div,
+body.git-reflow-template-active :is(
+  header[role="banner"],
+  header[aria-label="Global Navigation Menu"],
+  .GlobalNav,
+  [class*="GlobalNav"]
+) :is([class*="prc-Stack-Stack"], [class*="Stack-Stack"]) {
+  background: ${headerBackground} !important;
+  background-color: ${headerBackground} !important;
+  color: ${headerText} !important;
+}
+body.git-reflow-template-active :is(
+  header[role="banner"],
+  header[aria-label="Global Navigation Menu"],
+  .GlobalNav,
+  [class*="GlobalNav"]
+) :is(a, span, strong, em, button, svg, [role="button"]) {
+  color: ${headerText} !important;
+  fill: currentColor !important;
+}
+body.git-reflow-template-active :is(
+  header[role="banner"],
+  header[aria-label="Global Navigation Menu"],
+  .GlobalNav,
+  [class*="GlobalNav"]
+) :is(a, [role="link"], [aria-current="page"]) {
+  color: ${headerLink} !important;
+}
+body.git-reflow-template-active :is(
+  header[role="banner"],
+  header[aria-label="Global Navigation Menu"],
+  .GlobalNav,
+  [class*="GlobalNav"]
+) :is(button, input, textarea, .Label, [class*="Button"], [class*="TextInput"], [class*="SearchInput"], [class*="IconButton"]) {
+  background: ${headerInner} !important;
+  background-color: ${headerInner} !important;
+  border-color: color-mix(in srgb, ${headerMuted} 38%, transparent) !important;
+  color: ${headerText} !important;
+}
+body.git-reflow-template-active :is(.user-profile-nav, .user-profile-sticky-bar, nav[aria-label="User profile"], nav[aria-label="Profile"]) {
+  --bgColor-default: ${headerBackground} !important;
+  --bgColor-muted: ${headerInner} !important;
+  --fgColor-default: ${headerText} !important;
+  --fgColor-muted: ${headerMuted} !important;
+  --fgColor-accent: ${headerLink} !important;
+  background: ${headerBackground} !important;
+  border-color: color-mix(in srgb, ${headerMuted} 30%, transparent) !important;
+  color: ${headerText} !important;
+}
+body.git-reflow-template-active :is(.user-profile-nav, .user-profile-sticky-bar, nav[aria-label="User profile"], nav[aria-label="Profile"]) :is(a, span, svg) {
+  color: ${headerText} !important;
+  fill: currentColor !important;
+}
+body.git-reflow-template-active :is(.user-profile-nav, .user-profile-sticky-bar, nav[aria-label="User profile"], nav[aria-label="Profile"]) :is(a[aria-current="page"], .selected) {
+  color: ${headerLink} !important;
+}
+body.git-reflow-template-active :is(.js-profile-editable-area, .js-profile-editable-replace, .vcard-names-container, .user-profile-bio, .user-profile-mini-vcard) {
+  --bgColor-default: ${sidebarBackground} !important;
+  --bgColor-muted: ${sidebarInner} !important;
+  --fgColor-default: ${sidebarText} !important;
+  --fgColor-muted: ${sidebarMuted} !important;
+  --fgColor-accent: ${sidebarLink} !important;
+  color: ${sidebarText} !important;
+}
+body.git-reflow-template-active :is(.js-profile-editable-area, .js-profile-editable-replace) :is(h1, h2, p, span, strong, li, svg) {
+  color: ${sidebarText} !important;
+  fill: currentColor !important;
+}
+body.git-reflow-template-active :is(.js-profile-editable-area, .js-profile-editable-replace) :is(a, [role="link"]) {
+  color: ${sidebarLink} !important;
+}
+body.git-reflow-template-active :is(.js-profile-editable-area, .js-profile-editable-replace) :is(button, .Button, [class*="Button"]) {
+  background: ${sidebarInner} !important;
+  border-color: color-mix(in srgb, ${sidebarMuted} 36%, transparent) !important;
+  color: ${sidebarText} !important;
+}
+body.git-reflow-template-active :is(.profile-readme, .profile-readme .Box, .profile-readme .markdown-body, #user-profile-frame article.markdown-body) {
+  --bgColor-default: ${readmeBackground} !important;
+  --bgColor-muted: ${readmeInner} !important;
+  --fgColor-default: ${readmeText} !important;
+  --fgColor-muted: ${readmeMuted} !important;
+  --fgColor-accent: ${readmeLink} !important;
+  background: ${readmeBackground} !important;
+  border-color: color-mix(in srgb, ${readmeMuted} 34%, transparent) !important;
+  color: ${readmeText} !important;
+}
+body.git-reflow-template-active :is(.profile-readme, #user-profile-frame article.markdown-body) :is(h1, h2, h3, h4, h5, h6, p, li, span, strong, em, table, td, th) {
+  color: ${readmeText} !important;
+  border-color: color-mix(in srgb, ${readmeMuted} 26%, transparent) !important;
+}
+body.git-reflow-template-active :is(.profile-readme, #user-profile-frame article.markdown-body) :is(a, [role="link"]) {
+  color: ${readmeLink} !important;
+}
+body.git-reflow-template-active :is(.profile-readme, #user-profile-frame article.markdown-body) :is(pre, code, blockquote, table, tr, td, th) {
+  background: ${readmeInner} !important;
+}
+body.git-reflow-template-active :is(.js-pinned-items-reorder-container, .js-pinned-items-reorder-list) {
+  color: ${pinnedText} !important;
+}
+body.git-reflow-template-active :is(.pinned-item-list-item-content, .pinned-item-list-item .Box) {
+  --bgColor-default: ${pinnedBackground} !important;
+  --bgColor-muted: ${pinnedInner} !important;
+  --fgColor-default: ${pinnedText} !important;
+  --fgColor-muted: ${pinnedMuted} !important;
+  --fgColor-accent: ${pinnedLink} !important;
+  background: ${pinnedBackground} !important;
+  border-color: color-mix(in srgb, ${pinnedMuted} 34%, transparent) !important;
+  color: ${pinnedText} !important;
+}
+body.git-reflow-template-active :is(.pinned-item-list-item-content, .pinned-item-list-item .Box) :is(a, [role="link"], .Link--primary) {
+  color: ${pinnedLink} !important;
+}
+body.git-reflow-template-active :is(.pinned-item-list-item-content, .pinned-item-list-item .Box) :is(p, span, small, .color-fg-muted, .pinned-item-meta) {
+  color: ${pinnedMuted} !important;
+}
+body.git-reflow-template-active :is(.js-yearly-contributions, .js-calendar-graph, .ContributionCalendar, .contribution-activity, .js-profile-timeline-year-list) {
+  --bgColor-default: ${contributionBackground} !important;
+  --bgColor-muted: ${contributionInner} !important;
+  --fgColor-default: ${contributionText} !important;
+  --fgColor-muted: ${contributionMuted} !important;
+  --fgColor-accent: ${contributionLink} !important;
+  --contribution-default-bgColor-0: ${contributionInner} !important;
+  --contribution-default-bgColor-1: color-mix(in srgb, ${contributionLink} 28%, ${contributionInner}) !important;
+  --contribution-default-bgColor-2: color-mix(in srgb, ${contributionLink} 46%, ${contributionInner}) !important;
+  --contribution-default-bgColor-3: color-mix(in srgb, ${contributionLink} 68%, ${contributionInner}) !important;
+  --contribution-default-bgColor-4: ${contributionLink} !important;
+  background: ${contributionBackground} !important;
+  border-color: color-mix(in srgb, ${contributionMuted} 34%, transparent) !important;
+  color: ${contributionText} !important;
+}
+body.git-reflow-template-active :is(.js-yearly-contributions, .contribution-activity, .js-profile-timeline-year-list) :is(a, [role="link"]) {
+  color: ${contributionLink} !important;
+}
+body.git-reflow-template-active :is(.js-yearly-contributions, .contribution-activity, .js-profile-timeline-year-list) :is(h2, h3, p, span, strong, li, time, .color-fg-muted) {
+  color: ${contributionText} !important;
+}
+body.git-reflow-template-active :is(.contribution-activity .Box, .contribution-activity-listing, .contribution-activity-show-more, .js-profile-timeline-year-list a) {
+  background: ${contributionInner} !important;
+  border-color: color-mix(in srgb, ${contributionMuted} 34%, transparent) !important;
+  color: ${contributionText} !important;
+}
+`;
+}
+
+function applyProfileThemeStyle(blocks, pageAppearance) {
+  let style = document.getElementById(PROFILE_THEME_STYLE_ID);
+
+  if (!(style instanceof HTMLStyleElement)) {
+    style = document.createElement('style');
+    style.id = PROFILE_THEME_STYLE_ID;
+    document.head.append(style);
+  }
+
+  style.textContent = getProfileThemeCss(blocks, isObject(pageAppearance) ? pageAppearance : {});
+}
+
 function createGeneratedBlock(block) {
   const props = isObject(block.props) ? block.props : {};
   const itemLimit = getItemLimit(props.itemLimit, 8);
@@ -2956,6 +3396,7 @@ function applyTemplateBlocks(template, generation) {
   if (isGitHubRepositoryRoute()) {
     cleanupRepositoryGeneratedReplacements();
     restoreRememberedTextOverrides();
+    removeProfileThemeStyle();
     document.querySelectorAll(`.${HIDDEN_CLASS}`).forEach((element) => {
       element.classList.remove(HIDDEN_CLASS);
     });
@@ -2973,7 +3414,29 @@ function applyTemplateBlocks(template, generation) {
     return;
   }
 
+  if (isGitHubProfileRoute()) {
+    cleanupRepositoryGeneratedReplacements();
+    restoreRememberedTextOverrides();
+    removeRepositoryThemeStyle();
+    document.querySelectorAll(`.${HIDDEN_CLASS}`).forEach((element) => {
+      element.classList.remove(HIDDEN_CLASS);
+    });
+    document.querySelectorAll(`.${APPEARANCE_CLASS}`).forEach(clearAppearance);
+    document.querySelectorAll(`.${BLOCK_CLASS}:not(.${GENERATED_BLOCK_CLASS})`).forEach((element) => {
+      element.classList.remove(BLOCK_CLASS, HIDDEN_CLASS);
+      element.style.removeProperty('order');
+      clearAppearance(element);
+      delete element.dataset.gitReflowBlockId;
+      delete element.dataset.gitReflowBlockType;
+      delete element.dataset.gitReflowRegion;
+      delete element.dataset.gitReflowNativeRegion;
+    });
+    applyProfileThemeStyle(blocks, template.pageAppearance);
+    return;
+  }
+
   removeRepositoryThemeStyle();
+  removeProfileThemeStyle();
   document.querySelectorAll(`.${HIDDEN_CLASS}`).forEach((element) => {
     element.classList.remove(HIDDEN_CLASS);
   });
@@ -3144,7 +3607,7 @@ function recordTemplateUsage(token, template) {
 }
 
 function reapplyTemplateBlocksAfterGitHubHydration(template, generation) {
-  const delays = isGitHubRepositoryRoute()
+  const delays = isGitHubRepositoryRoute() || isGitHubProfileRoute()
     ? [250, 700, 1200, 2200, 3600, 5500, 8000]
     : [350, 900, 1800, 3200];
 
@@ -3201,8 +3664,8 @@ function startTemplateMutationObserver(template, generation) {
         }
 
         return (
-          target.matches?.('#repo-content-turbo-frame, #repo-content-pjax-container, article.markdown-body, .BorderGrid, [aria-labelledby="folders-and-files"]') ||
-          target.querySelector?.('article.markdown-body, .BorderGrid, [aria-labelledby="folders-and-files"], .git-reflow-generated-block')
+          target.matches?.('#repo-content-turbo-frame, #repo-content-pjax-container, #user-profile-frame, article.markdown-body, .profile-readme, .js-pinned-items-reorder-container, .js-yearly-contributions, .contribution-activity, .BorderGrid, [aria-labelledby="folders-and-files"]') ||
+          target.querySelector?.('#user-profile-frame, article.markdown-body, .profile-readme, .js-pinned-items-reorder-container, .js-yearly-contributions, .contribution-activity, .BorderGrid, [aria-labelledby="folders-and-files"], .git-reflow-generated-block')
         );
       });
     });
@@ -4119,6 +4582,7 @@ function resetAppliedStyles() {
   templateRenderGeneration += 1;
   stopTemplateMutationObserver();
   removeRepositoryThemeStyle();
+  removeProfileThemeStyle();
   cleanupRepositoryGeneratedReplacements();
   customLeftSidebarWidthPx = null;
   clearStoredLeftSidebarWidth();

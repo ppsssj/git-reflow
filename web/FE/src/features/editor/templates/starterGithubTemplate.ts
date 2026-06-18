@@ -1,5 +1,6 @@
 import type { ExtensionTemplatePayload, TemplateBlock, TemplateRecord } from '../../../types/template';
 import { defaultGithubTemplate } from './defaultGithubTemplate';
+import { profileOverviewBlocks, profileOverviewScreen } from './profileOverviewTemplate';
 import { repositoryReadmeBlocks, repositoryReadmeScreen } from './repositoryReadmeTemplate';
 
 const now = '2026-05-11T00:00:00.000Z';
@@ -192,6 +193,50 @@ function createBlockAppearances(theme: StarterTheme): Partial<Record<TemplateBlo
       linkColor: theme.linkColor,
       mutedTextColor: theme.mutedTextColor,
     },
+    'profile-sidebar': {
+      backgroundColor: theme.colors.panel,
+      innerBackgroundColor: theme.colors.panelSoft,
+      borderRadius: 14,
+      padding: 16,
+      elementGap: 10,
+      fontSize: 14,
+      textColor: theme.textColor,
+      linkColor: theme.linkColor,
+      mutedTextColor: theme.mutedTextColor,
+    },
+    'profile-readme': {
+      backgroundColor: theme.colors.mainPanel,
+      innerBackgroundColor: theme.colors.mainInner,
+      borderRadius: 12,
+      padding: 0,
+      elementGap: 14,
+      fontSize: 14,
+      textColor: theme.textColor,
+      linkColor: theme.linkColor,
+      mutedTextColor: theme.mutedTextColor,
+    },
+    'profile-pinned-repos': {
+      backgroundColor: theme.colors.panel,
+      innerBackgroundColor: theme.colors.panelSoft,
+      borderRadius: 12,
+      padding: 14,
+      elementGap: 12,
+      fontSize: 14,
+      textColor: theme.textColor,
+      linkColor: theme.linkColor,
+      mutedTextColor: theme.mutedTextColor,
+    },
+    'profile-contributions': {
+      backgroundColor: theme.colors.mainPanel,
+      innerBackgroundColor: theme.colors.mainInner,
+      borderRadius: 12,
+      padding: 16,
+      elementGap: 12,
+      fontSize: 14,
+      textColor: theme.textColor,
+      linkColor: theme.linkColor,
+      mutedTextColor: theme.mutedTextColor,
+    },
   };
 }
 
@@ -219,7 +264,7 @@ function createStarterGithubTemplate(theme: StarterTheme): ExtensionTemplatePayl
       ...defaultGithubTemplate.metadata,
       updatedAt: now,
     },
-    screens: [...defaultGithubTemplate.screens, repositoryReadmeScreen],
+    screens: [...defaultGithubTemplate.screens, repositoryReadmeScreen, profileOverviewScreen],
     blocks: [
       ...defaultGithubTemplate.blocks.map((block) => ({
         ...block,
@@ -233,6 +278,14 @@ function createStarterGithubTemplate(theme: StarterTheme): ExtensionTemplatePayl
         },
       })),
       ...repositoryReadmeBlocks.map((block) => ({
+        ...block,
+        visible: true,
+        props: {
+          ...block.props,
+          ...(blockAppearances[block.type] ? { appearance: blockAppearances[block.type] } : {}),
+        },
+      })),
+      ...profileOverviewBlocks.map((block) => ({
         ...block,
         visible: true,
         props: {
@@ -271,6 +324,7 @@ function createStarterGithubTemplateRecord(template: ExtensionTemplatePayload): 
     highlights: [
       'Styled GitHub Home preset',
       'Includes Repository README page',
+      'Includes Profile Overview page',
       'Editable colors, spacing, radius, and typography',
     ],
     sections: template.blocks

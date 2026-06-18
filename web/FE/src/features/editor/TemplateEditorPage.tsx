@@ -20,6 +20,7 @@ import { TemplateEditPanel } from './TemplateEditPanel';
 import type { QuickThemeId } from './TemplateEditPanel';
 import { TemplateLayoutCanvas } from './TemplateLayoutCanvas';
 import { defaultGithubTemplate } from './templates/defaultGithubTemplate';
+import { profileOverviewBlocks, profileOverviewScreen } from './templates/profileOverviewTemplate';
 import { repositoryReadmeBlocks, repositoryReadmeScreen } from './templates/repositoryReadmeTemplate';
 import {
   getStarterGithubTemplate,
@@ -77,6 +78,10 @@ const addableScreenPresets: Array<{ screen: TemplateScreen; blocks: TemplateBloc
   {
     screen: repositoryReadmeScreen,
     blocks: repositoryReadmeBlocks,
+  },
+  {
+    screen: profileOverviewScreen,
+    blocks: profileOverviewBlocks,
   },
 ];
 
@@ -731,6 +736,10 @@ export function TemplateEditorPage() {
     updateBlockTypeProps('issue-pr-updates', { appearance: theme.panel });
     updateBlockTypeProps('trending-repos', { appearance: theme.panel });
     updateBlockTypeProps('recommended-repos', { appearance: theme.panel });
+    updateBlockTypeProps('profile-sidebar', { appearance: theme.panel });
+    updateBlockTypeProps('profile-readme', { appearance: theme.main });
+    updateBlockTypeProps('profile-pinned-repos', { appearance: theme.panel });
+    updateBlockTypeProps('profile-contributions', { appearance: theme.main });
     setSyncStatus('Applied quick theme');
   };
 

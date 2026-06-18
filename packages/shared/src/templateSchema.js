@@ -15,6 +15,10 @@ export const TEMPLATE_BLOCK_TYPES = [
   'repository-file-list',
   'repository-readme',
   'repository-about-sidebar',
+  'profile-sidebar',
+  'profile-readme',
+  'profile-pinned-repos',
+  'profile-contributions',
 ];
 
 export const DEFAULT_COLUMN_LAYOUT = {

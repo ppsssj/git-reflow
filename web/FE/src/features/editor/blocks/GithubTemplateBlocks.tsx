@@ -73,6 +73,10 @@ interface RepositoryLanguage {
   color: string;
 }
 
+interface ProfileStat {
+  label?: string;
+}
+
 function getAppearanceStyle(block: TemplateBlock) {
   const appearance = block.props.appearance;
 
@@ -808,6 +812,137 @@ function RepositoryAboutSidebarBlock({ block, selected, onSelect, onOpenContextM
   );
 }
 
+function ProfileSidebarBlock({ block, selected, onSelect, onOpenContextMenu }: TemplateBlockComponentProps) {
+  const props = block.props as {
+    name?: string;
+    handle?: string;
+    website?: string;
+    stats?: Array<string | ProfileStat>;
+  };
+  const stats = props.stats ?? [];
+
+  return (
+    <BlockFrame block={block} selected={selected} onSelect={onSelect} onOpenContextMenu={onOpenContextMenu}>
+      <aside className="github-profile-card">
+        <div className="github-profile-card__avatar">{(props.handle ?? 'u').slice(0, 1).toUpperCase()}</div>
+        <div className="github-profile-card__names">
+          <h1>{props.name ?? 'Profile name'}</h1>
+          <p>{props.handle ?? 'username'}</p>
+        </div>
+        <button type="button">Edit profile</button>
+        <div className="github-profile-card__stats">
+          {stats.map((stat) => (
+            <span key={typeof stat === 'string' ? stat : stat.label}>{typeof stat === 'string' ? stat : stat.label}</span>
+          ))}
+        </div>
+        {props.website ? (
+          <a className="github-profile-card__website" href="#profile-website">
+            <Icon name="open_in_new" />
+            {props.website}
+          </a>
+        ) : null}
+        <section className="github-profile-card__achievements">
+          <h2>Achievements</h2>
+          <div>
+            <span>YOLO</span>
+            <span>Pull Shark</span>
+          </div>
+        </section>
+      </aside>
+    </BlockFrame>
+  );
+}
+
+function ProfileReadmeBlock({ block, selected, onSelect, onOpenContextMenu }: TemplateBlockComponentProps) {
+  const props = block.props as {
+    repository?: string;
+    heading?: string;
+    links?: string[];
+    summary?: string;
+  };
+
+  return (
+    <BlockFrame block={block} selected={selected} onSelect={onSelect} onOpenContextMenu={onOpenContextMenu}>
+      <article className="github-profile-readme">
+        <div className="github-profile-readme__header">
+          <Icon name="description" />
+          <strong>{props.repository ?? 'profile'} / README.md</strong>
+        </div>
+        <div className="github-profile-readme__body markdown-body">
+          <h1>{props.heading ?? 'Profile README'}</h1>
+          <div className="github-profile-readme__links">
+            {(props.links ?? ['Portfolio', 'Projects']).map((link) => (
+              <span key={link}>{link}</span>
+            ))}
+          </div>
+          <p>{props.summary ?? 'Personal profile README content.'}</p>
+        </div>
+      </article>
+    </BlockFrame>
+  );
+}
+
+function ProfilePinnedReposBlock({ block, selected, onSelect, onOpenContextMenu }: TemplateBlockComponentProps) {
+  const props = block.props as { repositories?: RepoSummary[] };
+  const repositories = props.repositories ?? [];
+
+  return (
+    <BlockFrame block={block} selected={selected} onSelect={onSelect} onOpenContextMenu={onOpenContextMenu}>
+      <section className="github-profile-pinned">
+        <header>
+          <h2>Pinned</h2>
+          <button type="button">Customize your pins</button>
+        </header>
+        <div className="github-profile-pinned__grid">
+          {repositories.map((repo) => (
+            <article className="github-profile-pinned__item" key={repo.name}>
+              <div>
+                <Icon name="folder" />
+                <strong>{repo.name}</strong>
+                <em>Public</em>
+              </div>
+              <p>{repo.description ?? 'Pinned profile repository.'}</p>
+              <footer>
+                {repo.language ? <span>{repo.language}</span> : null}
+                {repo.stars ? <span>Star {repo.stars}</span> : null}
+              </footer>
+            </article>
+          ))}
+        </div>
+      </section>
+    </BlockFrame>
+  );
+}
+
+function ProfileContributionsBlock({ block, selected, onSelect, onOpenContextMenu }: TemplateBlockComponentProps) {
+  const props = block.props as { summary?: string; years?: string[] };
+
+  return (
+    <BlockFrame block={block} selected={selected} onSelect={onSelect} onOpenContextMenu={onOpenContextMenu}>
+      <section className="github-profile-contributions">
+        <header>
+          <h2>{props.summary ?? 'Contribution calendar and activity timeline'}</h2>
+          <button type="button">Contribution settings</button>
+        </header>
+        <div className="github-profile-contributions__calendar" aria-hidden="true">
+          {Array.from({ length: 371 }, (_, index) => (
+            <span className={`is-level-${index % 11 === 0 ? 4 : index % 7 === 0 ? 3 : index % 5 === 0 ? 2 : index % 3 === 0 ? 1 : 0}`} key={index} />
+          ))}
+        </div>
+        <div className="github-profile-contributions__years">
+          {(props.years ?? ['2026', '2025', '2024']).map((year) => (
+            <button className={year === '2026' ? 'is-active' : ''} key={year} type="button">{year}</button>
+          ))}
+        </div>
+        <ol className="github-profile-contributions__activity">
+          <li><strong>Created commits in ppsssj/Git-Effects</strong><span>Jun 2026</span></li>
+          <li><strong>Opened pull requests in profile projects</strong><span>May 2026</span></li>
+        </ol>
+      </section>
+    </BlockFrame>
+  );
+}
+
 export const githubBlockRegistry: Record<TemplateBlockType, (props: TemplateBlockComponentProps) => JSX.Element> = {
   'top-nav': TopNavBlock,
   'profile-summary': ProfileSummaryBlock,
@@ -823,4 +958,8 @@ export const githubBlockRegistry: Record<TemplateBlockType, (props: TemplateBloc
   'repository-file-list': RepositoryFileListBlock,
   'repository-readme': RepositoryReadmeBlock,
   'repository-about-sidebar': RepositoryAboutSidebarBlock,
+  'profile-sidebar': ProfileSidebarBlock,
+  'profile-readme': ProfileReadmeBlock,
+  'profile-pinned-repos': ProfilePinnedReposBlock,
+  'profile-contributions': ProfileContributionsBlock,
 };
