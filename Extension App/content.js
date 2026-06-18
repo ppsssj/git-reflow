@@ -2158,23 +2158,25 @@ function getRepositoryThemeCss(blocks, pageAppearance) {
   const readme = getBlockAppearance(blocks, 'repository-readme');
   const about = getBlockAppearance(blocks, 'repository-about-sidebar');
   const pageBackground = sanitizeCssToken(pageAppearance?.backgroundColor, '#0b1120');
-  const headerBackground = sanitizeCssToken(header.backgroundColor, '#0d1117');
-  const headerInner = sanitizeCssToken(header.innerBackgroundColor, '#161b22');
+  const pagePanelBackground = `color-mix(in srgb, ${pageBackground} 82%, #ffffff 7%)`;
+  const pagePanelInner = `color-mix(in srgb, ${pageBackground} 72%, #ffffff 12%)`;
+  const headerBackground = sanitizeCssToken(header.backgroundColor, pageBackground);
+  const headerInner = sanitizeCssToken(header.innerBackgroundColor, pagePanelBackground);
   const headerText = sanitizeCssToken(header.textColor, '#f0f6fc');
   const headerLink = sanitizeCssToken(header.linkColor, '#58a6ff');
   const headerMuted = sanitizeCssToken(header.mutedTextColor, '#8b949e');
-  const fileBackground = sanitizeCssToken(files.backgroundColor, '#161b22');
-  const fileInner = sanitizeCssToken(files.innerBackgroundColor, '#0d1117');
+  const fileBackground = sanitizeCssToken(files.backgroundColor, pagePanelBackground);
+  const fileInner = sanitizeCssToken(files.innerBackgroundColor, pagePanelInner);
   const fileText = sanitizeCssToken(files.textColor, '#f0f6fc');
   const fileLink = sanitizeCssToken(files.linkColor, '#58a6ff');
   const fileMuted = sanitizeCssToken(files.mutedTextColor, '#8b949e');
-  const readmeBackground = sanitizeCssToken(readme.backgroundColor, '#161b22');
-  const readmeInner = sanitizeCssToken(readme.innerBackgroundColor, '#0d1117');
+  const readmeBackground = sanitizeCssToken(readme.backgroundColor, pagePanelBackground);
+  const readmeInner = sanitizeCssToken(readme.innerBackgroundColor, pagePanelInner);
   const readmeText = sanitizeCssToken(readme.textColor, '#f0f6fc');
   const readmeLink = sanitizeCssToken(readme.linkColor, '#58a6ff');
   const readmeMuted = sanitizeCssToken(readme.mutedTextColor, '#8b949e');
-  const aboutBackground = sanitizeCssToken(about.backgroundColor, '#161b22');
-  const aboutInner = sanitizeCssToken(about.innerBackgroundColor, '#0d1117');
+  const aboutBackground = sanitizeCssToken(about.backgroundColor, pagePanelBackground);
+  const aboutInner = sanitizeCssToken(about.innerBackgroundColor, pagePanelInner);
   const aboutText = sanitizeCssToken(about.textColor, '#f0f6fc');
   const aboutLink = sanitizeCssToken(about.linkColor, '#58a6ff');
   const aboutMuted = sanitizeCssToken(about.mutedTextColor, '#8b949e');
@@ -2185,6 +2187,19 @@ body.git-reflow-template-active {
 }
 body.git-reflow-template-active :is(.application-main, main#main-content, #js-repo-pjax-container, #repo-content-pjax-container, #repo-content-turbo-frame, react-app[app-name="code-view"], [class*="PageLayout-PageLayoutContent"], [class*="PageLayout-ContentWrapper"], [class*="PageLayout-Content"], [class*="PageLayout-PaneWrapper"]) {
   background: ${pageBackground} !important;
+}
+body.git-reflow-template-active :is(
+  .Layout,
+  .Layout-main,
+  .Layout-sidebar,
+  .repository-content,
+  [data-hpc],
+  [data-turbo-frame],
+  react-app[app-name*="code"],
+  [class*="Repository"],
+  [class*="Overview"]
+) {
+  background-color: transparent !important;
 }
 body.git-reflow-template-active :is(#repo-content-pjax-container, #repo-content-turbo-frame, react-app[app-name="code-view"], [class*="PageLayout-PageLayoutContent"], [class*="PageLayout-ContentWrapper"]) {
   --bgColor-default: ${fileBackground} !important;
@@ -2215,6 +2230,37 @@ body.git-reflow-template-active :is(#repo-content-pjax-container, #repo-content-
   --button-default-fgColor-rest: ${fileText} !important;
   --button-primary-bgColor-rest: color-mix(in srgb, ${fileLink} 50%, ${fileBackground}) !important;
   --button-primary-fgColor-rest: ${fileText} !important;
+}
+body.git-reflow-template-active :is(
+  main#main-content,
+  #repo-content-pjax-container,
+  #repo-content-turbo-frame,
+  react-app[app-name*="code"],
+  [class*="PageLayout"],
+  [class*="OverviewContent"],
+  [class*="OverviewRepoFiles"],
+  [class*="Directory"],
+  [class*="CodeView"],
+  [class*="Repository"],
+  [data-hpc]
+) {
+  --bgColor-default: ${fileBackground} !important;
+  --bgColor-muted: ${fileInner} !important;
+  --bgColor-inset: ${pageBackground} !important;
+  --color-canvas-default: ${fileBackground} !important;
+  --color-canvas-subtle: ${fileInner} !important;
+  --color-canvas-inset: ${pageBackground} !important;
+  --color-fg-default: ${fileText} !important;
+  --color-fg-muted: ${fileMuted} !important;
+  --color-accent-fg: ${fileLink} !important;
+  --fgColor-default: ${fileText} !important;
+  --fgColor-muted: ${fileMuted} !important;
+  --fgColor-accent: ${fileLink} !important;
+  --borderColor-default: color-mix(in srgb, ${fileMuted} 38%, transparent) !important;
+  --borderColor-muted: color-mix(in srgb, ${fileMuted} 24%, transparent) !important;
+  --control-bgColor-rest: ${fileInner} !important;
+  --control-borderColor-rest: color-mix(in srgb, ${fileMuted} 42%, transparent) !important;
+  --control-fgColor-rest: ${fileText} !important;
 }
 body.git-reflow-template-active :is(.AppHeader, .AppHeader-globalBar, .js-global-bar, [class*="AppHeader"], #repository-container-header, #repo-title-component, nav[aria-label="Repository"], #repository-container-header .UnderlineNav, #repository-container-header [class*="Underline"]) {
   --bgColor-default: ${headerBackground} !important;
@@ -2252,10 +2298,99 @@ body.git-reflow-template-active :is(.AppHeader, .AppHeader-globalBar, .js-global
   border-color: color-mix(in srgb, ${headerMuted} 38%, transparent) !important;
   color: ${headerText} !important;
 }
+body.git-reflow-template-active :is(
+  header[role="banner"],
+  header[aria-label="Global Navigation Menu"],
+  .GlobalNav,
+  [class*="GlobalNav"]
+) {
+  --bgColor-default: ${headerBackground} !important;
+  --bgColor-muted: ${headerInner} !important;
+  --bgColor-inset: ${headerBackground} !important;
+  --color-canvas-default: ${headerBackground} !important;
+  --color-canvas-subtle: ${headerInner} !important;
+  --color-canvas-inset: ${headerBackground} !important;
+  --color-fg-default: ${headerText} !important;
+  --color-fg-muted: ${headerMuted} !important;
+  --color-accent-fg: ${headerLink} !important;
+  --fgColor-default: ${headerText} !important;
+  --fgColor-muted: ${headerMuted} !important;
+  --fgColor-accent: ${headerLink} !important;
+  --borderColor-default: color-mix(in srgb, ${headerMuted} 34%, transparent) !important;
+  --borderColor-muted: color-mix(in srgb, ${headerMuted} 22%, transparent) !important;
+  --control-bgColor-rest: ${headerInner} !important;
+  --control-borderColor-rest: color-mix(in srgb, ${headerMuted} 38%, transparent) !important;
+  --control-fgColor-rest: ${headerText} !important;
+  background: ${headerBackground} !important;
+  background-color: ${headerBackground} !important;
+  color: ${headerText} !important;
+  border-color: color-mix(in srgb, ${headerMuted} 34%, transparent) !important;
+}
+body.git-reflow-template-active :is(
+  header[role="banner"],
+  header[aria-label="Global Navigation Menu"],
+  .GlobalNav,
+  [class*="GlobalNav"]
+) > div,
+body.git-reflow-template-active :is(
+  header[role="banner"],
+  header[aria-label="Global Navigation Menu"],
+  .GlobalNav,
+  [class*="GlobalNav"]
+) :is([class*="prc-Stack-Stack"], [class*="Stack-Stack"]) {
+  background: ${headerBackground} !important;
+  background-color: ${headerBackground} !important;
+  color: ${headerText} !important;
+  border-color: color-mix(in srgb, ${headerMuted} 34%, transparent) !important;
+}
+body.git-reflow-template-active :is(
+  header[role="banner"],
+  header[aria-label="Global Navigation Menu"],
+  .GlobalNav,
+  [class*="GlobalNav"]
+) :is(a, span, strong, em, button, svg, [role="button"]) {
+  color: ${headerText} !important;
+  fill: currentColor !important;
+}
+body.git-reflow-template-active :is(
+  header[role="banner"],
+  header[aria-label="Global Navigation Menu"],
+  .GlobalNav,
+  [class*="GlobalNav"]
+) :is(a, [role="link"], [aria-current="page"]) {
+  color: ${headerLink} !important;
+}
+body.git-reflow-template-active :is(
+  header[role="banner"],
+  header[aria-label="Global Navigation Menu"],
+  .GlobalNav,
+  [class*="GlobalNav"]
+) :is(button, input, textarea, .Label, [class*="Button"], [class*="TextInput"], [class*="SearchInput"], [class*="ActionList"], [class*="IconButton"]) {
+  background: ${headerInner} !important;
+  background-color: ${headerInner} !important;
+  border-color: color-mix(in srgb, ${headerMuted} 38%, transparent) !important;
+  color: ${headerText} !important;
+}
 body.git-reflow-template-active :is([class*="OverviewContent-module__Box_1"], [class*="OverviewContent-module__Box_2"], [class*="OverviewContent-module__Box_6"], [class*="OverviewContent-module__Box_7"], [class*="OverviewContent-module__Box_8"], [class*="OverviewContent-module__Box_9"], [class*="OverviewContent-module__Box_10"], [class*="OverviewContent-module__FileResultsList"], [class*="FileResultsList"], .overview-ref-selector, .TextInput-wrapper, [class*="TextInputWrapper"]) {
   background: transparent !important;
   color: ${fileText} !important;
   border-color: color-mix(in srgb, ${fileMuted} 32%, transparent) !important;
+}
+body.git-reflow-template-active main#main-content :is(
+  .Box,
+  .Box-header,
+  .Box-row,
+  [class*="Box"],
+  [class*="Header"],
+  [class*="FileResultsList"],
+  [class*="DirectoryContent"],
+  [class*="RepositoryContent"],
+  [data-testid*="file"],
+  [data-testid*="directory"]
+) {
+  background-color: ${fileBackground} !important;
+  border-color: color-mix(in srgb, ${fileMuted} 30%, transparent) !important;
+  color: ${fileText} !important;
 }
 body.git-reflow-template-active :is([class*="OverviewContent-module__Box_1"], [class*="OverviewContent-module__Box_2"], [class*="OverviewContent-module__Box_6"], [class*="OverviewContent-module__Box_7"], [class*="OverviewContent-module__Box_8"], [class*="OverviewContent-module__Box_9"], [class*="OverviewContent-module__Box_10"], [class*="OverviewContent-module__FileResultsList"], [class*="FileResultsList"]) :is(button, input, textarea, [class*="Button"], [class*="TextInput"]) {
   background: ${fileInner} !important;
@@ -2297,6 +2432,16 @@ body.git-reflow-template-active :is(table[aria-labelledby="folders-and-files"], 
   background: ${fileInner} !important;
   border-color: color-mix(in srgb, ${fileMuted} 34%, transparent) !important;
 }
+body.git-reflow-template-active main#main-content :is(
+  [data-testid="latest-commit"],
+  [class*="LatestCommit"],
+  [class*="OverviewHeaderRow"],
+  .Box-header,
+  .Box-row:first-child
+) {
+  background-color: ${fileInner} !important;
+  border-color: color-mix(in srgb, ${fileMuted} 34%, transparent) !important;
+}
 body.git-reflow-template-active :is(table[aria-labelledby="folders-and-files"], .Table-module__Box__HZKiQ, [class*="DirectoryContent"], [class*="LatestCommit"], .react-directory-row) :is(a, [role="link"], .Link--primary, .Link--secondary) {
   color: ${fileLink} !important;
 }
@@ -2321,6 +2466,17 @@ body.git-reflow-template-active :is([class*="OverviewRepoFiles-module__Box"], [c
   --borderColor-default: color-mix(in srgb, ${readmeMuted} 34%, transparent) !important;
   --borderColor-muted: color-mix(in srgb, ${readmeMuted} 22%, transparent) !important;
   background: ${readmeBackground} !important;
+  border-color: color-mix(in srgb, ${readmeMuted} 34%, transparent) !important;
+  color: ${readmeText} !important;
+}
+body.git-reflow-template-active main#main-content :is(
+  .Box:has(article.markdown-body),
+  .Box:has(#readme),
+  [class*="DirectoryRichtextContent"],
+  [class*="SharedMarkdownContent"],
+  [data-testid*="readme"]
+) {
+  background-color: ${readmeBackground} !important;
   border-color: color-mix(in srgb, ${readmeMuted} 34%, transparent) !important;
   color: ${readmeText} !important;
 }
@@ -2356,6 +2512,25 @@ body.git-reflow-template-active :is([class*="PageLayout-Pane"], [class*="PageLay
   --borderColor-default: color-mix(in srgb, ${aboutMuted} 34%, transparent) !important;
   --borderColor-muted: color-mix(in srgb, ${aboutMuted} 22%, transparent) !important;
   background: ${aboutBackground} !important;
+  border-color: color-mix(in srgb, ${aboutMuted} 30%, transparent) !important;
+  color: ${aboutText} !important;
+}
+body.git-reflow-template-active :is(
+  .Layout-sidebar,
+  [class*="PageLayout-Pane"],
+  aside[aria-label*="Repository"],
+  [data-testid="repository-sidebar"]
+) :is(
+  .Box,
+  .BorderGrid,
+  .BorderGrid-row,
+  .BorderGrid-cell,
+  [class*="Sidebar"],
+  [class*="About"],
+  [class*="Languages"],
+  [class*="Deployments"]
+) {
+  background-color: ${aboutBackground} !important;
   border-color: color-mix(in srgb, ${aboutMuted} 30%, transparent) !important;
   color: ${aboutText} !important;
 }
