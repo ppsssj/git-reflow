@@ -227,7 +227,7 @@ export function IntroPage() {
 
                 <div className="comparison-handle" style={{ left: `${split}%` }}>
                   <div className="comparison-handle__circle">
-                    <Icon name="unfold_more_double" />
+                    <Icon name="swap_horiz" />
                   </div>
                 </div>
               </div>
